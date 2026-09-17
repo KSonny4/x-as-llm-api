@@ -135,6 +135,8 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 | 9 | Seed source | Bao `projects/pi-multi-providers/` live refs (seed everything; exclude `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers); `KEEPER_TOKEN` reused from Bao, not re-minted |
 | 10 | Failure policy | 429 ⇒ limited+backoff; deny ⇒ down/suspect; rollback smoke-gated + rehearsed |
 | 11 | Gates | Phase gates + live proof (units + smoke + real inference per phase) |
+| 12 | Runnable goal | Keeper-first slice (Tasks 0–6d) through Nomad cutover; extension/matrix/probes deferred |
+| 13 | Token 403 | Agent authorized to rotate/reconcile KEEPER_TOKEN |
 
 ## Out of scope (explicit)
 
