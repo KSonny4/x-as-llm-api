@@ -4,7 +4,7 @@
 
 **Goal:** Rebuild the keeper in `KSonny4/x-as-llm-api` (values API, guides, matrix UI, probes) and strip `KSonny4/pi-infinity-llm` to the v2 extension + Rust helper, then cut over and deprecate `llm-quota`.
 
-**Architecture:** Python stdlib-only keeper service (zero deps, Coolify `dockercompose` story preserved); probe worker as second command of the same image; TS extension + Rust `keeper-helper` sidecar in the extension repo; one-way contract via `KEEPER_API.md` + `keeperPackVersion`.
+**Architecture:** Python stdlib-only keeper service (zero deps); prod deploys as a Nomad job (`keeper.nomad.hcl`, secrets from Bao), local dev via Compose; probe worker as second task of the same job; TS extension + Rust `keeper-helper` sidecar in the extension repo; one-way contract via `KEEPER_API.md` + `keeperPackVersion`.
 
 **Tech Stack:** Python 3.12 stdlib (`http.server`, `urllib`, `unittest`), Rust stable (`cargo`), TypeScript extension (pi `ExtensionAPI`), Docker Compose, `opencode run --pure` as L2 probe.
 
@@ -13,6 +13,15 @@
 ---
 
 ## Phase 0 — Repo bootstrap (this folder)
+
+### Task 0: E2E proof against deployed keeper (FIRST — gates everything)
+
+**Files:**
+- Create: `e2e/deployed-baseline.sh`, `e2e/README.md`
+
+**Step 1: Record live curls** — `/healthz` asserts 200; `/packs` asserts 401 without bearer; with bearer asserts 200 + captures member shapes (models/providers, values redacted) into `e2e/baseline-shapes.json`. Bearer comes from env only (`KEEPER_TOKEN`), never committed.
+**Step 2: Run** `bash e2e/deployed-baseline.sh`; expected: all green except the known 403-vs-401 token item, recorded as OPEN in `e2e/README.md`.
+**Step 3: Commit** `test: deployed e2e baseline`. No v2 code until this is green.
 
 ### Task 1: Create GitHub repo and push
 
@@ -50,7 +59,7 @@ class HealthTest(unittest.TestCase):
 Run: `cd keeper && python3 -m unittest test_server -v`
 Expected: FAIL (`server` module not defined).
 
-**Step 3: Write minimal implementation** — `server.py` with `GET /healthz → 200 ok`, stdlib only; `Dockerfile` (`python:3.12-slim`, `CMD ["python3","server.py"]`); `compose.yaml` (keeper :8080, `KEEPER_TOKEN: ${KEEPER_TOKEN:?…}` required); `.env.example` (`KEEPER_TOKEN=`, `PORT=`); `scripts/smoke.sh` (`/healthz` assert).
+**Step 3: Write minimal implementation** — `server.py` with `GET /healthz → 200 ok`, stdlib only; `Dockerfile` (`python:3.12-slim`, `CMD ["python3","server.py"]`); `compose.yaml` (local dev: keeper :8080, `KEEPER_TOKEN: ${KEEPER_TOKEN:?…}` required); `keeper.nomad.hcl` (prod job: same image, Bao-backed secrets, health check on `/healthz`); `.env.example` (`KEEPER_TOKEN=`, `PORT=`); `scripts/smoke.sh` (`/healthz` assert, `NOMAD_ADDR`-agnostic: takes base URL arg).
 
 **Step 4: Run test to verify it passes**
 Run: `cd keeper && python3 -m unittest test_server -v` then `PORT=18080 KEEPER_TOKEN=t python3 server.py & sleep 1; curl -s localhost:18080/healthz; kill %1`
@@ -172,7 +181,7 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 - Create: `probe/worker.py`
 - Test: `probe/test_worker.py`
 
-**Step 1:** Failing test — against local stub baseURL: `/models` 200 + tiny chat returns text ⇒ `ok`; connection-refused ⇒ `suspect`. L1 uses the route's declared `wire` (openai → chat/completions, anthropic → v1/messages); a wrong-wire response is classified `misconfigured`, distinctly from `down`.
+**Step 1:** Failing test — against local stub baseURL: `/models` 200 + tiny chat returns text ⇒ `ok`; connection-refused ⇒ `suspect`; stubbed 429 ⇒ `limited` (kept, backoff scheduled); stubbed 401/403 ⇒ `suspect` + feedback spooled. L1 uses the route's declared `wire` (openai → chat/completions, anthropic → v1/messages); a wrong-wire response is classified `misconfigured`, distinctly from `down`.
 **Step 2–4:** Implement `probe_l1()` with `urllib`, PASS, commit `feat: L1 probe`.
 
 ### Task 11: L2 `opencode run` probe + states + `status.json`
@@ -223,4 +232,4 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 **Files:**
 - Modify: `KEEPER_API.md` (mark v2 frozen), `~/git_projects/llm-quota/DEPRECATED.md`, `~/git_projects/pi-infinity-llm/DEPRECATED-map.md`
 
-**Steps:** No code test — verification gate instead: keeper `scripts/smoke.sh` green + ported matrix tests green + extension `node --test` green + one real `pi --provider infinity-implement -p "ping"` via keeper. Then: llm-quota `DEPRECATED.md` (pointer + parity evidence), move hostname, archive repo. Commit docs in each repo. @verification-before-completion before announcing done.
+**Steps:** Gate per phase (units green + `smoke.sh` green + one real inference: curl chat, `pi --provider infinity-implement -p "ping"`, opencode L2) before the next phase starts. Rollback rehearsal first (Nomad job revert forth and back, smoke both ways), then cutover; red smoke or a user report within 24h reverts the job. Then: llm-quota `DEPRECATED.md` (pointer + parity evidence), move hostname, archive repo. Commit docs in each repo. @verification-before-completion before announcing done.

@@ -2,6 +2,11 @@
 
 All six sections approved by owner in brainstorming review. Full rebuild (option C).
 
+## Principles (locked)
+
+- **E2E first, always.** Nothing is designed or built until live curls against the deployed keeper (`https://keeper.pkubelka.cz`) prove the wire: `/healthz` → 200, `/packs` bearer behavior recorded, member shapes captured. New endpoints are added only after the previous surface is e2e-green. Local/dev work replays the same curls. (Also recorded in engineering-guidance as a standing principle.)
+- **Deployed baseline 2026-09-17:** `/healthz` 200; `/packs` no-bearer → 401, garbage bearer → 401, Bao-stored `KEEPER_TOKEN` → **403** (differs from server.py's 401-only logic — OPEN: reconcile/rotate token with deploy owner before v2 reads depend on it).
+
 ## §1 — Repos: two, one contract (REVISED, approved)
 
 - **`KSonny4/x-as-llm-api` = this folder = the keeper.** Keeper service (values API,
@@ -16,6 +21,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   `KEEPER_API.md`; keeper never imports from the extension repo. Contract changes are
   additive + version-bumped; breaking changes get a new `keeperPackVersion` served in
   parallel until cutover is proven.
+- **Deploy target is Nomad, not Coolify.** Prod runs as a Nomad job (`keeper.nomad.hcl` in this repo); `compose.yaml` is local-dev only. Secrets reach the alloc from Bao (NomadSetup acl/registry; exact stanza at build time). The old Coolify path dies with the old keeper — no Coolify work in v2.
 - **`KSonny4/llm-quota`** (read-only OmniRoute quota matrix): full deprecation after
   matrix parity (ported `matrix.test.js` green). `DEPRECATED.md` + hostname move +
   archive. `pi-multi-providers/` is not a repo (remote = pi-infinity-llm) — covered
@@ -100,7 +106,11 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   failure: `opencode run --pure -m <provider/model> "ping"`. L2-pass ⇒ `degraded`
   (route wrong, provider alive); L1+L2-fail ⇒ `down`.
 - States: `ok` → `suspect` (report or single miss + instant re-probe) → `down`/`ok`.
+  HTTP 429 ⇒ `limited` (backoff, route kept, retry-clock shown) — never confused
+  with deny. Auth-shaped denial ⇒ `down`/`suspect` + feedback event.
   Served as `status.json`; matrix colors from it. Reports carry refs only, never keys.
+- Cutover rollback is smoke-gated + rehearsed: flip `KEEPER_BASE_URL` + version pin;
+  red `smoke.sh` or a user report within 24h flips it back.
 
 ## §6 — Keeper UI: minimal, server-rendered (approved)
 
@@ -122,6 +132,8 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 | 7 | pi-infinity-llm | Rebuild minimal, extension-only (canonical: pi-multi-providers tree) |
 | 8 | Matrix source | Probes only, no OmniRoute; AA orders ties among probe-ok |
 | 9 | Seed source | Bao `projects/pi-multi-providers/` live refs (seed everything; exclude `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers); `KEEPER_TOKEN` reused from Bao, not re-minted |
+| 10 | Failure policy | 429 ⇒ limited+backoff; deny ⇒ down/suspect; rollback smoke-gated + rehearsed |
+| 11 | Gates | Phase gates + live proof (units + smoke + real inference per phase) |
 
 ## Out of scope (explicit)
 
