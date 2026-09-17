@@ -1,12 +1,87 @@
 #!/usr/bin/env python3
-"""L1 skeleton tests: healthz, bearer discipline, 404s. Hermetic (no sockets)."""
+"""Wave-2 route tests: L1 discipline + packs/feedback/dispenser/chat/route/
+matrix/pages. Hermetic: seed fixtures inline, upstream stubbed, tmp paths.
+"""
+import json
 import os
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import server
+
+
+SEED = {"routes": [
+    {"provider": "acme-openai", "model": "acme-chat",
+     "base_url": "https://acme.example/v1", "api_key": "k1",
+     "wire": "openai", "env_var": "ACME_KEY",
+     "owner": "Owner <owner@example.com>", "name": "Acme Chat",
+     "connection_id": "c1", "active": True},
+    {"provider": "acme-anthropic", "model": "acme-claude",
+     "base_url": "https://acme.example", "api_key": "k2",
+     "wire": "anthropic", "env_var": "ACME_CLAUDE_KEY",
+     "owner": "owner@example.com", "name": "Acme Claude",
+     "connection_id": "c2", "active": True},
+    {"provider": "acme-pending", "model": "acme-waiting",
+     "base_url": "https://acme.example", "wire": "openai",
+     "env_var": "ACME_WAITING_KEY", "owner": "",
+     "name": "Acme Waiting", "connection_id": "c3", "active": True},
+]}
+
+OPENAI_UPSTREAM = {"id": "chatcmpl-1", "object": "chat.completion",
+                   "created": 0, "model": "acme-chat",
+                   "choices": [{"index": 0,
+                                "message": {"role": "assistant",
+                                            "content": "hi"},
+                                "finish_reason": "stop"}],
+                   "usage": {"prompt_tokens": 3, "completion_tokens": 1,
+                             "total_tokens": 4}}
+
+ANTHROPIC_UPSTREAM = {"id": "msg_1", "model": "acme-claude",
+                      "role": "assistant",
+                      "content": [{"type": "text", "text": "hello"}],
+                      "stop_reason": "end_turn",
+                      "usage": {"input_tokens": 5, "output_tokens": 2}}
+
+
+class FakeResp:
+    def __init__(self, status, doc):
+        self.status = status
+        self._raw = json.dumps(doc).encode()
+
+    def read(self):
+        return self._raw
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+class RouteCase(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.mkdtemp()
+        self.state = server.make_state(
+            "t", SEED, feedback_log=os.path.join(tmp, "fb.jsonl"),
+            aa_cache=os.path.join(tmp, "aa.json"))
+        self._urlopen = server.urlopen
+
+    def tearDown(self):
+        server.urlopen = self._urlopen
+
+    def call(self, method, path, headers=None, body=None):
+        headers = dict(headers or {})
+        if "authorization" not in {k.lower() for k in headers}:
+            headers["authorization"] = "Bearer t"
+        raw = json.dumps(body).encode() if body is not None else None
+        return server.route(method, path, headers, "t", body=raw,
+                            state=self.state)
+
+    def stub_upstream(self, doc):
+        server.urlopen = lambda req, timeout=30: FakeResp(200, doc)
 
 
 class HealthTest(unittest.TestCase):
@@ -32,6 +107,223 @@ class TokenTest(unittest.TestCase):
     def test_refuses_empty_token(self):
         with self.assertRaises(SystemExit):
             server.require_token("")
+
+
+class PacksTest(RouteCase):
+    def test_values_served_authed(self):
+        code, raw, headers = self.call("GET", "/packs")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertEqual(doc["keeperPackVersion"], "v2")
+        creds = [m["credential"]["value"] for m in doc["packs"]
+                 if "credential" in m]
+        self.assertIn("k1", creds)
+        waiting = [m for m in doc["packs"] if m["model"] == "acme-waiting"]
+        self.assertTrue(waiting[0]["signin"]["steps"])
+        self.assertEqual(dict(headers).get("Cache-Control"), "max-age=600")
+
+    def test_etag_304(self):
+        _, _, headers = self.call("GET", "/packs")
+        tag = dict(headers)["ETag"]
+        code, _, _ = self.call("GET", "/packs",
+                               {"authorization": "Bearer t",
+                                "If-None-Match": tag})
+        self.assertEqual(code, 304)
+
+    def test_packs_requires_bearer(self):
+        code, _, _ = server.route("GET", "/packs", {}, "t",
+                                  state=self.state)
+        self.assertEqual(code, 401)
+
+
+class FeedbackTest(RouteCase):
+    def good(self):
+        return {"provider": "acme-openai", "model": "acme-chat",
+                "errorClass": "auth", "httpStatus": 401,
+                "keeperPackVersion": "v2"}
+
+    def test_missing_field_422(self):
+        doc = self.good()
+        del doc["httpStatus"]
+        code, raw, _ = self.call("POST", "/feedback", body=doc)
+        self.assertEqual(code, 422)
+        self.assertEqual(json.loads(raw)["missing"], ["httpStatus"])
+
+    def test_bad_error_class_422(self):
+        doc = self.good()
+        doc["errorClass"] = "nope"
+        code, _, _ = self.call("POST", "/feedback", body=doc)
+        self.assertEqual(code, 422)
+
+    def test_valid_spools_202_and_flips_suspect(self):
+        code, raw, _ = self.call("POST", "/feedback", body=self.good())
+        self.assertEqual(code, 202)
+        with open(self.state["feedback_log"], encoding="utf-8") as fh:
+            lines = fh.read().strip().split("\n")
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(json.loads(lines[0])["errorClass"], "auth")
+        self.assertEqual(self.state["probe"]["acme-openai/acme-chat"],
+                         "suspect")
+
+
+class DispenserTest(RouteCase):
+    def test_providers_shape(self):
+        code, raw, _ = self.call("GET", "/v1/providers")
+        self.assertEqual(code, 200)
+        providers = json.loads(raw)["providers"]
+        acme = [p for p in providers if p["provider"] == "acme-openai"][0]
+        self.assertEqual(acme["baseURL"], "https://acme.example/v1")
+        self.assertEqual(acme["modelIDs"], ["acme-chat"])
+        self.assertEqual(acme["envVar"], "ACME_KEY")
+        self.assertIn("/v1/chat/completions", acme["curl"])
+
+    def test_guide_one_curl_per_model(self):
+        for who in ("curl", "pi", "opencode"):
+            code, raw, _ = self.call("GET", "/v1/guide/" + who)
+            self.assertEqual(code, 200, who)
+            doc = json.loads(raw)
+            models = {c["model"] for c in doc["curls"]}
+            self.assertIn("acme-chat", models)
+            self.assertIn("acme-claude", models)
+            for curl in doc["curls"]:
+                self.assertIn("/v1/chat/completions", curl["curl"])
+
+    def test_guide_unknown_404(self):
+        code, _, _ = self.call("GET", "/v1/guide/smtp")
+        self.assertEqual(code, 404)
+
+
+class ChatTest(RouteCase):
+    def test_openai_wire_choices(self):
+        self.stub_upstream(OPENAI_UPSTREAM)
+        code, raw, _ = self.call("POST", "/v1/chat/completions", body={
+            "model": "acme-chat",
+            "messages": [{"role": "user", "content": "ping"}]})
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertEqual(doc["choices"][0]["message"]["content"], "hi")
+
+    def test_anthropic_wire_identical_shape(self):
+        self.stub_upstream(ANTHROPIC_UPSTREAM)
+        code, raw, _ = self.call("POST", "/v1/chat/completions", body={
+            "model": "acme-claude",
+            "messages": [{"role": "user", "content": "ping"}]})
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertEqual(doc["object"], "chat.completion")
+        self.assertEqual(doc["choices"][0]["message"]["content"], "hello")
+        self.assertIn("usage", doc)
+
+    def test_stream_yields_sse_chunks(self):
+        self.stub_upstream(OPENAI_UPSTREAM)
+        code, raw, headers = self.call("POST", "/v1/chat/completions", body={
+            "model": "acme-chat",
+            "messages": [{"role": "user", "content": "ping"}],
+            "stream": True})
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn("data: ", text)
+        self.assertTrue(text.rstrip().endswith("data: [DONE]"))
+        self.assertEqual(dict(headers)["Content-Type"], "text/event-stream")
+
+    def test_unknown_model_404(self):
+        code, raw, _ = self.call("POST", "/v1/chat/completions", body={
+            "model": "nope", "messages": []})
+        self.assertEqual(code, 404)
+        self.assertIn("error", json.loads(raw))
+
+    def test_models_lists_seeded(self):
+        code, raw, _ = self.call("GET", "/v1/models")
+        self.assertEqual(code, 200)
+        ids = {m["id"] for m in json.loads(raw)["data"]}
+        self.assertEqual(ids, {"acme-chat", "acme-claude", "acme-waiting"})
+
+
+class RouteEndpointTest(RouteCase):
+    def test_route_shape(self):
+        code, raw, _ = self.call("GET", "/v1/route/acme-chat")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertEqual(doc, {
+            "model": "acme-chat", "baseURL": "https://acme.example/v1",
+            "api": "openai", "auth": {"scheme": "bearer", "value": "k1"},
+            "features": ["chat", "stream", "tools"],
+            "keeperPackVersion": "v2"})
+
+    def test_route_requires_bearer(self):
+        code, _, _ = server.route("GET", "/v1/route/acme-chat", {}, "t",
+                                  state=self.state)
+        self.assertEqual(code, 401)
+
+    def test_route_unknown_404(self):
+        code, _, _ = self.call("GET", "/v1/route/nope")
+        self.assertEqual(code, 404)
+
+
+class MatrixEndpointTest(RouteCase):
+    def test_matrix_rows_and_diagnostics(self):
+        code, raw, _ = self.call("GET", "/api/v1/matrix")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertEqual(doc["emails"], ["owner@example.com"])
+        self.assertTrue(doc["rows"])
+        self.assertIn("unassigned", doc["diagnostics"])
+        waiting = doc["diagnostics"]["unassigned"]
+        self.assertEqual(len(waiting), 1)
+        self.assertEqual(waiting[0]["id"], "c3")
+
+    def test_matrix_refresh_bypass(self):
+        _, first, _ = self.call("GET", "/api/v1/matrix")
+        code, second, _ = self.call("GET", "/api/v1/matrix?refresh=1")
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(first)["rows"],
+                         json.loads(second)["rows"])
+
+    def test_accounts_and_health(self):
+        code, raw, _ = self.call("GET", "/api/v1/accounts")
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(raw)["emails"], ["owner@example.com"])
+        code, raw, _ = self.call("GET", "/api/v1/health")
+        self.assertEqual(code, 200)
+        self.assertTrue(json.loads(raw)["ok"])
+
+    def test_index_html_table_and_unassigned(self):
+        code, raw, headers = self.call("GET", "/")
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn("<table>", text)
+        self.assertIn("owner@example.com", text)
+        self.assertIn("diagnostics.unassigned", text)
+        self.assertNotIn("k1", text)
+        self.assertEqual(dict(headers)["Content-Type"], "text/html")
+
+
+class PagesTest(RouteCase):
+    def test_guides_page(self):
+        code, raw, _ = self.call("GET", "/guides")
+        self.assertEqual(code, 200)
+        self.assertIn("/v1/chat/completions", raw.decode())
+
+    def test_signin_page(self):
+        code, raw, _ = self.call("GET", "/signin")
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn("re-mint", text)
+        self.assertIn("ACME_WAITING_KEY", text)
+
+    def test_report_page_and_round_trip(self):
+        code, raw, _ = self.call("GET", "/report")
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn('action="/feedback"', text)
+        self.assertIn("acme-openai/acme-chat", text)
+        code, _, _ = self.call("POST", "/feedback", body={
+            "provider": "acme-openai", "model": "acme-chat",
+            "errorClass": "denied", "httpStatus": 403,
+            "keeperPackVersion": "v2"})
+        self.assertEqual(code, 202)
+        with open(self.state["feedback_log"], encoding="utf-8") as fh:
+            self.assertIn("denied", fh.read())
 
 
 if __name__ == "__main__":
