@@ -6,6 +6,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 
 - **E2E first, always.** Nothing is designed or built until live curls against the deployed keeper (`https://keeper.pkubelka.cz`) prove the wire: `/healthz` → 200, `/packs` bearer behavior recorded, member shapes captured. New endpoints are added only after the previous surface is e2e-green. Local/dev work replays the same curls. (Also recorded in engineering-guidance as a standing principle.)
 - **Deployed baseline 2026-09-17:** `/healthz` 200; `/packs` no-bearer → 401, garbage bearer → 401, Bao-stored `KEEPER_TOKEN` → **403** (differs from server.py's 401-only logic — OPEN: reconcile/rotate token with deploy owner before v2 reads depend on it).
+- **Origin UNPROVEN:** Coolify project `keeper` (uuid `pp7eq33nlgkszotau67p2eym`) + app `keeper` (uuid `kv4gvawhgshjaxdggb2vgvuf`) exist, but the recorded first deploy FAILED (private-repo clone); no success recorded since. Cloudflare masks origin (all hosts show `server: cloudflare`), so outside probing cannot distinguish Coolify vs Nomad vs manual. OPEN (owner): check Coolify dashboard deployments for the app uuid; whatever serves the hostname today is deprecated in favor of the Nomad v2 job, then the Coolify app is removed.
 
 ## §1 — Repos: two, one contract (REVISED, approved)
 
