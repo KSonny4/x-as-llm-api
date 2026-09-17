@@ -1,0 +1,177 @@
+# Keeper Rebuild Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Rebuild the keeper in `KSonny4/x-as-llm-api` (values API, guides, matrix UI, probes) and strip `KSonny4/pi-infinity-llm` to the v2 extension + Rust helper, then cut over and deprecate `llm-quota`.
+
+**Architecture:** Python stdlib-only keeper service (zero deps, Coolify `dockercompose` story preserved); probe worker as second command of the same image; TS extension + Rust `keeper-helper` sidecar in the extension repo; one-way contract via `KEEPER_API.md` + `keeperPackVersion`.
+
+**Tech Stack:** Python 3.12 stdlib (`http.server`, `urllib`, `unittest`), Rust stable (`cargo`), TypeScript extension (pi `ExtensionAPI`), Docker Compose, `opencode run --pure` as L2 probe.
+
+**Skills:** @test-driven-development for every component, @verification-before-completion before each phase gate.
+
+---
+
+## Phase 0 — Repo bootstrap (this folder)
+
+### Task 1: Create GitHub repo and push
+
+**Files:**
+- Modify: `.git` remote (new)
+
+**Step 1: Create repo (no test — infra)**
+```bash
+gh repo create KSonny4/x-as-llm-api --public --source=. --push
+```
+Expected: repo exists, `main` pushed with design commit.
+
+**Step 2: Verify**
+```bash
+gh repo view KSonny4/x-as-llm-api --json name,url
+```
+Expected: prints repo JSON.
+
+### Task 2: Skeleton layout + compose
+
+**Files:**
+- Create: `keeper/server.py`, `keeper/Dockerfile`, `compose.yaml`, `.env.example`, `KEEPER_API.md` (stub: `# KEEPER_API — v2 draft`), `scripts/smoke.sh`
+- Test: `keeper/test_server.py`
+
+**Step 1: Write the failing test**
+```python
+# keeper/test_server.py
+import unittest
+class HealthTest(unittest.TestCase):
+    def test_healthz_contract_exists(self):
+        import server
+        self.assertTrue(hasattr(server, "H"))
+```
+**Step 2: Run test to verify it fails**
+Run: `cd keeper && python3 -m unittest test_server -v`
+Expected: FAIL (`server` module not defined).
+
+**Step 3: Write minimal implementation** — `server.py` with `GET /healthz → 200 ok`, stdlib only; `Dockerfile` (`python:3.12-slim`, `CMD ["python3","server.py"]`); `compose.yaml` (keeper :8080, `KEEPER_TOKEN: ${KEEPER_TOKEN:?…}` required); `.env.example` (`KEEPER_TOKEN=`, `PORT=`); `scripts/smoke.sh` (`/healthz` assert).
+
+**Step 4: Run test to verify it passes**
+Run: `cd keeper && python3 -m unittest test_server -v` then `PORT=18080 KEEPER_TOKEN=t python3 server.py & sleep 1; curl -s localhost:18080/healthz; kill %1`
+Expected: PASS, prints `ok`.
+
+**Step 5: Commit**
+```bash
+git add keeper compose.yaml .env.example KEEPER_API.md scripts/smoke.sh
+git commit -m "feat: keeper P0 skeleton (healthz, compose, smoke)"
+```
+
+---
+
+## Phase 1 — Keeper v2 API (TDD, @test-driven-development)
+
+### Task 3: Bearer auth + 404 discipline
+
+**Files:**
+- Modify: `keeper/server.py`
+- Test: `keeper/test_server.py` (append)
+
+**Step 1: Write the failing test**
+```python
+def test_packs_requires_bearer(self):
+    # unauthenticated GET /packs must be 401; unknown path 404
+```
+**Step 2:** Run, expect FAIL. **Step 3:** Implement `_authed()` (`KEEPER_TOKEN` required, `Bearer` compare; refuse start if unset). **Step 4:** Run, expect PASS. **Step 5:** Commit `feat: bearer auth + 404 discipline`.
+
+### Task 4: `GET /packs` values wire + ETag/304
+
+**Files:**
+- Modify: `keeper/server.py`, `KEEPER_API.md` (document v2 member shape)
+- Test: `keeper/test_server.py`
+
+**Step 1:** Failing test — seeded member with `credential.value` served when authed; `If-None-Match` → `304`; `Cache-Control: max-age=600`; seed via env `SEED_FILE` (test fixture JSON, never real secrets).
+**Step 2:** Run, FAIL. **Step 3:** Minimal `freeze()` from seed file + ETag. **Step 4:** PASS. **Step 5:** Commit `feat: packs values wire + etag`.
+
+### Task 5: `POST /feedback` (202 spool, 422 validation)
+
+**Files / steps:** same shape. Failing test: missing required field → `422` with `missing[]`; bad `errorClass` → `422`; valid → `202` + JSONL line in `FEEDBACK_LOG` tmp path. Implement, PASS, commit `feat: feedback spool`.
+
+### Task 6: `GET /v1/providers` + `GET /v1/guide/:who`
+
+**Files / steps:** Failing test — providers lists `baseURL/modelIDs/envVar/curl` per seed; guides contain `curl`, `pi`, `opencode` snippets generated from live seed (assert snippet contains baseURL, no hand-edit). Implement generators, PASS, commit `feat: dispenser endpoints`.
+
+---
+
+## Phase 2 — Matrix + UI (deprecates llm-quota)
+
+### Task 7: Matrix builder (port llm-quota cases)
+
+**Files:**
+- Create: `keeper/matrix.py`
+- Test: `keeper/test_matrix.py`
+
+**Step 1:** Failing test — port the grouping cases from `~/git_projects/llm-quota/test/matrix.test.js`: email dedupe case-insensitive, email-in-name fallback, bare names → `unassigned`, inactive → `skippedInactive`.
+**Step 2:** FAIL. **Step 3:** Implement `groupConnectionsByEmail` + `buildMatrix` in stdlib Python. **Step 4:** PASS (`python3 -m unittest test_matrix -v`). **Step 5:** Commit `feat: matrix builder (llm-quota parity)`.
+
+### Task 8: `GET /api/v1/matrix|accounts|health` + `/` UI
+
+**Files / steps:** Failing test — matrix endpoint returns rows/cols/diagnostics shape; `/` returns HTML containing table + `diagnostics.unassigned` section + `?refresh=1` bypasses cache. Implement server-rendered HTML (no framework), PASS, commit `feat: matrix UI`. Gate: open `http://localhost:8080/` in VS Code simple browser, eyeball rows.
+
+### Task 9: `/guides`, `/signin`, `/report` pages
+
+**Files / steps:** Failing tests — each page 200 + contains marker (`curl` block / re-mint steps / form posting to `/feedback`); `/report` round-trip writes a spool line. Implement, PASS, commit `feat: guides/signin/report pages`.
+
+---
+
+## Phase 3 — Probe worker (L1 → L2 CLI)
+
+### Task 10: L1 curl probe
+
+**Files:**
+- Create: `probe/worker.py`
+- Test: `probe/test_worker.py`
+
+**Step 1:** Failing test — against local stub baseURL: `/models` 200 + tiny chat returns text ⇒ `ok`; connection-refused ⇒ `suspect`.
+**Step 2–4:** Implement `probe_l1()` with `urllib`, PASS, commit `feat: L1 probe`.
+
+### Task 11: L2 `opencode run` probe + states + `status.json`
+
+**Files / steps:** Failing test — L1-fail + stubbed L2-pass ⇒ `degraded`; both fail ⇒ `down`; report event ⇒ `suspect` + instant re-probe. Stub the CLI via `PATH` fixture script. Implement `probe_l2()` (`opencode run --pure -m … "ping"`), state machine, `status.json` writer; wire worker as second compose service (`command: ["python3","/srv/probe/worker.py"]`). PASS, commit `feat: L2 probe + states`. Gate: `scripts/smoke.sh` extended (health → packs → guides → matrix → status → feedback round-trip) all green.
+
+---
+
+## Phase 4 — Extension repo rebuild (`KSonny4/pi-infinity-llm`)
+
+### Task 12: Archive + strip to extension-only
+
+**Files (in pi-infinity-llm checkout):**
+- Create: `archive/pre-split` branch; `DEPRECATED-map.md` (where each removed piece lives now)
+
+**Step 1:** `git checkout -b archive/pre-split; git push -u origin archive/pre-split; git checkout master`.
+**Step 2:** Delete `keeper/ packs/ prototype/`, old e2e vs old keeper; keep `extension/`, tests, README (rewritten minimal → points at `KEEPER_API.md` in x-as-llm-api), `AGENTS.md` pin.
+**Step 3:** Commit `chore: strip to extension-only (keeper lives in x-as-llm-api)`. No test (surgery, verified by Task 13).
+
+### Task 13: Extension values mode (replaces `CONNECTION_KEY_ENV`)
+
+**Files:**
+- Modify: `extension/extensions/keeper.ts`
+- Test: `extension/test/values.test.js` (run: `node --test`)
+
+**Step 1:** Failing test — served `credential.value` injected as `Authorization: Bearer` + mirrored `x-api-key`; `signin` member surfaces re-mint command; no `CONNECTION_KEY_ENV` import remains.
+**Step 2–4:** Implement, `npx tsc --noEmit && node --test`, PASS, commit `feat: values-mode credentials`.
+
+### Task 14: Rust `keeper-helper` — mint + sign + shape
+
+**Files:**
+- Create: `helper/Cargo.toml`, `helper/src/main.rs`
+- Test: `cargo test` (exact `u64` mint vectors vs known-good outputs from old `zen_mint.py`)
+
+**Step 1:** Failing test — `mint` vectors (descending 48-bit IDs, `ses_` + base62 shape); `sign` maps credential JSON → headers JSON; `shape` normalizes a probe event.
+**Step 2–4:** Implement (`mint-zen-session`, `sign`, `shape`; stdin JSON, stdout JSON, never log values), `cargo test` PASS, commit `feat: keeper-helper (mint/sign/shape)`. Then extension Task 15: spawn helper instead of in-TS mint (failing test: `User-Agent` + `x-opencode-session` present and fresh per request), PASS, commit.
+
+---
+
+## Phase 5 — Cutover + deprecations
+
+### Task 16: Contract freeze + deprecation notices
+
+**Files:**
+- Modify: `KEEPER_API.md` (mark v2 frozen), `~/git_projects/llm-quota/DEPRECATED.md`, `~/git_projects/pi-infinity-llm/DEPRECATED-map.md`
+
+**Steps:** No code test — verification gate instead: keeper `scripts/smoke.sh` green + ported matrix tests green + extension `node --test` green + one real `pi --provider infinity-implement -p "ping"` via keeper. Then: llm-quota `DEPRECATED.md` (pointer + parity evidence), move hostname, archive repo. Commit docs in each repo. @verification-before-completion before announcing done.
