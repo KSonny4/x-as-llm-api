@@ -48,9 +48,16 @@ await runs.lanes([
 // Wave 2+3 run after all lanes report success; reviewer gates each merge.
 ```
 
-## glla mapping
+## glla mapping (locked: audit at merge)
 
-`/list` queue (`GOAL-LIST.md`) stays the audit trail: mark items complete as
-their lane+merge finish (items 2–8 map to lanes; item 9 = Wave 3). Or run each
-lane as its own `/goal` in a separate session pointed at its worktree —
-auditor per lane, same contracts.
+Wave 1 lanes run as pure execution (no goal ledger/auditor — speed where safe).
+Rigor lands at the merge gates and after:
+
+- Each lane output gets a **reviewer pass** at merge (diff vs lane contract +
+  lane Done-when; findings must clear before merging to main).
+- **Wave 2 + Wave 3 run as glla `/list` items** (`GOAL-LIST.md` items 2–9,
+  rebased onto merged main) with full loop machinery: ledger, isolated
+  auditor with `<evidence>` per `Done when`, stall/error guards.
+- `/list` queue stays the audit trail: mark items complete as their merge
+  + audit finish. Lanes map: L1→items 1–2, L2–L4→items 3–6, L5ext→items 7–8,
+  cutover→item 9.
