@@ -7,7 +7,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 - **`KSonny4/x-as-llm-api` = this folder = the keeper.** Keeper service (values API,
   curl/pi/opencode guides, quota-matrix UI, feedback), L1/L2 probe worker, compose,
   docs. No extension code — only the versioned **`KEEPER_API.md`** contract.
-- **`KSonny4/pi-infinity-llm` = rebuilt minimal = the extension.** Strip to
+- **`KSonny4/pi-infinity-llm` = rebuilt minimal = the extension.** Canonical source is the `pi-multi-providers` working tree (it carries the Zen-mint + `x-api-key` mirroring fix). Strip to
   extension-only: `extension/` (v2 values-mode keeper extension), its tests, minimal
   README pointing at x-as-llm-api. Old material (`keeper/`, `packs/`, `prototype/`,
   keeper-spec docs, old e2e) snapshotted to `archive/pre-split` branch, then deleted
@@ -69,10 +69,8 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   with llm-quota semantics: rows = owner emails (email field → email-in-name
   fallback, case-insensitive dedupe), columns = distinct providers,
   `diagnostics.unassigned` + `skippedInactive`, `?refresh=1` bypass.
-- Data: probe results joined with OmniRoute management API where configured
-  (`OMNI_BASE_URL` + manage-scope key); without it, matrix renders from keeper probe
-  state with a "quota depth unavailable" banner. Never invent quota numbers.
-- YAGNI: no AA ranking, packs/catalog, or rotation come over.
+- Data: probe states only — no OmniRoute join. Rows/cols/diagnostics keep llm-quota semantics (owner-email rows, provider cols, `unassigned` + `skippedInactive`), cells colored from probe state (`ok/degraded/suspect/down`). Never invent quota numbers.
+- Ranking: probes decide working/best; Artificial Analysis orders quality ties among probe-ok models only (snapshot via `ARTIFICIALANALYSIS_API_KEY`, refreshed daily, last-good retained). No pack frontiers, no billing logic.
 
 ## §4 — pi-keeper extension v2: values mode + keep-alive (approved)
 
@@ -121,9 +119,10 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 | 4 | Approach | C. Full rebuild |
 | 5 | Rust scope | Helper binary (mint/sign/shape) |
 | 6 | llm-quota | Absorbed minimal matrix, deprecate |
-| 7 | pi-infinity-llm | Rebuild minimal, extension-only |
+| 7 | pi-infinity-llm | Rebuild minimal, extension-only (canonical: pi-multi-providers tree) |
+| 8 | Matrix source | Probes only, no OmniRoute; AA orders ties among probe-ok |
 
 ## Out of scope (explicit)
 
-NAPI/daemon, Vite split, key rotation UI, AA ranks/packs, OpenAI-compatible
+NAPI/daemon, Vite split, key rotation UI, full AA packs/catalog/rotation (tiebreak only), OpenAI-compatible
 `/v1/chat` proxy (revisit only if dispenser proves insufficient).

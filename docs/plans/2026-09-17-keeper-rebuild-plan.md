@@ -135,7 +135,13 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 
 ## Phase 2 — Matrix + UI (deprecates llm-quota)
 
-### Task 7: Matrix builder (port llm-quota cases)
+### Task 7: Matrix builder (port llm-quota grouping cases)
+
+**Files:**
+- Create: `keeper/matrix.py`
+- Test: `keeper/test_matrix.py`
+
+**Step 1:** Failing test — port the grouping cases from `~/git_projects/llm-quota/test/matrix.test.js`: email dedupe case-insensitive, email-in-name fallback, bare names → `unassigned`, inactive → `skippedInactive`. Cells carry probe state + optional AA score (tiebreak input, not ordering).
 
 **Files:**
 - Create: `keeper/matrix.py`
@@ -147,6 +153,10 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 ### Task 8: `GET /api/v1/matrix|accounts|health` + `/` UI
 
 **Files / steps:** Failing test — matrix endpoint returns rows/cols/diagnostics shape; `/` returns HTML containing table + `diagnostics.unassigned` section + `?refresh=1` bypasses cache. Implement server-rendered HTML (no framework), PASS, commit `feat: matrix UI`. Gate: open `http://localhost:8080/` in VS Code simple browser, eyeball rows.
+
+### Task 7b: AA snapshot fetch (tiebreak input)
+
+**Files / steps:** Failing test — fixture AA payload → scores indexed by model; fetch failure → last-good retained with stale flag. Implement daily fetch (`ARTIFICIALANALYSIS_API_KEY`, stdlib `urllib`, file cache), PASS, commit `feat: AA snapshot for tiebreak`.
 
 ### Task 9: `/guides`, `/signin`, `/report` pages
 
@@ -179,7 +189,7 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 - Create: `archive/pre-split` branch; `DEPRECATED-map.md` (where each removed piece lives now)
 
 **Step 1:** `git checkout -b archive/pre-split; git push -u origin archive/pre-split; git checkout master`.
-**Step 2:** Delete `keeper/ packs/ prototype/`, old e2e vs old keeper; keep `extension/`, tests, README (rewritten minimal → points at `KEEPER_API.md` in x-as-llm-api), `AGENTS.md` pin.
+**Step 2:** Delete `keeper/ packs/ prototype/`, old e2e vs old keeper **from the pi-multi-providers tree** (canonical — carries the Zen-mint fix); keep `extension/`, tests, README (rewritten minimal → points at `KEEPER_API.md` in x-as-llm-api), `AGENTS.md` pin.
 **Step 3:** Commit `chore: strip to extension-only (keeper lives in x-as-llm-api)`. No test (surgery, verified by Task 13).
 
 ### Task 13: Extension values mode (replaces `CONNECTION_KEY_ENV`)
@@ -198,7 +208,11 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 - Test: `cargo test` (exact `u64` mint vectors vs known-good outputs from old `zen_mint.py`)
 
 **Step 1:** Failing test — `mint` vectors (descending 48-bit IDs, `ses_` + base62 shape); `sign` maps credential JSON → headers JSON; `shape` normalizes a probe event.
-**Step 2–4:** Implement (`mint-zen-session`, `sign`, `shape`; stdin JSON, stdout JSON, never log values), `cargo test` PASS, commit `feat: keeper-helper (mint/sign/shape)`. Then extension Task 15: spawn helper instead of in-TS mint (failing test: `User-Agent` + `x-opencode-session` present and fresh per request), PASS, commit.
+**Step 2–4:** Implement (`mint-zen-session`, `sign`, `shape`; stdin JSON, stdout JSON, never log values), `cargo test` PASS, commit `feat: keeper-helper (mint/sign/shape)`.
+
+### Task 15: Extension spawns helper (replaces in-TS mint)
+
+**Files / steps:** Failing test — `User-Agent` + `x-opencode-session` present and fresh per request with the in-TS mint deleted. Implement spawn, PASS, commit `feat: extension uses keeper-helper`.
 
 ---
 
