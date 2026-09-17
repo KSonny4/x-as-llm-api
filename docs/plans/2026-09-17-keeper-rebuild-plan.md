@@ -65,7 +65,9 @@ Expected: FAIL (`server` module not defined).
 Run: `cd keeper && python3 -m unittest test_server -v` then `PORT=18080 KEEPER_TOKEN=t python3 server.py & sleep 1; curl -s localhost:18080/healthz; kill %1`
 Expected: PASS, prints `ok`.
 
-**Step 5: Commit**
+**Step 5: Deploy the slice to Nomad first** — `nomad job run keeper.nomad.hcl`; `bash scripts/smoke.sh <NOMAD_URL>` must print `ok` before any breadth work. Local-only green gates nothing.
+
+**Step 6: Commit**
 ```bash
 git add keeper compose.yaml .env.example KEEPER_API.md scripts/smoke.sh
 git commit -m "feat: keeper P0 skeleton (healthz, compose, smoke)"
@@ -232,4 +234,4 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 **Files:**
 - Modify: `KEEPER_API.md` (mark v2 frozen), `~/git_projects/llm-quota/DEPRECATED.md`, `~/git_projects/pi-infinity-llm/DEPRECATED-map.md`
 
-**Steps:** Gate per phase (units green + `smoke.sh` green + one real inference: curl chat, `pi --provider infinity-implement -p "ping"`, opencode L2) before the next phase starts. Rollback rehearsal first (Nomad job revert forth and back, smoke both ways), then cutover; red smoke or a user report within 24h reverts the job. Then: llm-quota `DEPRECATED.md` (pointer + parity evidence), move hostname, archive repo. Commit docs in each repo. @verification-before-completion before announcing done.
+**Steps:** Gate per phase (units green + `smoke.sh` green **against the Nomad URL, not just localhost** + one real inference: curl chat, `pi --provider infinity-implement -p "ping"`, opencode L2) before the next phase starts. Rollback rehearsal first (Nomad job revert forth and back, smoke both ways), then cutover; red smoke or a user report within 24h reverts the job. Then: llm-quota `DEPRECATED.md` (pointer + parity evidence), move hostname, archive repo. Commit docs in each repo. @verification-before-completion before announcing done.
