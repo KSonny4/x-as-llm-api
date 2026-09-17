@@ -121,6 +121,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 | 6 | llm-quota | Absorbed minimal matrix, deprecate |
 | 7 | pi-infinity-llm | Rebuild minimal, extension-only (canonical: pi-multi-providers tree) |
 | 8 | Matrix source | Probes only, no OmniRoute; AA orders ties among probe-ok |
+| 9 | Seed source | Bao `projects/pi-multi-providers/` live refs (seed everything; exclude `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers); `KEEPER_TOKEN` reused from Bao, not re-minted |
 
 ## Out of scope (explicit)
 

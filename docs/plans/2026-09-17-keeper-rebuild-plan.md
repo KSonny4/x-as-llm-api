@@ -85,7 +85,7 @@ def test_packs_requires_bearer(self):
 - Modify: `keeper/server.py`, `KEEPER_API.md` (document v2 member shape)
 - Test: `keeper/test_server.py`
 
-**Step 1:** Failing test — seeded member with `credential.value` served when authed; `If-None-Match` → `304`; `Cache-Control: max-age=600`; seed via env `SEED_FILE` (test fixture JSON, never real secrets).
+**Step 1:** Failing test — seeded member with `credential.value` served when authed; `If-None-Match` → `304`; `Cache-Control: max-age=600`; seed via env `SEED_FILE` (test fixture JSON, never real secrets). Production seeds export live refs from Bao (`bao kv get secret/projects/pi-multi-providers/<NAME>`, excluding `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED`); `KEEPER_TOKEN` comes from the same path.
 **Step 2:** Run, FAIL. **Step 3:** Minimal `freeze()` from seed file + ETag. **Step 4:** PASS. **Step 5:** Commit `feat: packs values wire + etag`.
 
 ### Task 5: `POST /feedback` (202 spool, 422 validation)
