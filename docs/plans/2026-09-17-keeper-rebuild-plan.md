@@ -94,7 +94,38 @@ def test_packs_requires_bearer(self):
 
 ### Task 6: `GET /v1/providers` + `GET /v1/guide/:who`
 
-**Files / steps:** Failing test — providers lists `baseURL/modelIDs/envVar/wire/curl` per seed; guides emit OpenAI-style curl for `wire: openai` models and `v1/messages` curl (with `x-api-key` + `anthropic-version`) for `wire: anthropic` models (seed defaults: Muse → openai, Alpha/union → anthropic). Implement generators, PASS, commit `feat: dispenser endpoints`.
+**Files / steps:** Failing test — providers lists `baseURL/modelIDs/envVar/curl` per seed; every guide emits ONE OpenAI curl (`POST /v1/chat/completions`) regardless of upstream wire. Implement generators, PASS, commit `feat: dispenser endpoints`.
+
+### Task 6b: Translator `keeper/translate.py` (OpenAI-out)
+
+**Files:**
+- Create: `keeper/translate.py`
+- Test: `keeper/test_translate.py`
+
+**Step 1: Write the failing tests** (fixtures only, no live calls) — OpenAI request → Anthropic body (system/message/tool mapping, `max_tokens` passthrough); Anthropic response → OpenAI `choices` (content, `tool_calls` with generated ids, `usage`); Anthropic SSE event → OpenAI chunk; Anthropic error → OpenAI-shaped error.
+
+**Step 2: Run tests to verify they fail**
+
+Run: `cd keeper && python3 -m unittest test_translate -v`
+Expected: FAIL (`translate` module not defined).
+
+**Step 3: Write minimal implementation** — `openai_to_anthropic(req)`, `anthropic_to_openai(resp)`, `anthropic_event_to_openai_chunk(ev)`, `anthropic_error_to_openai(err)`; `wire: openai` passthrough.
+
+**Step 4: Run tests to verify they pass**
+
+Run: `cd keeper && python3 -m unittest test_translate -v`
+Expected: PASS.
+
+**Step 5: Commit**
+
+```bash
+git add keeper/translate.py keeper/test_translate.py
+git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
+```
+
+### Task 6c: `POST /v1/chat/completions` + `GET /v1/models` (OpenAI parity)
+
+**Files / steps:** Failing test — chat completion via `wire: openai` seed route returns OpenAI `choices` shape (stubbed upstream); via `wire: anthropic` route returns identical shape through the translator; `stream: true` yields SSE `data:` chunks; `GET /v1/models` lists seeded models in OpenAI shape. Implement routes, PASS, commit `feat: OpenAI-parity endpoints`.
 
 ---
 

@@ -35,19 +35,20 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   `httpStatus`, `keeperPackVersion`): any report flips the route to `suspect` and
   triggers an immediate probe.
 
-## §2 addendum — Per-model wire compatibility (approved)
+## §2 addendum — OpenAI-out translation, full parity (approved, REVISED)
 
-- Wire is per-model, not per-gateway. Each route carries
-  `wire: "openai" | "anthropic"` (persists `freeze_map.json` api/targetFormat
-  knowledge). Router branches: `openai` → `POST {baseURL}/chat/completions`;
-  `anthropic` → `POST {baseURL}/v1/messages` (Anthropic headers/body).
-- Seed defaults: Muse-family → `openai`; Alpha/union → `anthropic`. Probe verifies
-  the wire per route; wire-mismatch is classified distinctly from down.
-- Dispenser emits the correct curl per model (chat/completions vs v1/messages
-  with `x-api-key` + `anthropic-version`). Extension Bearer→`x-api-key` mirroring
-  for anthropic-messages transports is contract (`KEEPER_API.md`).
-- Only two wires in v2 (`openai-responses` legs map to `openai` unless a probe
-  proves otherwise).
+- Curl consumers speak only OpenAI. Keeper exposes standard OpenAI paths —
+  `POST /v1/chat/completions` (incl. `stream: true` SSE), `GET /v1/models`,
+  OpenAI-shaped errors — regardless of upstream wire.
+- Translator inside the keeper (`keeper/translate.py`, fixture-tested): `wire:
+  openai` passes through; `wire: anthropic` translates both ways (OpenAI
+  request → Anthropic `/v1/messages` → OpenAI `choices` incl. tool_calls, usage,
+  SSE chunks). `wire` is internal-routing-only in `KEEPER_API.md`.
+- Parity = chat completions + streaming + tool calls + models + standard errors.
+  NOT in v2: embeddings, audio, images, assistants, batch (YAGNI).
+- Dispenser emits one OpenAI curl per model. Seed defaults: Muse-family →
+  `openai`; Alpha/union → `anthropic`; probe verifies wire per route,
+  wrong-wire is `misconfigured`, not `down`. Only two wires in v2.
 
 ## §3 — Quota-matrix UI in keeper, deprecates llm-quota (approved)
 
