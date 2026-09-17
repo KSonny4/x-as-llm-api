@@ -94,7 +94,7 @@ def test_packs_requires_bearer(self):
 
 ### Task 6: `GET /v1/providers` + `GET /v1/guide/:who`
 
-**Files / steps:** Failing test — providers lists `baseURL/modelIDs/envVar/curl` per seed; guides contain `curl`, `pi`, `opencode` snippets generated from live seed (assert snippet contains baseURL, no hand-edit). Implement generators, PASS, commit `feat: dispenser endpoints`.
+**Files / steps:** Failing test — providers lists `baseURL/modelIDs/envVar/wire/curl` per seed; guides emit OpenAI-style curl for `wire: openai` models and `v1/messages` curl (with `x-api-key` + `anthropic-version`) for `wire: anthropic` models (seed defaults: Muse → openai, Alpha/union → anthropic). Implement generators, PASS, commit `feat: dispenser endpoints`.
 
 ---
 
@@ -127,7 +127,7 @@ def test_packs_requires_bearer(self):
 - Create: `probe/worker.py`
 - Test: `probe/test_worker.py`
 
-**Step 1:** Failing test — against local stub baseURL: `/models` 200 + tiny chat returns text ⇒ `ok`; connection-refused ⇒ `suspect`.
+**Step 1:** Failing test — against local stub baseURL: `/models` 200 + tiny chat returns text ⇒ `ok`; connection-refused ⇒ `suspect`. L1 uses the route's declared `wire` (openai → chat/completions, anthropic → v1/messages); a wrong-wire response is classified `misconfigured`, distinctly from `down`.
 **Step 2–4:** Implement `probe_l1()` with `urllib`, PASS, commit `feat: L1 probe`.
 
 ### Task 11: L2 `opencode run` probe + states + `status.json`

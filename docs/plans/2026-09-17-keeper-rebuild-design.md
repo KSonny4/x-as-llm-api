@@ -35,6 +35,20 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   `httpStatus`, `keeperPackVersion`): any report flips the route to `suspect` and
   triggers an immediate probe.
 
+## §2 addendum — Per-model wire compatibility (approved)
+
+- Wire is per-model, not per-gateway. Each route carries
+  `wire: "openai" | "anthropic"` (persists `freeze_map.json` api/targetFormat
+  knowledge). Router branches: `openai` → `POST {baseURL}/chat/completions`;
+  `anthropic` → `POST {baseURL}/v1/messages` (Anthropic headers/body).
+- Seed defaults: Muse-family → `openai`; Alpha/union → `anthropic`. Probe verifies
+  the wire per route; wire-mismatch is classified distinctly from down.
+- Dispenser emits the correct curl per model (chat/completions vs v1/messages
+  with `x-api-key` + `anthropic-version`). Extension Bearer→`x-api-key` mirroring
+  for anthropic-messages transports is contract (`KEEPER_API.md`).
+- Only two wires in v2 (`openai-responses` legs map to `openai` unless a probe
+  proves otherwise).
+
 ## §3 — Quota-matrix UI in keeper, deprecates llm-quota (approved)
 
 - `GET /` (server-rendered HTML, stdlib only) + `GET /api/v1/matrix|accounts|health`
