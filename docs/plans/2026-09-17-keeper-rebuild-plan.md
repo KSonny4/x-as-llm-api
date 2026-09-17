@@ -127,6 +127,10 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 
 **Files / steps:** Failing test — chat completion via `wire: openai` seed route returns OpenAI `choices` shape (stubbed upstream); via `wire: anthropic` route returns identical shape through the translator; `stream: true` yields SSE `data:` chunks; `GET /v1/models` lists seeded models in OpenAI shape. Implement routes, PASS, commit `feat: OpenAI-parity endpoints`.
 
+### Task 6d: `GET /v1/route/:model` (machine interface)
+
+**Files / steps:** Failing test — authed call returns `{model, baseURL, api: "openai", auth: {scheme, value}, features, keeperPackVersion}` from seed; unauthed → `401`; unknown model → `404`. Implement, PASS, commit `feat: machine route endpoint`. Guides Task 9 then adds the Python (`urllib`) + Rust (`reqwest`) startup sketches consuming it.
+
 ---
 
 ## Phase 2 — Matrix + UI (deprecates llm-quota)
