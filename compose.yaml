@@ -1,0 +1,10 @@
+# Local dev only. Prod runs as keeper.nomad.hcl on Nomad.
+services:
+  keeper:
+    build:
+      context: ./keeper
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      KEEPER_TOKEN: ${KEEPER_TOKEN:?KEEPER_TOKEN required}
