@@ -50,6 +50,19 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   `openai`; Alpha/union → `anthropic`; probe verifies wire per route,
   wrong-wire is `misconfigured`, not `down`. Only two wires in v2.
 
+## §2 addendum — Machine route interface (approved)
+
+- Consumers prepare for exactly one interface: OpenAI. Translation lives in
+  `keeper/translate.py`, not in every consumer.
+- `GET /v1/route/:model` (bearer-authed JSON): `{ model, baseURL, api:
+  "openai", auth: { scheme: "bearer", value: "…" }, features:
+  ["chat","stream","tools"], keeperPackVersion }`. Services fetch at startup,
+  speak plain OpenAI chat/completions, never hardcode keys/URLs.
+- Lifecycle mirrors the extension: cache, re-fetch on 401/403, refresh on
+  `keeperPackVersion` change. Copy-paste Python (`urllib`) + Rust (`reqwest`)
+  sketches ship in `/guides`. Values only to bearer-authed callers over TLS;
+  one team token in v2 (known limitation).
+
 ## §3 — Quota-matrix UI in keeper, deprecates llm-quota (approved)
 
 - `GET /` (server-rendered HTML, stdlib only) + `GET /api/v1/matrix|accounts|health`
