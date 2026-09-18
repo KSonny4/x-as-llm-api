@@ -1,0 +1,66 @@
+{
+  "_comment": [
+    "Keeper L1-vs-L2 divergence alert (Grafana unified alerting, file-provisioned shape).",
+    "Fires when keeper_route_divergent == 1 on any route: L1 curl failed while",
+    "L2 opencode CLI passed on the same route+run (the 'weird' case).",
+    "Plain down (both legs fail) does NOT page here by design.",
+    "DATASOURCE_UID: point at the Prometheus scraping keeper GET /metrics",
+    "  (bearer-gated; scrape config needs Authorization: Bearer $KEEPER_TOKEN).",
+    "CONTACT: attach your contact point uid in `notifications` before apply,",
+    "  or import via UI and pick the receiver there."
+  ],
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "keeper-divergence",
+      "folder": "keeper",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "keeper-route-divergent",
+          "title": "Keeper route divergent (curl fails, opencode CLI passes)",
+          "condition": "fire",
+          "for": "0s",
+          "annotations": {
+            "summary": "L1/L2 split on {{ $labels.provider }}/{{ $labels.model }} ({{ $labels.connection }})",
+            "description": "Direct HTTP probing failed but the opencode CLI leg passed on the same route+run. Credential or policy anomaly, not an outage. Matrix: https://keeper.pkubelka.cz/ ; runbook: docs/cutover-rehearsal-2026-09-18.md"
+          },
+          "labels": {
+            "severity": "page",
+            "service": "keeper"
+          },
+          "data": [
+            {
+              "refId": "divergent",
+              "datasourceUid": "DATASOURCE_UID",
+              "model": {
+                "expr": "max by (provider, model, connection) (keeper_route_divergent)",
+                "range": true,
+                "instant": false
+              }
+            },
+            {
+              "refId": "fire",
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "threshold",
+                "expression": "divergent",
+                "conditions": [
+                  {
+                    "evaluator": {"type": "gt", "params": [0]},
+                    "operator": {"type": "and"},
+                    "query": {"params": []},
+                    "reducer": {"type": "last"},
+                    "type": "query"
+                  }
+                ]
+              }
+            }
+          ],
+          "notifications": []
+        }
+      ]
+    }
+  ]
+}

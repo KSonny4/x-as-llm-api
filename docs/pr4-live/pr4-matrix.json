@@ -1,0 +1,1 @@
+{"emails": [], "rows": [], "providers": [], "diagnostics": {"unassigned": [{"id": "openrouter/gpt-4o-mini", "provider": "openrouter", "name": "GPT-4o mini via OpenRouter"}, {"id": "zen/big-pickle", "provider": "opencode-zen", "name": "Big Pickle"}], "skipped_inactive": [], "divergent": ["zen/big-pickle"]}, "aa_stale": false, "keeperPackVersion": "v2"}
