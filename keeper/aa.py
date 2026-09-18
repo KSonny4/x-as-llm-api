@@ -14,11 +14,14 @@ AA_MODELS_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
 
 
 def parse_scores(payload):
-    """{model key: score}; prefers coding, falls back to intelligence.
-    Keyed by AA slug (url-style model id, e.g. gpt-4o-mini) falling back
-    to raw id: AA v2 ids are UUIDs that never match a model string, so
-    the slug is the joinable key. Matrix lookup tries the full model
-    string then its last path segment (see matrix.aa_lookup)."""
+    """{model key: score}; AA coding index first, intelligence fallback.
+    V2 shape nests scores in entry.evaluations
+    (artificial_analysis_coding_index / _intelligence_index); bare
+    top-level coding/intelligence still accepted (legacy/fixtures).
+    Keyed by AA slug (url-style model id) falling back to raw id: v2 ids
+    are UUIDs that never match a model string, so the slug is the
+    joinable key. Matrix lookup tries the full model string then its
+    last path segment (see matrix.aa_lookup)."""
     scores = {}
     data = payload.get("data") if isinstance(payload, dict) else None
     for entry in data if isinstance(data, list) else []:
@@ -27,7 +30,13 @@ def parse_scores(payload):
         key = entry.get("slug") or entry.get("id")
         if not key:
             continue
-        score = entry.get("coding")
+        evals = entry.get("evaluations")
+        evals = evals if isinstance(evals, dict) else {}
+        score = evals.get("artificial_analysis_coding_index")
+        if not isinstance(score, (int, float)):
+            score = evals.get("artificial_analysis_intelligence_index")
+        if not isinstance(score, (int, float)):
+            score = entry.get("coding")
         if not isinstance(score, (int, float)):
             score = entry.get("intelligence")
         if isinstance(score, (int, float)):

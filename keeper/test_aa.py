@@ -31,6 +31,19 @@ class ParseTest(unittest.TestCase):
         ]})
         self.assertEqual(scores, {"gpt-4o-mini": 77.0, "plain-id": 11.0})
 
+    def test_v2_evaluations_coding_index_first(self):
+        scores = parse_scores({"data": [{
+            "id": "uuid-1", "slug": "m-v2",
+            "evaluations": {
+                "artificial_analysis_coding_index": 81.6,
+                "artificial_analysis_intelligence_index": 53.4}},
+            {"id": "uuid-2", "slug": "m-intel",
+             "evaluations": {
+                 "artificial_analysis_coding_index": None,
+                 "artificial_analysis_intelligence_index": 53.4}},
+        ]})
+        self.assertEqual(scores, {"m-v2": 81.6, "m-intel": 53.4})
+
 
 class FetchTest(unittest.TestCase):
     def _cache(self, tmp=True):
