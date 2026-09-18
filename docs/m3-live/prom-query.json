@@ -1,0 +1,168 @@
+{
+ "fetched_at": "2026-09-18T23:34:48Z",
+ "query": "keeper_route_divergent",
+ "via": "grafanacloud-prom datasource proxy",
+ "series_count": 11,
+ "response": {
+  "status": "success",
+  "data": {
+   "resultType": "vector",
+   "result": [
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "claude/claude-sonnet-4-6",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "claude-sonnet-4-6",
+      "provider": "claude"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "claude/claude-sonnet-4-6-oauth2",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "claude-sonnet-4-6",
+      "provider": "claude"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "claude/claude-sonnet-4-6-oauth3",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "claude-sonnet-4-6",
+      "provider": "claude"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "gemini/gemini-3.6-flash",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "gemini-3.6-flash",
+      "provider": "gemini"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "moonshot/kimi-k2.7-code",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "kimi-k2.7-code",
+      "provider": "moonshot"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "openrouter/gpt-4o-mini",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "openai/gpt-4o-mini",
+      "provider": "openrouter"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "openrouter/gpt-4o-mini-key1",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "openai/gpt-4o-mini",
+      "provider": "openrouter"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "openrouter/gpt-4o-mini-key3",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "openai/gpt-4o-mini",
+      "provider": "openrouter"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "openrouter/gpt-4o-mini-key4",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "openai/gpt-4o-mini",
+      "provider": "openrouter"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "zen/big-pickle",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "big-pickle",
+      "provider": "opencode-zen"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    },
+    {
+     "metric": {
+      "__name__": "keeper_route_divergent",
+      "connection": "zen/big-pickle-spare",
+      "instance": "127.0.0.1:8102",
+      "job": "prometheus.scrape.keeper",
+      "model": "big-pickle",
+      "provider": "opencode-zen"
+     },
+     "value": [
+      1789774488.443,
+      "0"
+     ]
+    }
+   ]
+  }
+ }
+}

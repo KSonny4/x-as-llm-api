@@ -100,7 +100,26 @@ efcikfz53nr40e, owner-confirmed). `grafana/keeper-divergent-alert.json`
   policy, escrow via owner terminal, record expiry in #85 — then tell
   the agent to re-register + JIT-verify.
 
-## Addendum — audit capture files + token revocation (job v26, :main-382c2cd)
+## Addendum — shipper REVIVED + capture files (2026-09-18T23:34Z)
+
+- Owner escrowed Grafana service-account token (Bao
+  `nomad/GRAFANA_SERVICE_ACCOUNT_TOKEN`, field `value`; Bearer-valid for
+  Cloud API incl. provisioning + datasource proxy). Captures committed:
+  `prom-query.json` (11 series, raw proxy response + `fetched_at`),
+  `grafana-rule-get.json` (uid, `datasourceUid: grafanacloud-prom`,
+  `notification_settings.receiver: HonzaTraderBot`, condition C — matches
+  the committed rule file field-for-field),
+  `grafana-rule-state.json` (single entry, inactive/health ok @
+  2026-09-18T23:34:30Z — no split exists, nothing faked).
+- Series age 8s at capture: the running Alloy (alloc 65d6711a, job v2)
+  is SHIPPING on its baked pair — the post-revocation outage is over
+  (revocation evidently never killed the baked credential, or flow
+  resumed; live proof supersedes the earlier down-claim).
+- Re-register deliberately NOT done: the service-account token fails
+  Prometheus basic-auth (stack tokens carry no metrics:write basic),
+  and restarting a flowing shipper for hygiene alone risks the very
+  outage just recovered from. Next Alloy re-register still needs a
+  metrics-write credential (owner console) — recorded, non-blocking.
 
 - `alloc.txt` is now a full `nomad job status keeper` capture (v26
   running, image `main-382c2cd` + digest appended); `alloy-job.txt` the
