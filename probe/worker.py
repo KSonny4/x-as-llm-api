@@ -68,8 +68,36 @@ def _non_empty_text(s):
     return isinstance(s, str) and bool(s.strip())
 
 
+def _probe_l1_gemini(route):
+    """Gemini has no OpenAI /models leg: ping generateContent directly."""
+    code, body = _post(
+        route, "/v1beta/models/%s:generateContent" % route.get("model", ""),
+        {"contents": [{"parts": [{"text": "ping"}]}]},
+        {"x-goog-api-key": route.get("api_key", "")})
+    if code == 200:
+        try:
+            text = json.loads(body)["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception:
+            text = ""
+        if _non_empty_text(text):
+            return "ok", {}, None
+        return "suspect", {"reason": "empty text"}, _feedback(route, 200, "unknown")
+    if code in (404, 415, 422):
+        return "misconfigured", {"reason": body[:200]}, None
+    if code is None:
+        return "suspect", {"reason": body}, None
+    if code == 429:
+        return "limited", {"backoff_at": (_now() + timedelta(minutes=BACKOFF_MIN)).isoformat()}, None
+    if code in (401, 403):
+        return "suspect", {"reason": body[:200]}, _feedback(route, code, "auth")
+    return "suspect", {"reason": body[:200]}, _feedback(route, code or 0, "unknown")
+
+
 def probe_l1(route):
     """Returns (outcome, detail, feedback|None)."""
+    wire = route.get("wire", "openai")
+    if wire == "gemini":
+        return _probe_l1_gemini(route)
     code, body = _get(route, "/models")
     if code is None:
         return "suspect", {"reason": body}, None

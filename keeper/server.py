@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import aa
+import inventory as inventory_mod
 import matrix as matrix_mod
 import translate as translate_mod
 
@@ -32,6 +33,9 @@ SESSION_TTL = 12 * 3600  # 12h browser sessions, in-memory: restart = re-login
 
 # Assignable in tests to stub upstream providers (no live calls in suite).
 urlopen = urllib.request.urlopen
+
+# Hook for model inventory; tests stub server.enumerate_inventory.
+enumerate_inventory = inventory_mod.get_inventory
 
 ANTHROPIC_VERSION = "2023-06-01"
 FEEDBACK_REQUIRED = ("provider", "model", "errorClass", "httpStatus",
@@ -90,16 +94,26 @@ def find_route(state, model):
     return None
 
 
-def freeze(state):
+def pack_path(provider, model):
+    """Standalone pack identity: infinity/<provider>/<model>."""
+    return "infinity/%s/%s" % (provider or "unknown", model or "unknown")
+
+
+def freeze(state, inventory=None):
     """Frozen packs snapshot: values for live credentials, signin steps
-    otherwise. Values only ever go to bearer-authed callers (see route)."""
+    otherwise. Values only ever go to bearer-authed callers (see route).
+    One standalone pack per model; inventory-only models get signin packs."""
     packs = []
+    seen = set()
     for route in state["routes"]:
+        provider = route.get("provider", "")
+        model = route.get("model", "")
         member = {
-            "provider": route.get("provider", ""),
-            "model": route.get("model", ""),
+            "provider": provider,
+            "model": model,
             "base_url": route.get("base_url", ""),
             "env_var": route.get("env_var", ""),
+            "path": pack_path(provider, model),
         }
         if route.get("api_key"):
             member["credential"] = {"type": "bearer",
@@ -111,6 +125,23 @@ def freeze(state):
                 "re-mint via your provider dashboard, then retry",
             ]}
         packs.append(member)
+        seen.add((provider, model))
+    for provider, models in (inventory or {}).items():
+        for model in models:
+            if (provider, model) in seen:
+                continue
+            seen.add((provider, model))
+            packs.append({
+                "provider": provider,
+                "model": model,
+                "base_url": "",
+                "env_var": "",
+                "path": pack_path(provider, model),
+                "signin": {"steps": [
+                    "seed a route for %s/%s, then re-mint via your "
+                    "provider dashboard" % (provider, model),
+                ]},
+            })
     return {"keeperPackVersion": KEEPER_PACK_VERSION, "packs": packs}
 
 
@@ -389,9 +420,11 @@ def matrix_view(state, refresh=False):
     ensure_aa(state, refresh)
     if state["matrix_cache"] is not None and not refresh:
         return state["matrix_cache"]
+    inv = enumerate_inventory(state["routes"], refresh)
     doc = matrix_mod.build_matrix(seed_connections(state), state["probe"],
                                   state["aa_scores"],
-                                  state.get("probe_detail", {}))
+                                  state.get("probe_detail", {}),
+                                  inventory=inv)
     doc["aa_stale"] = state["aa_stale"]
     doc["keeperPackVersion"] = KEEPER_PACK_VERSION
     state["matrix_cache"] = doc
@@ -468,6 +501,27 @@ def page_login():
             "</script></body></html>")
 
 
+def _col_probed(doc, col):
+    for p in doc["providers"]:
+        if p.get("id") == col and "probed" in p:
+            return bool(p["probed"])
+    return any(row["cells"].get(col) for row in doc["rows"])
+
+
+def _col_head(col):
+    label = col.get("model") or col["id"]
+    sub = col.get("provider", "")
+    if sub and sub != label:
+        return "<th>%s<br><small>%s</small></th>" % (html.escape(label),
+                                                     html.escape(sub))
+    return "<th>%s</th>" % html.escape(label)
+
+
+def _state_class(state):
+    return "st-" + "".join(c if c.isalpha() else "-"
+                            for c in str(state).lower())
+
+
 def page_index(state):
     """Server-rendered matrix + just-in-time poller.
 
@@ -478,17 +532,21 @@ def page_index(state):
     DOM is built with textContent (no innerHTML) so route names cannot
     inject markup."""
     doc = matrix_view(state)
+    col_ids = [p["id"] for p in doc["providers"]]
+    probed = {c: _col_probed(doc, c) for c in col_ids}
     rows = []
-    providers = [p["id"] for p in doc["providers"]]
     for row in doc["rows"]:
         cells = []
-        for provider in providers:
-            entries = row["cells"].get(provider, [])
+        for cid in col_ids:
+            entries = row["cells"].get(cid, [])
             if entries:
                 cells.append("<td>%s</td>" % ", ".join(
                     _cell_html(e) for e in entries))
-            else:
+            elif probed[cid]:
                 cells.append("<td>—</td>")
+            else:
+                cells.append('<td class="unprobed" '
+                             'title="unprobed">—</td>')
         rows.append("<tr><td>%s</td>%s</tr>" % (html.escape(row["email"]),
                                                "".join(cells)))
     unassigned = "".join("<li>%s</li>" % html.escape(
@@ -500,15 +558,23 @@ def page_index(state):
             "td,th{border:1px solid #ccc;padding:.3em .6em;text-align:left}"
             ".div{color:#fff;background:#c0392b;border-radius:3px;"
             "padding:0 .4em;font-size:.8em}"
+            ".st-ok{color:#1e7e34}.st-suspect{color:#b26a00}"
+            ".st-down,.st-degraded{color:#c0392b;font-weight:bold}"
+            ".st-unknown{color:#777}"
+            "td.unprobed{background:#f2f2f2;color:#aaa}"
+            ".legend{font-size:.85em;color:#555}"
             "#stale{display:none;background:#f39c12;color:#000;"
             "padding:.5em;margin-bottom:1em}"
             "small{color:#666}</style></head><body>"
             "<h1>keeper matrix</h1>"
             "<p id=\"stale\"></p>"
-            "<table><thead><tr><th>owner</th>%s</tr></thead>"
+            "<table id=\"tbl\" data-cols=\"%s\"><thead><tr><th>owner</th>%s</tr></thead>"
             "<tbody id=\"cells\">%s</tbody></table>"
             "<p><small id=\"updated\"></small> "
             "<button id=\"lo\">log out</button></p>"
+            "<p class=\"legend\">green ok · amber suspect · red down · "
+            "gray unknown · <span class=\"div\">DIVERGENT</span> split · "
+            "gray — unprobed</p>"
             "<h2>diagnostics.unassigned</h2><ul id=\"unassigned\">%s</ul>"
             "<script>"
             "const T=document.getElementById('cells'),"
@@ -519,6 +585,7 @@ def page_index(state):
             "await fetch('/api/v1/session/logout',{method:'POST'});"
             "location='/login';};"
             "function cell(e){const s=document.createElement('span');"
+            "s.className='st st-'+String(e.state).replace(/[^a-z]/g,'-');"
             "s.textContent=e.name+' ('+e.state+')';"
             "if(e.divergent){const b=document.createElement('span');"
             "b.className='div';b.textContent='DIVERGENT';"
@@ -529,14 +596,19 @@ def page_index(state):
             "async function poll(){"
             "try{const r=await fetch('/api/v1/matrix?refresh=1');"
             "if(!r.ok)throw new Error(r.status);"
-            "const d=await r.json(),provs=d.providers.map(p=>p.id);"
+            "const d=await r.json();"
+            "const init=document.getElementById('tbl').dataset.cols.split(',');"
+            "const ids=d.providers.map(p=>p.id);"
+            "if(ids.join(',')!==init.join(',')){S.style.display='block';"
+            "S.textContent='new models available — reload the page.';return;}"
             "T.replaceChildren(...d.rows.map(row=>{"
             "const tr=document.createElement('tr'),"
             "td=document.createElement('td');"
             "td.textContent=row.email;tr.appendChild(td);"
-            "for(const p of provs){const c=document.createElement('td'),"
-            "es=row.cells[p]||[];"
-            "if(!es.length)c.textContent='—';"
+            "for(const q of d.providers){const c=document.createElement('td'),"
+            "es=row.cells[q.id]||[];"
+            "if(!es.length){if(q.probed===false){c.className='unprobed';"
+            "c.title='unprobed';}c.textContent='—';}"
             "es.forEach((e,i)=>{if(i)c.appendChild("
             "document.createTextNode(', '));c.appendChild(cell(e));});"
             "tr.appendChild(c);}return tr;}));"
@@ -552,12 +624,15 @@ def page_index(state):
             "S.textContent='stale — refresh failed ('+e.message+')';}}"
             "setInterval(poll,30000);"
             "</script></body></html>"
-            % ("".join("<th>%s</th>" % html.escape(p) for p in providers),
+            % (",".join(html.escape(c) for c in col_ids),
+               "".join(_col_head(p) for p in doc["providers"]),
                "".join(rows), unassigned or "<li>none</li>"))
 
 
 def _cell_html(entry):
-    out = html.escape("%s (%s)" % (entry["name"], entry["state"]))
+    out = '<span class="st %s">%s</span>' % (
+        _state_class(entry["state"]),
+        html.escape("%s (%s)" % (entry["name"], entry["state"])))
     if entry.get("divergent"):
         out += ' <span class="div">DIVERGENT</span>'
     if entry.get("checked_at"):

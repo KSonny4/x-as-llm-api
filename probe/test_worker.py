@@ -42,6 +42,8 @@ def make_stub(behavior):
 OPENAI_MODELS = '{"data":[{"id":"muse"}]}'
 OPENAI_CHAT = '{"choices":[{"message":{"content":"pong"}}]}'
 ANTHROPIC_MSG = '{"content":[{"text":"pong"}]}'
+GEMINI_GEN = json.dumps({"candidates": [{"content": {"parts": [
+    {"text": "pong"}]}}]})
 
 
 class ProbeTest(unittest.TestCase):
@@ -88,6 +90,30 @@ class ProbeTest(unittest.TestCase):
                 f"http://127.0.0.1:{srv.server_port}", wire="anthropic"))
             self.assertEqual(out, "ok")
             self.assertIsNone(fb)
+        finally:
+            srv.shutdown()
+
+    def test_l1_ok_gemini(self):
+        srv = make_stub({"/v1beta/models/gemini-2.5-flash:generateContent":
+                         (200, GEMINI_GEN)})
+        try:
+            out, _, fb = self.probe_l1(self.route(
+                f"http://127.0.0.1:{srv.server_port}", wire="gemini",
+                model="gemini-2.5-flash"))
+            self.assertEqual(out, "ok")
+            self.assertIsNone(fb)
+        finally:
+            srv.shutdown()
+
+    def test_l1_gemini_401_is_suspect_with_auth_feedback(self):
+        srv = make_stub({"/v1beta/models/gemini-2.5-flash:generateContent":
+                         (401, '{"error":{"message":"bad key"}}')})
+        try:
+            out, _, fb = self.probe_l1(self.route(
+                f"http://127.0.0.1:{srv.server_port}", wire="gemini",
+                model="gemini-2.5-flash"))
+            self.assertEqual(out, "suspect")
+            self.assertEqual(fb["errorClass"], "auth")
         finally:
             srv.shutdown()
 
