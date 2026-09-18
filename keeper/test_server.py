@@ -358,5 +358,44 @@ class ParallelAcceptTest(unittest.TestCase):
         self.assertEqual(self.get("Bearer new", "old"), 401)
 
 
+class MetricsTest(RouteCase):
+    SPLIT = {"provider": "zen", "model": "big-pickle",
+             "state": "degraded",
+             "detail": {"l1": "suspect", "l2": "pong"},
+             "checked_at": "2026-09-18T00:00:00+00:00"}
+    DOWN = {"provider": "zen", "model": "other",
+            "state": "down", "detail": {"l1": "suspect"},
+            "checked_at": "2026-09-18T00:00:00+00:00"}
+
+    def get_metrics(self, headers=None, state=None):
+        headers = {"authorization": "Bearer t"} if headers is None else headers
+        return server.route("GET", "/metrics", headers, "t",
+                            state=state or self.state)
+
+    def test_metrics_requires_bearer(self):
+        code, _, _ = server.route("GET", "/metrics", {}, "t",
+                                  state=self.state)
+        self.assertEqual(code, 401)
+
+    def test_divergent_gauge_and_timestamp(self):
+        self.state["probe_detail"] = {"zen/big-pickle": self.SPLIT,
+                                        "zen/other": self.DOWN}
+        code, raw, headers = self.get_metrics()
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn('keeper_route_divergent{provider="zen",'
+                      'model="big-pickle",connection="zen/big-pickle"} 1',
+                      text)
+        self.assertIn('keeper_route_divergent{provider="zen",'
+                      'model="other",connection="zen/other"} 0', text)
+        self.assertIn("keeper_probe_checked_at_seconds{", text)
+        self.assertIn("# TYPE keeper_route_divergent gauge", text)
+
+    def test_empty_detail_exposes_no_series(self):
+        code, raw, _ = self.get_metrics()
+        self.assertEqual(code, 200)
+        self.assertNotIn("keeper_route_divergent{", raw.decode())
+
+
 if __name__ == "__main__":
     unittest.main()

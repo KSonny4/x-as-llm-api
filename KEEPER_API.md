@@ -24,6 +24,7 @@ revoke. Seeds come from `SEED_FILE` JSON
 | `GET /api/v1/matrix` | bearer | `{emails, rows, providers, diagnostics: {unassigned, skippedInactive}}`; `?refresh=1` bypasses cache |
 | `GET /api/v1/accounts` | bearer | `{emails, unassigned_count}` |
 | `GET /api/v1/health` | bearer | `{ok, keeperPackVersion, routes}` |
+| `GET /metrics` | bearer | Prometheus text: `keeper_route_divergent{provider,model,connection}` 0/1 (L1-fail+L2-pass) + `keeper_probe_checked_at_seconds`; series only for dual-probed connections |
 | `GET /` | bearer | server-rendered matrix table + `diagnostics.unassigned` (values never in HTML) |
 | `GET /guides` | bearer | per-consumer copy-paste cards |
 | `GET /signin` | bearer | re-mint steps for keyless members |
