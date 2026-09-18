@@ -68,9 +68,12 @@ class RouteCase(unittest.TestCase):
             "t", SEED, feedback_log=os.path.join(tmp, "fb.jsonl"),
             aa_cache=os.path.join(tmp, "aa.json"))
         self._urlopen = server.urlopen
+        self._enumerate = server.enumerate_inventory
+        server.enumerate_inventory = lambda routes, refresh=False: {}
 
     def tearDown(self):
         server.urlopen = self._urlopen
+        server.enumerate_inventory = self._enumerate
 
     def call(self, method, path, headers=None, body=None):
         headers = dict(headers or {})
@@ -291,7 +294,7 @@ class MatrixEndpointTest(RouteCase):
         code, raw, headers = self.call("GET", "/")
         self.assertEqual(code, 200)
         text = raw.decode()
-        self.assertIn("<table>", text)
+        self.assertIn("<table id=\"tbl\"", text)
         self.assertIn("owner@example.com", text)
         self.assertIn("diagnostics.unassigned", text)
         self.assertNotIn("k1", text)
@@ -488,7 +491,7 @@ class SessionCase(RouteCase):
         code, body, _ = server.route("GET", "/", cookie, "t",
                                      state=self.state)
         self.assertEqual(code, 200)
-        self.assertIn(b"<table>", body)
+        self.assertIn(b"<table id=\"tbl\"", body)
         code, _, _ = server.route(
             "POST", "/feedback", cookie, "t",
             body=json.dumps({"provider": "x"}).encode(),
@@ -553,6 +556,96 @@ class SessionCase(RouteCase):
         code, _, _ = server.route("GET", "/", cookie, "t",
                                   state=self.state)
         self.assertEqual(code, 401)
+
+
+class PacksPathTest(RouteCase):
+    """One standalone pack per model: infinity/<provider>/<model>."""
+
+    def test_every_pack_has_infinity_path(self):
+        code, raw, _ = self.call("GET", "/packs")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertTrue(doc["packs"])
+        for pack in doc["packs"]:
+            self.assertEqual(pack["path"], "infinity/%s/%s" % (
+                pack["provider"], pack["model"]))
+            self.assertIsInstance(pack["model"], str)
+
+    def test_inventory_only_models_get_signin_packs(self):
+        doc = server.freeze(self.state,
+                            {"zen": ["big-pickle", "new-model"]})
+        by_path = {p["path"]: p for p in doc["packs"]}
+        extra = by_path["infinity/zen/new-model"]
+        self.assertEqual(extra["model"], "new-model")
+        self.assertIn("signin", extra)
+        self.assertNotIn("credential", extra)
+
+    def test_seeded_inventory_model_not_duplicated(self):
+        doc = server.freeze(self.state, {"acme-openai": ["acme-chat"]})
+        paths = [p["path"] for p in doc["packs"]]
+        self.assertEqual(paths.count("infinity/acme-openai/acme-chat"), 1)
+        seeded = [p for p in doc["packs"]
+                  if p["path"] == "infinity/acme-openai/acme-chat"][0]
+        self.assertIn("credential", seeded)
+
+
+class InventoryWiringTest(RouteCase):
+    def test_matrix_view_calls_enumerate_with_refresh(self):
+        seen = {}
+
+        def fake(routes, refresh=False):
+            seen["n"] = len(routes)
+            seen["refresh"] = refresh
+            return {}
+        server.enumerate_inventory = fake
+        self.state["matrix_cache"] = None
+        server.matrix_view(self.state, refresh=True)
+        self.assertGreaterEqual(seen["n"], 1)
+        self.assertTrue(seen["refresh"])
+
+
+class ModelColumnsPageTest(RouteCase):
+    """Page against the frozen model-column doc shape."""
+    DOC = {
+        "emails": ["a@b.cz"],
+        "rows": [{"email": "a@b.cz", "cells": {
+            "claude-opus": [{"connection_id": "c1", "name": "Opus",
+                               "model": "claude-opus", "state": "ok",
+                               "l1": "ok", "l2": "not-run",
+                               "divergent": False, "checked_at": ""}]}}],
+        "providers": [
+            {"id": "claude-opus", "provider": "anthropic",
+             "model": "claude-opus", "probed": True},
+            {"id": "muse-x", "provider": "muse",
+             "model": "muse-x", "probed": False}],
+        "diagnostics": {"unassigned": [], "skippedInactive": [],
+                         "divergent": []},
+    }
+
+    def render(self):
+        orig = server.matrix_view
+        server.matrix_view = lambda state, refresh=False: self.DOC
+        try:
+            return self.call("GET", "/")
+        finally:
+            server.matrix_view = orig
+
+    def test_model_headers_with_provider_sub(self):
+        code, body, _ = self.render()
+        self.assertEqual(code, 200)
+        self.assertIn(b"claude-opus<br><small>anthropic</small>", body)
+        self.assertIn(b"muse-x<br><small>muse</small>", body)
+
+    def test_unprobed_column_gray(self):
+        _, body, _ = self.render()
+        self.assertIn(b'class="unprobed"', body)
+
+    def test_legend_colors_and_reload_hint(self):
+        _, body, _ = self.render()
+        for needle in (b"green ok", b"st-ok", b"st-unknown",
+                       b"new models available", b"setInterval(poll,30000)",
+                       b"data-cols="):
+            self.assertIn(needle, body)
 
 
 if __name__ == "__main__":

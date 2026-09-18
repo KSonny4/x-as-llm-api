@@ -116,29 +116,46 @@ def _cell_sort_key(cell):
     return (ok_first, -(cell.get("aa_score") or 0.0))
 
 
+def column_id(provider, model):
+    """Matrix column key: the model string when present, else provider id.
+    Seed-only fallbacks (no model yet) keep the old provider column."""
+    model = model.strip() if isinstance(model, str) else ""
+    if model:
+        return model
+    return provider or "unknown"
+
+
 def build_matrix(connections, probe_states=None, aa_scores=None,
-                 probe_detail=None):
-    """Email x provider rows; cells ordered ok-first then AA desc.
+                 probe_detail=None, inventory=None):
+    """Email x model rows; cells ordered ok-first then AA desc.
     probe_states maps connection id -> state string (legacy) while
     probe_detail optionally maps the same id -> full probe_route result;
     cells then also carry l1/l2/divergent and diagnostics lists the
-    divergent ids."""
+    divergent ids.
+    inventory optionally maps provider -> [model, ...] (live-enumerated);
+    inventory-only models become unprobed columns so new models are
+    visible before any probe runs."""
     probe_states = probe_states or {}
     probe_detail = probe_detail or {}
     aa_scores = aa_scores or {}
     grouped = group_connections_by_email(connections)
     rows = []
     providers = []
-    seen_providers = set()
+    seen_columns = set()
+
+    def ensure_column(col_id, provider, model):
+        if col_id not in seen_columns:
+            seen_columns.add(col_id)
+            providers.append({"id": col_id, "provider": provider,
+                              "model": model, "probed": False})
     divergent = []
     for email in grouped["emails"]:
         cells = {}
         for conn in grouped["by_email"][email]:
             provider = conn.get("provider") or "unknown"
-            if provider not in seen_providers:
-                seen_providers.add(provider)
-                providers.append({"id": provider})
-            model = conn.get("model")
+            model = conn.get("model") or ""
+            col = column_id(provider, model)
+            ensure_column(col, provider, model)
             cid = str(conn.get("id"))
             det = probe_detail.get(cid)
             if det is None:
@@ -149,7 +166,7 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
                 verdict = dual_verdict(det)
             if verdict["divergent"] and cid not in divergent:
                 divergent.append(cid)
-            cells.setdefault(provider, []).append({
+            cells.setdefault(col, []).append({
                 "connection_id": cid,
                 "name": connection_display_name(conn),
                 "model": model,
@@ -169,6 +186,18 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
     for cid, det in probe_detail.items():
         if cid not in divergent and dual_verdict(det)["divergent"]:
             divergent.append(cid)
+    for provider, models in (inventory or {}).items():
+        for model in models or []:
+            col = column_id(provider, model)
+            ensure_column(col, provider, model if isinstance(model, str)
+                          else "")
+    probed = set()
+    for row in rows:
+        for col, entries in row["cells"].items():
+            if entries:
+                probed.add(col)
+    for entry in providers:
+        entry["probed"] = entry["id"] in probed
     return {
         "emails": grouped["emails"],
         "rows": rows,

@@ -93,17 +93,20 @@ class MatrixTest(unittest.TestCase):
 
     def test_aa_orders_ties_among_probe_ok_only(self):
         conns = [
-            {"id": "low", "provider": "zen", "name": "L", "email": "a@b.cz", "model": "m-low"},
-            {"id": "high", "provider": "zen", "name": "H", "email": "a@b.cz", "model": "m-high"},
+            {"id": "bad", "provider": "zen", "name": "B", "email": "a@b.cz", "model": "m"},
+            {"id": "good", "provider": "zen", "name": "G", "email": "a@b.cz", "model": "m"},
             {"id": "dead", "provider": "zen", "name": "D", "email": "a@b.cz", "model": "m-dead"},
         ]
-        states = {"low": "ok", "high": "ok", "dead": "down"}
-        scores = {"m-low": 50.0, "m-high": 90.0, "m-dead": 99.0}
+        states = {"bad": "down", "good": "ok", "dead": "down"}
+        scores = {"m": 50.0, "m-dead": 99.0}
         data = build_matrix(conns, probe_states=states, aa_scores=scores)
-        ids = [c["connection_id"] for c in data["rows"][0]["cells"]["zen"]]
-        # ok first ordered by AA desc; down last despite highest AA
-        self.assertEqual(ids, ["high", "low", "dead"])
-        self.assertEqual(data["rows"][0]["cells"]["zen"][0]["aa_score"], 90.0)
+        col = data["rows"][0]["cells"]["m"]
+        # ok first despite insertion order; down last despite highest AA
+        self.assertEqual([c["connection_id"] for c in col],
+                         ["good", "bad"])
+        self.assertEqual(col[0]["aa_score"], 50.0)
+        self.assertEqual(
+            data["rows"][0]["cells"]["m-dead"][0]["aa_score"], 99.0)
 
 
 class DualVerifyTest(unittest.TestCase):
@@ -157,9 +160,9 @@ class DualVerifyTest(unittest.TestCase):
                                                  "o": "ok"},
                             probe_detail={"z": self.SPLIT, "o": self.OK})
         cells = {c["connection_id"]: c
-                 for c in data["rows"][0]["cells"]["zen"]}
+                 for c in data["rows"][0]["cells"]["big-pickle"]}
         cells.update({c["connection_id"]: c
-                      for c in data["rows"][0]["cells"]["openrouter"]})
+                      for c in data["rows"][0]["cells"]["gpt-4o-mini"]})
         self.assertTrue(cells["z"]["divergent"])
         self.assertEqual(cells["z"]["l1"], "suspect")
         self.assertEqual(cells["z"]["l2"], "pass")
@@ -175,10 +178,31 @@ class DualVerifyTest(unittest.TestCase):
         ], probe_states={"z": "degraded", "n": "ok"},
             probe_detail={"z": self.SPLIT})
         cells = {c["connection_id"]: c
-                 for c in data["rows"][0]["cells"]["zen"]}
+                 for c in data["rows"][0]["cells"]["big-pickle"]}
+        cells.update({c["connection_id"]: c
+                      for c in data["rows"][0]["cells"]["m"]})
         self.assertEqual(cells["z"]["checked_at"],
                          "2026-09-18T00:00:00+00:00")
         self.assertEqual(cells["n"]["checked_at"], "")
+
+    def test_columns_key_per_model_with_probed_flags(self):
+        data = build_matrix([
+            {"id": "z", "provider": "zen", "model": "big-pickle",
+             "name": "Z", "email": "a@b.cz"},
+            {"id": "n", "provider": "zen",
+             "name": "N", "email": "a@b.cz"},
+        ], probe_states={"z": "ok", "n": "ok"},
+            inventory={"zen": ["big-pickle", "claude-muse"]})
+        cols = {p["id"]: p for p in data["providers"]}
+        self.assertEqual([p["id"] for p in data["providers"]],
+                         ["big-pickle", "zen", "claude-muse"])
+        self.assertEqual(cols["big-pickle"]["provider"], "zen")
+        self.assertEqual(cols["big-pickle"]["model"], "big-pickle")
+        self.assertTrue(cols["big-pickle"]["probed"])
+        self.assertTrue(cols["zen"]["probed"])
+        self.assertFalse(cols["claude-muse"]["probed"])
+        self.assertEqual(cols["claude-muse"]["provider"], "zen")
+        self.assertEqual(cols["claude-muse"]["model"], "claude-muse")
 
     def test_unassigned_divergent_still_listed(self):
         data = build_matrix([
