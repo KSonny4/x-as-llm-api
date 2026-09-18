@@ -1,0 +1,9 @@
+{
+ "rule": "max(keeper_route_divergent) > 0",
+ "series": {
+  "keeper_route_divergent{provider=\"openrouter\",model=\"openai/gpt-4o-mini\",connection=\"openrouter/gpt-4o-mini\"}": 0.0,
+  "keeper_route_divergent{provider=\"opencode-zen\",model=\"big-pickle\",connection=\"zen/big-pickle\"}": 1.0
+ },
+ "max": 1.0,
+ "verdict": "FIRING"
+}

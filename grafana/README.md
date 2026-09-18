@@ -18,18 +18,26 @@ the same route+run. Plain `down` never pages here by design.
     credentials: <KEEPER_TOKEN>   # same bearer as /packs; never in git
 ```
 
-## Import the rule (Grafana Cloud meowlabs, UI path)
+## Create the rule (Grafana Cloud meowlabs, UI path)
 
-1. Wake the stack if hibernated (open it in a browser first).
-2. Alerting → Alert rules → New → **Import**: paste
-   `grafana/keeper-divergent-alert.json`.
-3. Replace `DATASOURCE_UID` with your Prometheus uid (the preview shows
-   `Data source not found` until you do).
-4. Attach your contact point in `notifications` (rule ships with none —
-   deliberate: paging target is an owner call).
-5. `for: 0s` fires immediately on any divergent==1 (calibrated choice:
-   splits are rare and always actionable; persistence can be added later
-   per L4 without changing the signal).
+`keeper-divergent-alert.json` is file-provisioning format (for API apply
+or self-hosted provisioning) — the Cloud UI has no JSON-paste import for
+rules, so recreate it via Alerting → Alert rules → New alert rule:
+
+- Folder: `keeper` (create it) · Group: `keeper-divergence` · Interval: `1m`
+- Query (Prometheus datasource scraping keeper `/metrics`, see below):
+  `max by (provider, model, connection) (keeper_route_divergent)`
+- Expression (threshold): `fire` = last of query `> 0`; `for: 0s`
+  (fires immediately on any divergent==1 — splits are rare and always
+  actionable; persistence can calibrate later per L4)
+- Labels: `severity=page`, `service=keeper`
+- Annotations: summary `L1/L2 split on {{ $labels.provider }}/{{ $labels.model }}`;
+  description with matrix link + runbook pointer (see the JSON file)
+- Notifications: attach YOUR contact point (deliberately unfilled here —
+  paging target is an owner call)
+- `grafana/condition-check-2026-09-18.json` proves the condition holds on
+  live data right now (`max` = 1.0 → FIRING); the presentation half
+  (rule rendered in UI) is the owner step below.
 
 ## API path (currently blocked)
 
