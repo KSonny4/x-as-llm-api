@@ -55,6 +55,5946 @@
     "type": "bearer",
     "present": true
    }
+  },
+  {
+   "provider": "openrouter",
+   "model": "aion-labs/aion-2.0",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/aion-labs/aion-2.0",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/aion-labs/aion-2.0, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "aion-labs/aion-3.0",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/aion-labs/aion-3.0",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/aion-labs/aion-3.0, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "aion-labs/aion-3.0-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/aion-labs/aion-3.0-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/aion-labs/aion-3.0-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "aion-labs/aion-rp-llama-3.1-8b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/aion-labs/aion-rp-llama-3.1-8b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/aion-labs/aion-rp-llama-3.1-8b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "amazon/nova-2-lite-v1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/amazon/nova-2-lite-v1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/amazon/nova-2-lite-v1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "amazon/nova-lite-v1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/amazon/nova-lite-v1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/amazon/nova-lite-v1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "amazon/nova-micro-v1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/amazon/nova-micro-v1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/amazon/nova-micro-v1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "amazon/nova-premier-v1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/amazon/nova-premier-v1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/amazon/nova-premier-v1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "amazon/nova-pro-v1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/amazon/nova-pro-v1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/amazon/nova-pro-v1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthracite-org/magnum-v4-72b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthracite-org/magnum-v4-72b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthracite-org/magnum-v4-72b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-3-haiku",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-3-haiku",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-3-haiku, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-fable-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-fable-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-fable-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-fable-5.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-fable-5.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-fable-5.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-fable-5.1:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-fable-5.1:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-fable-5.1:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-fable-5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-fable-5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-fable-5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-haiku-4.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-haiku-4.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-haiku-4.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-haiku-4.5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-haiku-4.5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-haiku-4.5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.1:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.1:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.1:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.6:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.6:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.6:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.7",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.7",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.7, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.7:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.7:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.7:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.8",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.8",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.8, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-4.8:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-4.8:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-4.8:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-opus-5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-opus-5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-opus-5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-4.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-4.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-4.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-4.5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-4.5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-4.5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-4.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-4.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-4.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-4.6:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-4.6:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-4.6:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "anthropic/claude-sonnet-5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/anthropic/claude-sonnet-5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/anthropic/claude-sonnet-5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "arcee-ai/trinity-large-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/arcee-ai/trinity-large-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/arcee-ai/trinity-large-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "baidu/ernie-4.5-vl-424b-a47b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/baidu/ernie-4.5-vl-424b-a47b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/baidu/ernie-4.5-vl-424b-a47b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-1.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-1.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-1.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-1.6-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-1.6-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-1.6-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-2-1-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-2-1-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-2-1-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-2.0-code",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-2.0-code",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-2.0-code, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-2.0-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-2.0-lite",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-2.0-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance-seed/seed-2.0-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance-seed/seed-2.0-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance-seed/seed-2.0-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "bytedance/ui-tars-1.5-7b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/bytedance/ui-tars-1.5-7b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/bytedance/ui-tars-1.5-7b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cognitivecomputations/dolphin-mistral-24b-venice-edition",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cognitivecomputations/dolphin-mistral-24b-venice-edition, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cohere/command-a",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cohere/command-a",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cohere/command-a, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cohere/command-r-08-2024",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cohere/command-r-08-2024",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cohere/command-r-08-2024, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cohere/command-r-plus-08-2024",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cohere/command-r-plus-08-2024",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cohere/command-r-plus-08-2024, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cohere/command-r7b-12-2024",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cohere/command-r7b-12-2024",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cohere/command-r7b-12-2024, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "cohere/north-mini-code:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/cohere/north-mini-code:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/cohere/north-mini-code:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-chat",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-chat",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-chat, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-chat-v3-0324",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-chat-v3-0324",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-chat-v3-0324, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-chat-v3.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-chat-v3.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-chat-v3.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-r1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-r1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-r1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-r1-0528",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-r1-0528",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-r1-0528, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-r1-distill-llama-70b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-r1-distill-llama-70b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-r1-distill-llama-70b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v3.1-terminus",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v3.1-terminus",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v3.1-terminus, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v3.2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v3.2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v3.2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v3.2-exp",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v3.2-exp",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v3.2-exp, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash-0731",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash-0731",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash-0731, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash-0731:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash-0731:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash-0731:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash-0731:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash-0731:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash-0731:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash-vision-exp",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash-vision-exp",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash-vision-exp, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-flash-vision-exp:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-flash-vision-exp:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-flash-vision-exp:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-pro-0813",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-pro-0813",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-pro-0813, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4-pro-0813:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4-pro-0813:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4-pro-0813:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "deepseek/deepseek-v4.1-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/deepseek/deepseek-v4.1-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/deepseek/deepseek-v4.1-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "dots-studio/dots-3-note-preview:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/dots-studio/dots-3-note-preview:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/dots-studio/dots-3-note-preview:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-flash-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-flash-image",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-flash-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-flash-lite:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-flash-lite:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-flash-lite:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-2.5-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-2.5-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-2.5-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3-flash-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3-flash-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3-flash-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3-flash-preview:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3-flash-preview:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3-flash-preview:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3-pro-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3-pro-image",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3-pro-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3-pro-image-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3-pro-image-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3-pro-image-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-image",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-image-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-image-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-image-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-lite-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-lite-image",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-lite-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-lite-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-lite-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-lite-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-flash-lite:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-flash-lite:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-flash-lite:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-pro-preview-customtools",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-pro-preview-customtools",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-pro-preview-customtools, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.1-pro-preview:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.1-pro-preview:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.1-pro-preview:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.5-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.5-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.5-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.5-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.5-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.5-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.5-flash-lite:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.5-flash-lite:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.5-flash-lite:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.5-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.5-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.5-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.6-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.6-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.6-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.6-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.6-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.6-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.7-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.7-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.7-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.7-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.7-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.7-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.8-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.8-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.8-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemini-3.8-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemini-3.8-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemini-3.8-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-2-27b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-2-27b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-2-27b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-3-12b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-3-12b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-3-12b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-3-27b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-3-27b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-3-27b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-3-4b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-3-4b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-3-4b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-4-26b-a4b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-4-26b-a4b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-4-26b-a4b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-4-26b-a4b-it:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-4-26b-a4b-it:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-4-26b-a4b-it:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-4-31b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-4-31b-it",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-4-31b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/gemma-4-31b-it:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/gemma-4-31b-it:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/gemma-4-31b-it:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/lyria-3-clip-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/lyria-3-clip-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/lyria-3-clip-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "google/lyria-3-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/google/lyria-3-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/google/lyria-3-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "gryphe/mythomax-l2-13b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/gryphe/mythomax-l2-13b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/gryphe/mythomax-l2-13b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "ibm-granite/granite-4.0-h-micro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/ibm-granite/granite-4.0-h-micro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/ibm-granite/granite-4.0-h-micro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "ibm-granite/granite-4.2-8b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/ibm-granite/granite-4.2-8b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/ibm-granite/granite-4.2-8b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inception/mercury-2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inception/mercury-2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inception/mercury-2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inception/mercury-2.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inception/mercury-2.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inception/mercury-2.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash-fin",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash-fin",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash-fin, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash-fin:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash-fin:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash-fin:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash-sante:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash-sante:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash-sante:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash-vl",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash-vl",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash-vl, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inclusionai/ling-3.0-flash-vl:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inclusionai/ling-3.0-flash-vl:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inclusionai/ling-3.0-flash-vl:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inference-net/schematron-v2-small",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inference-net/schematron-v2-small",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inference-net/schematron-v2-small, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "inference-net/schematron-v2-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/inference-net/schematron-v2-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/inference-net/schematron-v2-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "kwaipilot/kat-coder-pro-v2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/kwaipilot/kat-coder-pro-v2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/kwaipilot/kat-coder-pro-v2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "kwaipilot/kat-coder-pro-v2.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/kwaipilot/kat-coder-pro-v2.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/kwaipilot/kat-coder-pro-v2.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "liquid/lfm-2.5-2.6b:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/liquid/lfm-2.5-2.6b:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/liquid/lfm-2.5-2.6b:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mancer/weaver",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mancer/weaver",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mancer/weaver, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meituan/longcat-2.0",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meituan/longcat-2.0",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meituan/longcat-2.0, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-3.1-70b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-3.1-70b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-3.1-70b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-3.1-8b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-3.1-8b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-3.1-8b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-3.2-1b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-3.2-1b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-3.2-1b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-3.2-3b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-3.2-3b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-3.2-3b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-3.3-70b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-3.3-70b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-3.3-70b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-4-maverick",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-4-maverick",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-4-maverick, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-4-scout",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-4-scout",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-4-scout, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta-llama/llama-guard-4-12b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta-llama/llama-guard-4-12b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta-llama/llama-guard-4-12b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-glimmer-30b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-glimmer-30b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-glimmer-30b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-glimmer-30b:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-glimmer-30b:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-glimmer-30b:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-spark-1.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-spark-1.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-spark-1.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-spark-1.2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-spark-1.2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-spark-1.2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-spark-1.2-contributor",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-spark-1.2-contributor",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-spark-1.2-contributor, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-spark-1.3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-spark-1.3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-spark-1.3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "meta/muse-spark-1.3-contributor",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/meta/muse-spark-1.3-contributor",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/meta/muse-spark-1.3-contributor, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "microsoft/phi-4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/microsoft/phi-4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/microsoft/phi-4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "microsoft/wizardlm-2-8x22b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/microsoft/wizardlm-2-8x22b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/microsoft/wizardlm-2-8x22b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-01",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-01",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-01, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m2-her",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m2-her",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m2-her, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m2.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m2.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m2.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m2.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m2.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m2.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m2.7",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m2.7",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m2.7, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "minimax/minimax-m3:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/minimax/minimax-m3:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/minimax/minimax-m3:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/codestral-2508",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/codestral-2508",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/codestral-2508, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/codestral-2508:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/codestral-2508:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/codestral-2508:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/devstral-2512",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/devstral-2512",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/devstral-2512, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/ministral-14b-2512",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/ministral-14b-2512",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/ministral-14b-2512, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/ministral-3b-2512",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/ministral-3b-2512",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/ministral-3b-2512, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/ministral-8b-2512",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/ministral-8b-2512",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/ministral-8b-2512, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/ministral-8b-2512:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/ministral-8b-2512:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/ministral-8b-2512:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-large",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-large",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-large, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-large-2407",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-large-2407",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-large-2407, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-large-2512:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-large-2512:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-large-2512:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-medium-3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-medium-3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-medium-3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-medium-3-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-medium-3-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-medium-3-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-medium-3-5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-medium-3-5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-medium-3-5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-medium-3.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-medium-3.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-medium-3.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-medium-3.1:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-medium-3.1:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-medium-3.1:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-nemo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-nemo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-nemo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-saba",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-saba",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-saba, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-small-24b-instruct-2501",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-small-24b-instruct-2501",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-small-24b-instruct-2501, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-small-2603",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-small-2603",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-small-2603, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-small-2603:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-small-2603:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-small-2603:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-small-3.1-24b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-small-3.1-24b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-small-3.1-24b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mistral-small-3.2-24b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mistral-small-3.2-24b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mistral-small-3.2-24b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/mixtral-8x22b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/mixtral-8x22b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/mixtral-8x22b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "mistralai/voxtral-small-24b-2507",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/mistralai/voxtral-small-24b-2507",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/mistralai/voxtral-small-24b-2507, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2-0905",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2-0905",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2-0905, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k2.7-code",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k2.7-code",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k2.7-code, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "moonshotai/kimi-k3:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/moonshotai/kimi-k3:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/moonshotai/kimi-k3:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "morph/morph-v3-fast",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/morph/morph-v3-fast",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/morph/morph-v3-fast, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "morph/morph-v3-large",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/morph/morph-v3-large",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/morph/morph-v3-large, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nex-agi/nex-n2.5-mini:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nex-agi/nex-n2.5-mini:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nex-agi/nex-n2.5-mini:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nex-agi/nex-n2.5-pro:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nex-agi/nex-n2.5-pro:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nex-agi/nex-n2.5-pro:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nousresearch/hermes-3-llama-3.1-405b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nousresearch/hermes-3-llama-3.1-405b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nousresearch/hermes-3-llama-3.1-405b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nousresearch/hermes-3-llama-3.1-70b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nousresearch/hermes-3-llama-3.1-70b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nousresearch/hermes-3-llama-3.1-70b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nousresearch/hermes-4-405b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nousresearch/hermes-4-405b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nousresearch/hermes-4-405b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-nano-30b-a3b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-nano-30b-a3b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-super-120b-a12b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-super-120b-a12b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-super-120b-a12b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-super-120b-a12b:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-ultra-550b-a55b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-ultra-550b-a55b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-ultra-550b-a55b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3-ultra-550b-a55b:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3.5-content-safety",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3.5-content-safety",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3.5-content-safety, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3.5-content-safety:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3.5-content-safety:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3.5-content-safety:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3.5-lightning",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3.5-lightning",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3.5-lightning, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "nvidia/nemotron-3.5-lightning:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/nvidia/nemotron-3.5-lightning:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/nvidia/nemotron-3.5-lightning:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-3.5-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-3.5-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-3.5-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-3.5-turbo-0613",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-3.5-turbo-0613",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-3.5-turbo-0613, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-3.5-turbo-16k",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-3.5-turbo-16k",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-3.5-turbo-16k, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-3.5-turbo-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-3.5-turbo-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-3.5-turbo-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-3.5-turbo:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-3.5-turbo:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-3.5-turbo:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4-turbo:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4-turbo:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4-turbo:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1-nano",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1-nano",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1-nano, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1-nano:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1-nano:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1-nano:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4.1:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4.1:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4.1:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-2024-05-13",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o-2024-05-13",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o-2024-05-13, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-2024-08-06",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o-2024-08-06",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o-2024-08-06, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-2024-11-20",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o-2024-11-20",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o-2024-11-20, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini-2024-07-18",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o-mini-2024-07-18",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o-mini-2024-07-18, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-4o:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-4o:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-image",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-image-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-image-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-image-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-nano",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-nano",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-nano, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-nano:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-nano:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-nano:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.1-codex",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.1-codex",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.1-codex, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.1-codex-max",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.1-codex-max",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.1-codex-max, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.1-codex-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.1-codex-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.1-codex-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.1:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.1:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.1:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2-chat",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2-chat",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2-chat, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2-codex",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2-codex",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2-codex, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.2:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.2:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.2:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.3-codex",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.3-codex",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.3-codex, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-image-2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-image-2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-image-2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-nano",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-nano",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-nano, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-nano:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-nano:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-nano:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.4:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.4:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.4:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.5-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.5-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.5-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.5-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.5-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.5-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-luna",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-luna",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-luna, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-luna-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-luna-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-luna-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-luna-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-luna-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-luna-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-luna:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-luna:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-luna:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-sol",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-sol",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-sol, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-sol-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-sol-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-sol-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-sol-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-sol-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-sol-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-sol:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-sol:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-sol:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-terra",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-terra",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-terra, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-terra-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-terra-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-terra-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-terra-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-terra-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-terra-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5.6-terra:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5.6-terra:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5.6-terra:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-5:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-5:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-5:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-6-astra",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-6-astra",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-6-astra, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-6-astra-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-6-astra-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-6-astra-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-6-astra-pro:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-6-astra-pro:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-6-astra-pro:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-6-astra:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-6-astra:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-6-astra:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-audio",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-audio",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-audio, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-audio-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-audio-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-audio-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-chat-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-chat-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-chat-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-oss-120b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-oss-120b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-oss-120b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-oss-120b:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-oss-120b:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-oss-120b:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-oss-20b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-oss-20b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-oss-20b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-oss-safeguard-20b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/gpt-oss-safeguard-20b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/gpt-oss-safeguard-20b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o1-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o1-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o1-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3-mini-high",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3-mini-high",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3-mini-high, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o3:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o3:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o3:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o4-mini",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o4-mini",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o4-mini, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o4-mini-high",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o4-mini-high",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o4-mini-high, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/o4-mini:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openai/o4-mini:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openai/o4-mini:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/auto",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/auto",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/auto, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/auto-beta",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/auto-beta",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/auto-beta, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/bodybuilder",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/bodybuilder",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/bodybuilder, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/fusion",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/fusion",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/fusion, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openrouter/pareto-code",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/openrouter/pareto-code",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/openrouter/pareto-code, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perceptron/perceptron-mk1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perceptron/perceptron-mk1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perceptron/perceptron-mk1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perplexity/sonar",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perplexity/sonar",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perplexity/sonar, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perplexity/sonar-deep-research",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perplexity/sonar-deep-research",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perplexity/sonar-deep-research, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perplexity/sonar-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perplexity/sonar-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perplexity/sonar-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perplexity/sonar-pro-search",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perplexity/sonar-pro-search",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perplexity/sonar-pro-search, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "perplexity/sonar-reasoning-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/perplexity/sonar-reasoning-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/perplexity/sonar-reasoning-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "poolside/laguna-s-2.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/poolside/laguna-s-2.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/poolside/laguna-s-2.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "poolside/laguna-s-2.1:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/poolside/laguna-s-2.1:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/poolside/laguna-s-2.1:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "poolside/laguna-xs-2.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/poolside/laguna-xs-2.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/poolside/laguna-xs-2.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "poolside/laguna-xs-2.1:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/poolside/laguna-xs-2.1:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/poolside/laguna-xs-2.1:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "prism-ml/ternary-bonsai-2-27b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/prism-ml/ternary-bonsai-2-27b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/prism-ml/ternary-bonsai-2-27b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen-2.5-72b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen-2.5-72b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen-2.5-72b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen-2.5-7b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen-2.5-7b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen-2.5-7b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen-2.5-coder-32b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen-2.5-coder-32b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen-2.5-coder-32b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen-plus",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen-plus",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen-plus, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen-plus-2025-07-28",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen-plus-2025-07-28",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen-plus-2025-07-28, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen2.5-vl-72b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen2.5-vl-72b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen2.5-vl-72b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-14b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-14b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-14b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-235b-a22b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-235b-a22b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-235b-a22b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-235b-a22b-2507",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-235b-a22b-2507",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-235b-a22b-2507, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-235b-a22b-thinking-2507",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-235b-a22b-thinking-2507",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-235b-a22b-thinking-2507, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-30b-a3b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-30b-a3b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-30b-a3b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-30b-a3b-instruct-2507",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-30b-a3b-instruct-2507",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-30b-a3b-instruct-2507, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-30b-a3b-thinking-2507",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-30b-a3b-thinking-2507",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-30b-a3b-thinking-2507, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-32b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-32b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-32b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-8b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-8b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-8b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-coder",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-coder",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-coder, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-coder-30b-a3b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-coder-30b-a3b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-coder-30b-a3b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-coder-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-coder-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-coder-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-coder-next",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-coder-next",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-coder-next, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-coder-plus",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-coder-plus",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-coder-plus, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-max",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-max",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-max, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-max-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-max-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-max-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-next-80b-a3b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-next-80b-a3b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-next-80b-a3b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-next-80b-a3b-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-next-80b-a3b-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-next-80b-a3b-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-235b-a22b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-235b-a22b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-235b-a22b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-235b-a22b-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-235b-a22b-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-235b-a22b-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-30b-a3b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-30b-a3b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-30b-a3b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-30b-a3b-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-30b-a3b-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-30b-a3b-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-32b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-32b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-32b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-8b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-8b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-8b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3-vl-8b-thinking",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3-vl-8b-thinking",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3-vl-8b-thinking, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-122b-a10b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-122b-a10b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-122b-a10b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-27b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-27b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-27b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-35b-a3b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-35b-a3b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-35b-a3b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-397b-a17b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-397b-a17b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-397b-a17b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-9b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-9b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-9b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-9b:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-9b:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-9b:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-flash-02-23",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-flash-02-23",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-flash-02-23, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-plus-02-15",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-plus-02-15",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-plus-02-15, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.5-plus-20260420",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.5-plus-20260420",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.5-plus-20260420, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.6-27b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.6-27b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.6-27b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.6-35b-a3b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.6-35b-a3b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.6-35b-a3b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.6-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.6-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.6-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.6-max-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.6-max-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.6-max-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.6-plus",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.6-plus",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.6-plus, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.7-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.7-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.7-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.7-max",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.7-max",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.7-max, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.7-plus",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.7-plus",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.7-plus, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-2.4t-a95b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-2.4t-a95b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-2.4t-a95b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-2.4t-a95b:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-2.4t-a95b:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-2.4t-a95b:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-27b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-27b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-27b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-27b:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-27b:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-27b:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "qwen/qwen3.8-max-0902",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/qwen/qwen3.8-max-0902",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/qwen/qwen3.8-max-0902, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "rekaai/reka-edge",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/rekaai/reka-edge",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/rekaai/reka-edge, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "rekaai/reka-flash-3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/rekaai/reka-flash-3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/rekaai/reka-flash-3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "relace/relace-apply-3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/relace/relace-apply-3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/relace/relace-apply-3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "relace/relace-search",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/relace/relace-search",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/relace/relace-search, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sakana/fugu-max",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sakana/fugu-max",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sakana/fugu-max, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sakana/fugu-ultra",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sakana/fugu-ultra",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sakana/fugu-ultra, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sakana/fugu-ultra-v2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sakana/fugu-ultra-v2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sakana/fugu-ultra-v2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sakana/sakana-namazu",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sakana/sakana-namazu",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sakana/sakana-namazu, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sao10k/l3-lunaris-8b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sao10k/l3-lunaris-8b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sao10k/l3-lunaris-8b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sao10k/l3.1-euryale-70b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sao10k/l3.1-euryale-70b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sao10k/l3.1-euryale-70b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "sao10k/l3.3-euryale-70b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/sao10k/l3.3-euryale-70b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/sao10k/l3.3-euryale-70b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "stepfun/step-3.5-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/stepfun/step-3.5-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/stepfun/step-3.5-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "stepfun/step-3.7-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/stepfun/step-3.7-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/stepfun/step-3.7-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hunyuan-a13b-instruct",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hunyuan-a13b-instruct",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hunyuan-a13b-instruct, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy-mt2-1.8b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy-mt2-1.8b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy-mt2-1.8b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy-mt2-30b-a3b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy-mt2-30b-a3b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy-mt2-30b-a3b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy-mt2-7b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy-mt2-7b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy-mt2-7b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy3-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy3-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy3-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "tencent/hy4-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/tencent/hy4-preview",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/tencent/hy4-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thedrummer/cydonia-24b-v4.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thedrummer/cydonia-24b-v4.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thedrummer/cydonia-24b-v4.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thedrummer/skyfall-36b-v2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thedrummer/skyfall-36b-v2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thedrummer/skyfall-36b-v2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thedrummer/unslopnemo-12b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thedrummer/unslopnemo-12b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thedrummer/unslopnemo-12b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thinkingmachines/inkling",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thinkingmachines/inkling",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thinkingmachines/inkling, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thinkingmachines/inkling-small",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thinkingmachines/inkling-small",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thinkingmachines/inkling-small, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thinkingmachines/inkling-small:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thinkingmachines/inkling-small:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thinkingmachines/inkling-small:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thinkingmachines/inkling:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thinkingmachines/inkling:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thinkingmachines/inkling:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "thinkingmachines/inkling:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/thinkingmachines/inkling:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/thinkingmachines/inkling:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "unbiased/pareto",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/unbiased/pareto",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/unbiased/pareto, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "undi95/remm-slerp-l2-13b",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/undi95/remm-slerp-l2-13b",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/undi95/remm-slerp-l2-13b, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "upstage/solar-pro-3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/upstage/solar-pro-3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/upstage/solar-pro-3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "upstage/solar-pro4",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/upstage/solar-pro4",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/upstage/solar-pro4, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "writer/palmyra-x5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/writer/palmyra-x5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/writer/palmyra-x5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.20",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.20",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.20, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.20-multi-agent",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.20-multi-agent",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.20-multi-agent, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.3:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.3:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.3:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-4.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-4.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-4.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "x-ai/grok-build-0.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/x-ai/grok-build-0.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/x-ai/grok-build-0.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "xiaomi/mimo-v2.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/xiaomi/mimo-v2.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/xiaomi/mimo-v2.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "xiaomi/mimo-v2.5-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/xiaomi/mimo-v2.5-pro",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/xiaomi/mimo-v2.5-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.5-air",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.5-air",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.5-air, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.5v",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.5v",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.5v, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.6",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.6, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.6v",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.6v",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.6v, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.7",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.7",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.7, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-4.7-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-4.7-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-4.7-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.1",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.1",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.1, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.2",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.2:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.2:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.2:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.2:free",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.2:free",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.2:free, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.3",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.3",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.3, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.3-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.3-flash",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.3-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.3-flash:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.3-flash:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.3-flash:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5.3:batch",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5.3:batch",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5.3:batch, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "z-ai/glm-5v-turbo",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/z-ai/glm-5v-turbo",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/z-ai/glm-5v-turbo, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~anthropic/claude-fable-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~anthropic/claude-fable-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~anthropic/claude-fable-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~anthropic/claude-haiku-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~anthropic/claude-haiku-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~anthropic/claude-haiku-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~anthropic/claude-opus-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~anthropic/claude-opus-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~anthropic/claude-opus-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~anthropic/claude-sonnet-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~anthropic/claude-sonnet-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~anthropic/claude-sonnet-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~deepseek/deepseek-flash-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~deepseek/deepseek-flash-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~deepseek/deepseek-flash-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~deepseek/deepseek-pro-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~deepseek/deepseek-pro-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~deepseek/deepseek-pro-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~deepseek/deepseek-v4-flash-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~deepseek/deepseek-v4-flash-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~deepseek/deepseek-v4-flash-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~google/gemini-flash-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~google/gemini-flash-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~google/gemini-flash-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~google/gemini-pro-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~google/gemini-pro-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~google/gemini-pro-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~moonshotai/kimi-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~moonshotai/kimi-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~moonshotai/kimi-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~openai/gpt-astra-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~openai/gpt-astra-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~openai/gpt-astra-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~openai/gpt-luna-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~openai/gpt-luna-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~openai/gpt-luna-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~openai/gpt-mini-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~openai/gpt-mini-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~openai/gpt-mini-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~openai/gpt-sol-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~openai/gpt-sol-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~openai/gpt-sol-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~openai/gpt-terra-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~openai/gpt-terra-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~openai/gpt-terra-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~x-ai/grok-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~x-ai/grok-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~x-ai/grok-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~z-ai/glm-flash-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~z-ai/glm-flash-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~z-ai/glm-flash-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "~z-ai/glm-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/openrouter/~z-ai/glm-latest",
+   "signin": {
+    "steps": [
+     "seed a route for openrouter/~z-ai/glm-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "antigravity-preview-05-2026",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/antigravity-preview-05-2026",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/antigravity-preview-05-2026, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "antigravity-preview-09-2026",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/antigravity-preview-09-2026",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/antigravity-preview-09-2026, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "aqa",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/aqa",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/aqa, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "deep-research-max-preview-04-2026",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/deep-research-max-preview-04-2026",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/deep-research-max-preview-04-2026, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "deep-research-preview-04-2026",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/deep-research-preview-04-2026",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/deep-research-preview-04-2026, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "deep-research-pro-preview-12-2025",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/deep-research-pro-preview-12-2025",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/deep-research-pro-preview-12-2025, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-computer-use-preview-10-2025",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-computer-use-preview-10-2025",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-computer-use-preview-10-2025, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-flash",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-flash-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-flash-image",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-flash-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-flash-native-audio-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-flash-native-audio-latest",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-flash-native-audio-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-flash-preview-tts",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-flash-preview-tts",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-flash-preview-tts, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-pro",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-pro",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-pro, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-2.5-pro-preview-tts",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-2.5-pro-preview-tts",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-2.5-pro-preview-tts, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3-flash-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3-flash-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3-flash-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3-pro-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3-pro-image",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3-pro-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3-pro-image-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3-pro-image-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3-pro-image-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-image",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-image-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-image-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-image-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-lite-image",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-lite-image",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-lite-image, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-lite-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-lite-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-lite-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-flash-tts-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-flash-tts-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-flash-tts-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.1-pro-preview-customtools",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.1-pro-preview-customtools",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.1-pro-preview-customtools, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.5-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.5-flash",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.5-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.5-flash-lite",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.5-flash-lite, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.5-transcribe",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.5-transcribe",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.5-transcribe, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.5-transcribe-live",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.5-transcribe-live",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.5-transcribe-live, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.7-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.7-flash",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.7-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.8-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-3.8-flash",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-3.8-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-embedding-001",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-embedding-001",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-embedding-001, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-embedding-2",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-embedding-2",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-embedding-2, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-embedding-2-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-embedding-2-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-embedding-2-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-flash-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-flash-latest",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-flash-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-flash-lite-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-flash-lite-latest",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-flash-lite-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-omni-1.1-flash",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-omni-1.1-flash",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-omni-1.1-flash, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-omni-flash-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-omni-flash-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-omni-flash-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-pro-latest",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-pro-latest",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-pro-latest, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-robotics-er-2-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemini-robotics-er-2-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemini-robotics-er-2-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemma-4-26b-a4b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemma-4-26b-a4b-it",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemma-4-26b-a4b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemma-4-31b-it",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/gemma-4-31b-it",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/gemma-4-31b-it, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "lyria-3-clip-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/lyria-3-clip-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/lyria-3-clip-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "lyria-3-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/lyria-3-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/lyria-3-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "lyria-3.5",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/lyria-3.5",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/lyria-3.5, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "nano-banana-pro-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/nano-banana-pro-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/nano-banana-pro-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "veo-3.1-fast-generate-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/veo-3.1-fast-generate-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/veo-3.1-fast-generate-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "veo-3.1-generate-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/veo-3.1-generate-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/veo-3.1-generate-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "veo-3.1-lite-generate-preview",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/gemini/veo-3.1-lite-generate-preview",
+   "signin": {
+    "steps": [
+     "seed a route for gemini/veo-3.1-lite-generate-preview, then re-mint via your provider dashboard"
+    ]
+   }
+  },
+  {
+   "provider": "moonshot",
+   "model": "kimi-k2.6",
+   "base_url": "",
+   "env_var": "",
+   "path": "infinity/moonshot/kimi-k2.6",
+   "signin": {
+    "steps": [
+     "seed a route for moonshot/kimi-k2.6, then re-mint via your provider dashboard"
+    ]
+   }
   }
  ]
 }

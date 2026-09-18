@@ -1,17 +1,23 @@
-# M3 live receipt — :main-a2ebb09, 5-route reseed (2026-09-18)
+# M3 live receipt — :main-91c7cb8, 5-route reseed (2026-09-18)
 
-Proves the all-models matrix is live on merged `main` (PR #8, merge
-`a2ebb09`). Each file is a captured artifact, re-verifiable as noted.
+Proves the all-models matrix is live on `main` (fix: `GET /packs` serves
+the live inventory, not just seed routes). Each file is a captured
+artifact, re-verifiable as noted.
 
 - `arch.txt` — `docker inspect`: `arch=amd64` + image digest.
 - `alloc.txt` — Nomad `keeper` running alloc id + job version.
 - `healthz.txt` — public `GET /healthz` → 200.
 - `packs.json` — public `GET /packs` (credential values redacted to
-  `{type, present}`): 5 packs, every `path: infinity/<provider>/<model>`,
-  incl. `infinity/claude/claude-sonnet-4-6`.
+  `{type, present}`): 500 packs, every `path: infinity/<provider>/<model>`
+  — 5 seeded routes with credentials/signin as before, plus 495
+  inventory-only signin packs (openrouter 445, gemini 49, moonshot 1),
+  incl. `infinity/claude/claude-sonnet-4-6`. The full enumerated list is
+  in packs (uncapped); the matrix caps display columns at 20/provider
+  with overflow in `diagnostics.inventory_more`.
 - `matrix.txt` — public matrix: 1 email row, 5 routed columns with real
-  states + `checked_at`, 46 total columns,
-  `inventory_more: {openrouter: 424, gemini: 29}`.
+  states + `l1`/`l2` + `checked_at` (fresh `keeper-probe` dispatch at
+  capture time), 46 total columns,
+  `inventory_more: {openrouter: 425, gemini: 29}`.
 - `metrics.txt` — 5 `keeper_route_divergent` series (all 0 here: no
   L1-fail+L2-pass split at capture time).
 - `reseed.json` — the 5-route seed source (api_key values redacted to
@@ -23,7 +29,10 @@ Proves the all-models matrix is live on merged `main` (PR #8, merge
   real key formats; short fixture stubs structurally excluded).
 
 Notes: Gemini/Moonshot states vary run to run (depleted prepay / 429) —
-both are honest provider-side states, not code faults. No UI screenshot
+both are honest provider-side states, not code faults. Probe detail
+(`l1`/`l2`/`checked_at`) is in-memory server state: a redeploy resets
+cells to unknown until the next `keeper-probe` dispatch; that is why
+`matrix.txt` is captured right after a dispatch. No UI screenshot
 is attached: this environment has no image-input path, so visual proof
 is unavailable rather than invented; the page HTML is asserted in tests
 (legend, colors, Muse column, poller).

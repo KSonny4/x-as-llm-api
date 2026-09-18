@@ -1,8 +1,8 @@
 emails: ['ksonny4@gmail.com']
 columns: 46
-inventory_more: {'openrouter': 424, 'gemini': 29}
-  big-pickle -> down suspect
-  claude-sonnet-4-6 -> down suspect
-  gemini-3.6-flash -> down suspect
-  kimi-k2.7-code -> limited limited
-  openai/gpt-4o-mini -> ok ok
+inventory_more: {'openrouter': 425, 'gemini': 29}
+  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:23.049272+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:31.651928+00:00
+  gemini-3.6-flash -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:26.961710+00:00
+  kimi-k2.7-code -> limited l1=limited l2=not-run checked_at=2026-09-18T20:32:27.809380+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T20:30:22.542799+00:00
