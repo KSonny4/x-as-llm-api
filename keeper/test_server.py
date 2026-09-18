@@ -326,5 +326,37 @@ class PagesTest(RouteCase):
             self.assertIn("denied", fh.read())
 
 
+class ParallelAcceptTest(unittest.TestCase):
+    """Rotation: route() accepts a tuple of tokens (current + next).
+    Single-string call sites keep working unchanged."""
+    def setUp(self):
+        tmp = tempfile.mkdtemp()
+        self.state = server.make_state(
+            "old", SEED, feedback_log=os.path.join(tmp, "fb.jsonl"),
+            aa_cache=os.path.join(tmp, "aa.json"))
+
+    def get(self, bearer, token):
+        code, _, _ = server.route(
+            "GET", "/packs", {"authorization": bearer}, token,
+            state=self.state)
+        return code
+
+    def test_tuple_accepts_either_token(self):
+        self.assertEqual(self.get("Bearer old", ("old", "new")), 200)
+        self.assertEqual(self.get("Bearer new", ("old", "new")), 200)
+
+    def test_tuple_rejects_third_and_empty(self):
+        for bearer in ("Bearer other", "", "Bearer "):
+            self.assertEqual(self.get(bearer, ("old", "new")), 401)
+
+    def test_empty_next_accepts_only_current(self):
+        self.assertEqual(self.get("Bearer old", ("old", "")), 200)
+        self.assertEqual(self.get("Bearer new", ("old", "")), 401)
+
+    def test_single_string_unchanged(self):
+        self.assertEqual(self.get("Bearer old", "old"), 200)
+        self.assertEqual(self.get("Bearer new", "old"), 401)
+
+
 if __name__ == "__main__":
     unittest.main()

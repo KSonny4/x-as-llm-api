@@ -1,30 +1,71 @@
-# keeper.nomad.hcl — PROD job (Nomad, not Coolify). Deploy-ready; adjust
-# image/region/datacenter/vault paths at deploy time with the Nomad owner.
-# Secrets reach the alloc from Bao (OpenBao KVv2 at BAO_ADDR; NomadSetup
-# acl/registry in Bao hold cluster access). Exact vault stanza per cluster.
+# keeper.nomad.hcl — PROD job on the ovh-vps Nomad cluster.
+#
+# Deploy (tokens NEVER in git — pass via -var):
+#   export NOMAD_ADDR=https://nomad.pkubelka.cz
+#   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
+#   nomad job run \
+#     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-multi-providers/KEEPER_TOKEN)" \
+#     -var=keeper_token_next="" \
+#     keeper.nomad.hcl
+#
+# Rotation window: pass -var=keeper_token_next=<NEW> alongside the current
+# token (server parallel-accepts both), smoke with both, then run again with
+# keeper_token=<NEW> and keeper_token_next="" to revoke the old one.
+#
+# Smoke (in-alloc: no published port, token never leaves the cluster):
+#   ALLOC=$(nomad job allocs -json keeper | jq -r '.[0].ID')
+#   nomad alloc exec $ALLOC python3 /srv/keeper/smoke.py
+#
+# Secrets note: this cluster runs no Vault/Consul, so the bearer reaches the
+# alloc via task env (visible to the Nomad management token holder).
+# Source of truth stays Bao (secret/projects/pi-multi-providers/KEEPER_TOKEN,
+# versioned — revoked tokens remain recoverable there, never re-accepted).
+
+variable "keeper_token" {
+  type = string
+}
+
+variable "keeper_token_next" {
+  type    = string
+  default = ""
+}
+
 job "keeper" {
-  datacenters = ["dc1"]
+  datacenters = ["ovh-vps"]
   type        = "service"
 
   group "keeper" {
     count = 1
 
+    network {
+      port "http" {
+        to           = 8080
+        host_network = "loopback"
+      }
+    }
+
+    update {
+      max_parallel     = 1
+      health_check     = "checks"
+      min_healthy_time = "10s"
+      healthy_deadline = "5m"
+      progress_deadline = "10m"
+      auto_revert      = false
+      canary           = 0
+    }
+
     task "server" {
       driver = "docker"
       config {
-        image = "registry.local/keeper:2-skeleton"
-        ports = ["http"]
+        image      = "registry.pkubelka.cz/keeper:cutover-1"
+        ports      = ["http"]
+        force_pull = true
       }
 
-      # Bao-backed secret (KVv2). Field `token` under
-      # secret/projects/pi-multi-providers/KEEPER_TOKEN.
-      template {
-        data        = <<EOH
-KEEPER_TOKEN={{ with secret "secret/data/projects/pi-multi-providers/KEEPER_TOKEN" }}{{ .Data.data.token }}{{ end }}
-PORT=8080
-EOH
-        destination = "secrets/keeper.env"
-        env         = true
+      env {
+        PORT              = "8080"
+        KEEPER_TOKEN      = var.keeper_token
+        KEEPER_TOKEN_NEXT = var.keeper_token_next
       }
 
       resources {
@@ -33,20 +74,15 @@ EOH
       }
 
       service {
-        name = "keeper"
-        port = "http"
+        name     = "keeper"
+        port     = "http"
+        provider = "nomad"
         check {
           type     = "http"
           path     = "/healthz"
           interval = "30s"
           timeout  = "5s"
         }
-      }
-    }
-
-    network {
-      port "http" {
-        to = 8080
       }
     }
   }

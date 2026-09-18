@@ -435,6 +435,14 @@ def page_report(state):
             "<button>send</button></form></body></html>" % options)
 
 
+def accepted(auth, token):
+    """Bearer check against one token or a tuple (current + next).
+    Rotation: pass (KEEPER_TOKEN, KEEPER_TOKEN_NEXT); empty entries never
+    match, so an unset NEXT changes nothing."""
+    toks = token if isinstance(token, (tuple, list)) else (token,)
+    return any(t and auth == "Bearer " + t for t in toks)
+
+
 def route(method, path, headers, token, body=None, query="", state=None):
     """Pure routing: (status, body_bytes, extra_headers). No sockets.
 
@@ -449,7 +457,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
     for key, value in headers.items():
         if key.lower() == "authorization":
             auth = value
-    if auth != "Bearer " + token:
+    if not accepted(auth, token):
         return 401, b"unauthorized", [("Content-Type", "text/plain")]
     if state is None:
         return 404, b"not found", [("Content-Type", "text/plain")]
@@ -541,6 +549,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
 class H(BaseHTTPRequestHandler):
     server_version = "keeper/2"
     token = ""
+    token_next = ""  # rotation window: also accepted while set
     state = None
 
     def log_message(self, *a):
@@ -565,12 +574,14 @@ class H(BaseHTTPRequestHandler):
 
     def do_GET(self):
         code, body, headers = route("GET", self.path, dict(self.headers),
-                                    self.token, state=self.state)
+                                    (self.token, self.token_next),
+                                    state=self.state)
         self._send(code, body, headers)
 
     def do_POST(self):
         code, body, headers = route("POST", self.path, dict(self.headers),
-                                    self.token, body=self._read_body(),
+                                    (self.token, self.token_next),
+                                    body=self._read_body(),
                                     state=self.state)
         self._send(code, body, headers)
 
@@ -578,6 +589,7 @@ class H(BaseHTTPRequestHandler):
 def main():
     token = require_token(os.environ.get("KEEPER_TOKEN", ""))
     H.token = token
+    H.token_next = os.environ.get("KEEPER_TOKEN_NEXT", "")
     H.state = make_state(token, load_seed(os.environ.get("SEED_FILE", "")))
     print("keeper v2 on 0.0.0.0:%d" % PORT, flush=True)
     HTTPServer(("0.0.0.0", PORT), H).serve_forever()
