@@ -1,1 +1,36 @@
-80 a0:3f running 21
+ID            = keeper
+Name          = keeper
+Submit Date   = 2026-09-19T00:53:29+02:00
+Type          = service
+Priority      = 50
+Datacenters   = ovh-vps
+Namespace     = default
+Node Pool     = default
+Status        = running
+Periodic      = false
+Parameterized = false
+
+Summary
+Task Group  Queued  Starting  Running  Failed  Complete  Lost  Unknown
+keeper      0       0         1        9       24        0     0
+
+Latest Deployment
+ID          = d4505185
+Status      = successful
+Description = Deployment completed successfully
+
+Deployed
+Task Group  Desired  Placed  Healthy  Unhealthy  Progress Deadline
+keeper      1        1       1        0          2026-09-18T23:03:59Z
+
+Allocations
+ID        Node ID   Task Group  Version  Desired  Status    Created     Modified
+6c0e82d1  5804ea97  keeper      26       run      running   14m45s ago  14m15s ago
+1176d899  5804ea97  keeper      25       stop     complete  17m12s ago  14m40s ago
+15220aba  5804ea97  keeper      24       stop     complete  20m47s ago  17m7s ago
+a3694e5e  5804ea97  keeper      23       stop     complete  1h11m ago   20m42s ago
+
+
+==> View job details and metrics in the Web UI: https://nomad.pkubelka.cz/ui/jobs/keeper@default
+image: registry.pkubelka.cz/keeper:main-382c2cd
+digest: [registry.pkubelka.cz/keeper@sha256:1dea9aab1440800c8442efba46555429db3909a92c009bb7efce012fbd38b46b]

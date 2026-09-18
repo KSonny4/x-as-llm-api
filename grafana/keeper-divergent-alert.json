@@ -7,15 +7,18 @@
     "APPLIED LIVE 2026-09-18 via provisioning API (folder keeper, group",
     "  keeper-divergence, uid keeper-route-divergent): datasourceUid",
     "  grafanacloud-prom (Hosted Prometheus fed by keeper-alloy; Cloud cannot",
-    "  scrape bearer-gated /metrics directly), receiver HonzaTraderBot",
-    "  (notification_settings). Shape: A range query -> B reduce(last) ->",
-    "  C threshold gt 0. The reduce step is MANDATORY: this Cloud version",
-    "  rejects unreduced time-series input ('only reduced data can be",
+    "  scrape bearer-gated /metrics directly), notification_settings.receiver",
+    "  HonzaTraderBot (telegram, owner-confirmed). This file mirrors the",
+    "  applied rule field-for-field (condition C, A range -> B reduce(last)",
+    "  -> C threshold gt 0); notification_settings is the unified-alerting",
+    "  receiver binding (legacy file-provisioning `notifications` is NOT used).",
+    "Shape lessons: the reduce step is MANDATORY on this Cloud version",
+    "  (unreduced time-series input is rejected: 'only reduced data can be",
     "  alerted on'); multi-series labels survive reduce (one instance per",
     "  route). Group interval is SECONDS (60), not '1m' (string 400s).",
     "  for 0s: pages immediately on a split (splits are rare + actionable).",
     "Deleted same-day: stale twin rule cfyn4k7ofc16of (earlier 2-stage attempt,",
-    "  no receiver, permanent eval error) + bisect scratch group."
+    "  no receiver, permanent eval error) + keeper-bisect scratch group."
   ],
   "apiVersion": 1,
   "groups": [
@@ -30,6 +33,9 @@
           "title": "Keeper route divergent (curl fails, opencode CLI passes)",
           "condition": "C",
           "for": "0s",
+          "keep_firing_for": "0s",
+          "noDataState": "NoData",
+          "execErrState": "Error",
           "annotations": {
             "summary": "L1/L2 split on {{ $labels.provider }}/{{ $labels.model }} ({{ $labels.connection }})",
             "description": "Direct HTTP probing failed but the opencode CLI leg passed on the same route+run. Credential or policy anomaly, not an outage. Matrix: https://keeper.pkubelka.cz/"
@@ -75,7 +81,7 @@
               }
             }
           ],
-          "notifications": ["HonzaTraderBot"]
+          "notification_settings": {"receiver": "HonzaTraderBot"}
         }
       ]
     }
