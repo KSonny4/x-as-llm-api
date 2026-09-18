@@ -12,6 +12,12 @@ _BARE_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
 _OK_STATES = ("ok",)
 
+# Display bound for inventory-only columns per provider: firehose
+# providers stay complete in packs; the matrix shows at most this many
+# unprobed columns each and reports the overflow in
+# diagnostics.inventory_more.
+MAX_INVENTORY_COLUMNS = 20
+
 
 def extract_owner_email(value):
     """Canonical lowercase owner address from any typed format, else None."""
@@ -148,6 +154,7 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
             seen_columns.add(col_id)
             providers.append({"id": col_id, "provider": provider,
                               "model": model, "probed": False})
+    inventory_more = {}
     divergent = []
     for email in grouped["emails"]:
         cells = {}
@@ -187,10 +194,23 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
         if cid not in divergent and dual_verdict(det)["divergent"]:
             divergent.append(cid)
     for provider, models in (inventory or {}).items():
+        added = 0
+        skipped = 0
         for model in models or []:
             col = column_id(provider, model)
+            if col in seen_columns:
+                continue
+            # Display bound: firehose providers (openrouter: 400+) stay in
+            # packs; the matrix keeps at most N unprobed columns each and
+            # reports the overflow so nothing is silently hidden.
+            if added >= MAX_INVENTORY_COLUMNS:
+                skipped += 1
+                continue
             ensure_column(col, provider, model if isinstance(model, str)
                           else "")
+            added += 1
+        if skipped:
+            inventory_more[provider] = skipped
     probed = set()
     for row in rows:
         for col, entries in row["cells"].items():
@@ -206,5 +226,6 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
             "unassigned": grouped["unassigned"],
             "skipped_inactive": grouped["skipped_inactive"],
             "divergent": sorted(divergent),
+            "inventory_more": inventory_more,
         },
     }

@@ -19,13 +19,13 @@ restarts (in-memory). Token travels in the mint fetch header, never URL. Seeds c
 | `GET /healthz` | none | `200` → `ok` |
 | `GET /packs` | bearer | frozen snapshot `{keeperPackVersion, packs[]}`; `ETag`/`304`, `Cache-Control: max-age=600`; one standalone pack per model with `path: infinity/<provider>/<model>`; inventory-only models get signin packs |
 | `POST /feedback` | bearer | `202` spool to JSONL; `422` with `missing[]` / `bad_errorClass` |
-| `POST /api/v1/probe` | bearer | ingest one probe_route result `{provider, model, state, detail{l1,l2}, checkedAt?}` → `202` (records probe_detail + probe state, busts matrix cache); `422` shape/unknown-route |
+| `POST /api/v1/probe` | bearer | ingest one probe_route result `{provider, model, state, detail{l1,l2}, checkedAt?}` → `202` (records probe_detail + probe state, busts matrix cache); `422` shape/unknown-route. Probe L1 wires: `openai` (`/models` + chat ping), `anthropic` (`/v1/messages` ping), `gemini` (`generateContent` ping); L2 is the opencode CLI leg on the route provider/model ref. |
 | `GET /v1/providers` | bearer | per provider: `baseURL`, `modelIDs[]`, `envVar`, ready OpenAI `curl` |
 | `GET /v1/guide/:who` | bearer | `who` in `curl\|pi\|opencode`; one OpenAI curl per model |
 | `POST /v1/chat/completions` | bearer | OpenAI-in/out on either upstream wire; `stream: true` → SSE `data:` chunks + `[DONE]` |
 | `GET /v1/models` | bearer | OpenAI `{object: list, data[]}` over seeded models |
 | `GET /v1/route/:model` | bearer | `{model, baseURL, api: "openai", auth: {scheme, value}, features, keeperPackVersion}`; `404` unknown |
-| `GET /api/v1/matrix` | bearer | `{emails, rows, providers, diagnostics: {unassigned, skippedInactive}}`; columns keyed per model (`providers[]: {id, provider, model, probed}`); `?refresh=1` bypasses cache and re-enumerates provider inventory (1h server TTL) |
+| `GET /api/v1/matrix` | bearer | `{emails, rows, providers, diagnostics: {unassigned, skippedInactive}}`; columns keyed per model (`providers[]: {id, provider, model, probed}`); `?refresh=1` bypasses cache and re-enumerates provider inventory (1h server TTL). Inventory source: per-provider live APIs (OpenAI-compatible `/models`, Gemini list) with per-provider degrade to seed-declared; unlistable providers (OAuth/CLI-only) are seed-declared. Inventory-only columns capped at 20 per provider, overflow in `diagnostics.inventory_more` (full list always in packs). |
 | `GET /api/v1/accounts` | bearer | `{emails, unassigned_count}` |
 | `GET /api/v1/health` | bearer | `{ok, keeperPackVersion, routes}` |
 | `GET /metrics` | bearer | Prometheus text: `keeper_route_divergent{provider,model,connection}` 0/1 (L1-fail+L2-pass) + `keeper_probe_checked_at_seconds`; series only for dual-probed connections |

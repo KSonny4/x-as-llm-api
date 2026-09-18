@@ -204,6 +204,18 @@ class DualVerifyTest(unittest.TestCase):
         self.assertEqual(cols["claude-muse"]["provider"], "zen")
         self.assertEqual(cols["claude-muse"]["model"], "claude-muse")
 
+    def test_inventory_columns_capped_with_overflow_reported(self):
+        conns = [{"id": "s", "provider": "big", "model": "seeded",
+                  "name": "S", "email": "a@b.cz"}]
+        inv = {"big": ["seeded"] + ["m%02d" % i for i in range(25)]}
+        data = build_matrix(conns, probe_states={"s": "ok"},
+                            inventory=inv)
+        ids = [c["id"] for c in data["providers"]]
+        self.assertIn("seeded", ids)
+        self.assertEqual(len(ids), 21)  # seeded route + 20 inventory
+        self.assertEqual(data["diagnostics"]["inventory_more"],
+                         {"big": 5})
+
     def test_unassigned_divergent_still_listed(self):
         data = build_matrix([
             {"id": "z", "provider": "zen", "model": "big-pickle",
