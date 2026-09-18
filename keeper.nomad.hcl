@@ -82,7 +82,7 @@ job "keeper" {
     task "server" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/keeper:main-9de7b49"
+        image      = "registry.pkubelka.cz/keeper:main-286d64c"
         ports      = ["http"]
         force_pull = true
       }
