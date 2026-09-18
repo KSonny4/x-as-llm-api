@@ -10,9 +10,17 @@
 #   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
 #   nomad job run \
 #     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-multi-providers/KEEPER_TOKEN)" \
-#     -var=prom_user="$(bao kv get -field=value secret/projects/control-panel/GRAFANA_CLOUD_PROMETHEUS_USERNAME)" \
-#     -var=prom_token="<metrics publisher token>" \
+#     -var=prom_user="<Cloud Prometheus basic-auth username (instance id)>" \
+#     -var=prom_token="$(bao kv get -field=token secret/projects/nomad/GRAFANA_CLOUD_RW)" \
 #     keeper-alloy.nomad.hcl
+#
+# Credential rotation (owner terminal ONLY — values never touch chat/logs):
+#   exposed alloy token => revoke in Cloud console, mint fresh under the
+#   same alloy metrics:write access policy, escrow via owner terminal:
+#     bao kv put secret/projects/nomad/GRAFANA_CLOUD_RW token=<fresh>
+#   then record the new expiry in issue #85 and re-register this job.
+#   2026-09-18: one alloy token treated as exposed/rotated; escrow path is
+#   Bao secret/projects/nomad/GRAFANA_CLOUD_RW field token.
 #
 # Verify: keeper_route_divergent appears in grafanacloud-prom within ~1 min:
 #   curl -H "Authorization: Bearer $GRAFANA_TOKEN" \
@@ -64,6 +72,14 @@ job "keeper-alloy" {
         ]
       }
 
+      env {
+        # Remote-write password arrives as process env so the rendered
+        # Alloy file (visible via alloc fs to the management-token holder)
+        # never carries the secret; the value itself still comes from
+        # -var=prom_token at register time (Bao, owner terminal only).
+        GRAFANA_TOKEN = var.prom_token
+      }
+
       template {
         data        = <<EOH
 prometheus.scrape "keeper" {
@@ -78,7 +94,7 @@ prometheus.remote_write "cloud" {
     url = "${var.prom_url}"
     basic_auth {
       username = "${var.prom_user}"
-      password = "${var.prom_token}"
+      password = env("GRAFANA_TOKEN")
     }
   }
 }
