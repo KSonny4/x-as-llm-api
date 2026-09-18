@@ -766,7 +766,9 @@ def route(method, path, headers, token, body=None, query="", state=None):
     params = urllib.parse.parse_qs(query)
 
     if method == "GET" and clean_path == "/packs":
-        doc = freeze(state)
+        refresh = params.get("refresh", ["0"])[0] == "1"
+        doc = freeze(state, enumerate_inventory(state["routes"],
+                                                refresh))
         tag = '"%s"' % etag_for(doc)
         if headers.get("If-None-Match", headers.get("if-none-match", "")) == tag:
             return 304, b"", [("ETag", tag)]

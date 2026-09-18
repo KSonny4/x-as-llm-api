@@ -571,6 +571,15 @@ class PacksPathTest(RouteCase):
                 pack["provider"], pack["model"]))
             self.assertIsInstance(pack["model"], str)
 
+    def test_route_serves_inventory_packs(self):
+        server.enumerate_inventory = lambda routes, refresh=False: \
+            {"zen": ["new-model"]}
+        code, raw, _ = self.call("GET", "/packs")
+        self.assertEqual(code, 200)
+        by_path = {p["path"]: p for p in json.loads(raw)["packs"]}
+        self.assertIn("infinity/zen/new-model", by_path)
+        self.assertIn("signin", by_path["infinity/zen/new-model"])
+
     def test_inventory_only_models_get_signin_packs(self):
         doc = server.freeze(self.state,
                             {"zen": ["big-pickle", "new-model"]})
