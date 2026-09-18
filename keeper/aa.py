@@ -14,20 +14,24 @@ AA_MODELS_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
 
 
 def parse_scores(payload):
-    """{model_id: score}; prefers coding, falls back to intelligence."""
+    """{model key: score}; prefers coding, falls back to intelligence.
+    Keyed by AA slug (url-style model id, e.g. gpt-4o-mini) falling back
+    to raw id: AA v2 ids are UUIDs that never match a model string, so
+    the slug is the joinable key. Matrix lookup tries the full model
+    string then its last path segment (see matrix.aa_lookup)."""
     scores = {}
     data = payload.get("data") if isinstance(payload, dict) else None
     for entry in data if isinstance(data, list) else []:
         if not isinstance(entry, dict):
             continue
-        model_id = entry.get("id")
-        if not model_id:
+        key = entry.get("slug") or entry.get("id")
+        if not key:
             continue
         score = entry.get("coding")
         if not isinstance(score, (int, float)):
             score = entry.get("intelligence")
         if isinstance(score, (int, float)):
-            scores[model_id] = float(score)
+            scores[key] = float(score)
     return scores
 
 

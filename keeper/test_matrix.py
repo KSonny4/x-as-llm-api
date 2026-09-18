@@ -108,6 +108,20 @@ class MatrixTest(unittest.TestCase):
         self.assertEqual(
             data["rows"][0]["cells"]["m-dead"][0]["aa_score"], 99.0)
 
+    def test_aa_lookup_prefixed_model_matches_slug(self):
+        conns = [{"id": "a", "provider": "or", "name": "A",
+                  "email": "a@b.cz", "model": "openai/gpt-4o-mini"}]
+        data = build_matrix(conns, aa_scores={"gpt-4o-mini": 77.0})
+        cell = data["rows"][0]["cells"]["openai/gpt-4o-mini"][0]
+        self.assertEqual(cell["aa_score"], 77.0)
+
+    def test_aa_lookup_miss_stays_none(self):
+        conns = [{"id": "a", "provider": "zen", "name": "A",
+                  "email": "a@b.cz", "model": "big-pickle"}]
+        data = build_matrix(conns, aa_scores={"gpt-4o-mini": 77.0})
+        cell = data["rows"][0]["cells"]["big-pickle"][0]
+        self.assertIsNone(cell["aa_score"])
+
 
 class DualVerifyTest(unittest.TestCase):
     """L1-vs-L2 comparison: divergent ⟺ L1-fail + L2-pass, same route+run."""

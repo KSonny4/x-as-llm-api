@@ -122,6 +122,19 @@ def _cell_sort_key(cell):
     return (ok_first, -(cell.get("aa_score") or 0.0))
 
 
+def aa_lookup(aa_scores, model):
+    """AA score for a model string: full string first, then the last
+    path segment (provider/model ids like openrouter's match AA slugs
+    on the bare name). Misses (internal/placeholder ids) stay None and
+    sort last in the open-provider view."""
+    if not model or not aa_scores:
+        return None
+    if model in aa_scores:
+        return aa_scores[model]
+    base = model.rsplit("/", 1)[-1]
+    return aa_scores.get(base)
+
+
 def column_id(provider, model):
     """Matrix column key: the model string when present, else provider id.
     Seed-only fallbacks (no model yet) keep the old provider column."""
@@ -183,7 +196,7 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
                 "divergent": verdict["divergent"],
                 "checked_at": (det.get("checked_at", "")
                                 if isinstance(det, dict) else ""),
-                "aa_score": aa_scores.get(model) if model else None,
+                "aa_score": aa_lookup(aa_scores, model),
             })
         for plist in cells.values():
             plist.sort(key=_cell_sort_key)

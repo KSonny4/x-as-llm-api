@@ -24,6 +24,13 @@ class ParseTest(unittest.TestCase):
         scores = parse_scores(FIXTURE)
         self.assertEqual(scores, {"m-high": 90.0, "m-low": 50.0, "m-brain": 80.0})
 
+    def test_prefers_slug_over_uuid_id(self):
+        scores = parse_scores({"data": [
+            {"id": "3e87c73e-uuid", "slug": "gpt-4o-mini", "coding": 77.0},
+            {"id": "plain-id", "coding": 11.0},
+        ]})
+        self.assertEqual(scores, {"gpt-4o-mini": 77.0, "plain-id": 11.0})
+
 
 class FetchTest(unittest.TestCase):
     def _cache(self, tmp=True):
