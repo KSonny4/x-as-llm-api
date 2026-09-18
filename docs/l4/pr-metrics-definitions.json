@@ -1,0 +1,49 @@
+{
+  "schema": "pr-metrics/v1",
+  "inputs": {
+    "keeper-tests": {
+      "command": "python3 -m unittest discover -s keeper",
+      "scope": "keeper/ hermetic unit suite (upstream HTTP stubbed, no live calls)",
+      "population": "all TestCases collected by unittest discovery in keeper/",
+      "window": "single run at receipt build time",
+      "exclusions": []
+    },
+    "probe-tests": {
+      "command": "python3 -m unittest discover -s probe",
+      "scope": "probe/ hermetic worker tests (localhost stub servers only)",
+      "population": "all TestCases collected by unittest discovery in probe/",
+      "window": "single run at receipt build time",
+      "exclusions": []
+    }
+  },
+  "metrics": [
+    {
+      "id": "keeper-tests-passed",
+      "label": "keeper suite tests passed",
+      "unit": "tests",
+      "input": "keeper-tests",
+      "method": {"kind": "value", "path": ["tests", "passed"]}
+    },
+    {
+      "id": "keeper-tests-total",
+      "label": "keeper suite tests collected",
+      "unit": "tests",
+      "input": "keeper-tests",
+      "method": {"kind": "value", "path": ["tests", "total"]}
+    },
+    {
+      "id": "probe-tests-passed",
+      "label": "probe suite tests passed",
+      "unit": "tests",
+      "input": "probe-tests",
+      "method": {"kind": "value", "path": ["tests", "passed"]}
+    },
+    {
+      "id": "probe-tests-total",
+      "label": "probe suite tests collected",
+      "unit": "tests",
+      "input": "probe-tests",
+      "method": {"kind": "value", "path": ["tests", "total"]}
+    }
+  ]
+}
