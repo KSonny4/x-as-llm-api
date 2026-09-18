@@ -58,7 +58,7 @@ job "keeper-alloy" {
         network_mode = "host"
         args = [
           "run",
-          "/etc/alloy/config.alloy",
+          "${NOMAD_TASK_DIR}/config.alloy",
           "--storage.path=${NOMAD_ALLOC_DIR}/data",
           "--server.http.listen-addr=127.0.0.1:12345",
         ]
@@ -83,7 +83,7 @@ prometheus.remote_write "cloud" {
   }
 }
 EOH
-        destination = "/etc/alloy/config.alloy"
+        destination = "local/config.alloy"
         change_mode = "restart"
       }
 
