@@ -3,24 +3,24 @@
 # HELP keeper_probe_checked_at_seconds Unix time of last dual probe.
 # TYPE keeper_probe_checked_at_seconds gauge
 keeper_route_divergent{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6"} 0
-keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6"} 1789766596
+keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6"} 1789767265
 keeper_route_divergent{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth2"} 0
-keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth2"} 1789766600
+keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth2"} 1789767268
 keeper_route_divergent{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth3"} 0
-keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth3"} 1789766604
+keeper_probe_checked_at_seconds{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6-oauth3"} 1789767272
 keeper_route_divergent{provider="gemini",model="gemini-3.6-flash",connection="gemini/gemini-3.6-flash"} 0
-keeper_probe_checked_at_seconds{provider="gemini",model="gemini-3.6-flash",connection="gemini/gemini-3.6-flash"} 1789766592
+keeper_probe_checked_at_seconds{provider="gemini",model="gemini-3.6-flash",connection="gemini/gemini-3.6-flash"} 1789767260
 keeper_route_divergent{provider="moonshot",model="kimi-k2.7-code",connection="moonshot/kimi-k2.7-code"} 0
-keeper_probe_checked_at_seconds{provider="moonshot",model="kimi-k2.7-code",connection="moonshot/kimi-k2.7-code"} 1789766593
+keeper_probe_checked_at_seconds{provider="moonshot",model="kimi-k2.7-code",connection="moonshot/kimi-k2.7-code"} 1789767261
 keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 0
-keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 1789766343
+keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 1789767010
 keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key1"} 0
-keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key1"} 1789766344
+keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key1"} 1789767012
 keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key3"} 0
-keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key3"} 1789766346
+keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key3"} 1789767014
 keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key4"} 0
-keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key4"} 1789766347
+keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini-key4"} 1789767015
 keeper_route_divergent{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 0
-keeper_probe_checked_at_seconds{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 1789766468
+keeper_probe_checked_at_seconds{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 1789767135
 keeper_route_divergent{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle-spare"} 0
-keeper_probe_checked_at_seconds{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle-spare"} 1789766588
+keeper_probe_checked_at_seconds{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle-spare"} 1789767256

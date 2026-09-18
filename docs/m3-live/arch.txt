@@ -1,1 +1,1 @@
-arch=amd64 digest=[registry.pkubelka.cz/keeper@sha256:20ef8ee9c80715952a6ec1c0eaecdec12e7afe3f963b0c5cdce4cb0e2dc071d4]
+arch=amd64 digest=[registry.pkubelka.cz/keeper@sha256:1ce313cbefda61b31b60847420d388845a4f20430915f51d4a522bf3d9ca9794]

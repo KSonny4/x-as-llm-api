@@ -4,10 +4,10 @@
     "Fires when keeper_route_divergent == 1 on any route: L1 curl failed while",
     "L2 opencode CLI passed on the same route+run (the 'weird' case).",
     "Plain down (both legs fail) does NOT page here by design.",
-    "DATASOURCE_UID: point at the Prometheus scraping keeper GET /metrics",
-    "  (bearer-gated; scrape config needs Authorization: Bearer $KEEPER_TOKEN).",
-    "CONTACT: attach your contact point uid in `notifications` before apply,",
-    "  or import via UI and pick the receiver there."
+    "DATASOURCE_UID: filled as grafanacloud-prom (Hosted Prometheus fed by",
+    "  keeper-alloy; Cloud cannot scrape bearer-gated /metrics directly).",
+    "CONTACT: `notifications` stays empty until the owner picks a receiver;",
+    "  attach the contact point uid here before apply (owner-only step).",
   ],
   "apiVersion": 1,
   "groups": [
@@ -33,7 +33,7 @@
           "data": [
             {
               "refId": "divergent",
-              "datasourceUid": "DATASOURCE_UID",
+              "datasourceUid": "grafanacloud-prom",
               "model": {
                 "expr": "max by (provider, model, connection) (keeper_route_divergent)",
                 "range": true,

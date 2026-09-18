@@ -7,20 +7,20 @@ inventory_more: {'openrouter': 425, 'gemini': 29}
   retired zen 1 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
   antigravity 1 (CLI-only) -> unknown l1=unknown l2=not-run checked_at=
   banned key (placeholder) -> unknown l1=unknown l2=not-run checked_at=
-  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:08.511405+00:00
-  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:16.791918+00:00
-  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:20.576139+00:00
-  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:24.871477+00:00
+  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:34:16.215082+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:34:25.068532+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:34:28.970867+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:34:32.573469+00:00
   codex (no verified wire) -> unknown l1=unknown l2=not-run checked_at=
   cursor (unavailable) -> unknown l1=unknown l2=not-run checked_at=
   devin sessions (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
-  gemini-3.6-flash -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:12.485589+00:00
+  gemini-3.6-flash -> down l1=suspect l2=fail checked_at=2026-09-18T21:34:20.345323+00:00
   kilocode-key (endpoint TBD) -> unknown l1=unknown l2=not-run checked_at=
-  kimi-k2.7-code -> limited l1=limited l2=not-run checked_at=2026-09-18T21:23:13.142406+00:00
-  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:03.663215+00:00
-  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:04.953944+00:00
-  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:06.404248+00:00
-  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:07.507249+00:00
+  kimi-k2.7-code -> limited l1=limited l2=not-run checked_at=2026-09-18T21:34:21.150780+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:30:10.090101+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:30:12.218087+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:30:14.137151+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:30:15.256937+00:00
   opencode-go (unavailable) -> unknown l1=unknown l2=not-run checked_at=
   retired zen 5 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
   retired zen 6 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
@@ -32,5 +32,5 @@ inventory_more: {'openrouter': 425, 'gemini': 29}
   workers-ai key 3 (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
   retired zen 2 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
   antigravity 2 (CLI-only) -> unknown l1=unknown l2=not-run checked_at=
-  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:21:08.005601+00:00
+  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:32:15.760769+00:00
   retired zen 4 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
