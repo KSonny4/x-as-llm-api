@@ -4,7 +4,7 @@
 #   export NOMAD_ADDR=https://nomad.pkubelka.cz
 #   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
 #   nomad job run \
-#     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-multi-providers/KEEPER_TOKEN)" \
+#     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-infinity-llm/KEEPER_TOKEN)" \
 #     -var=keeper_token_next="" \
 #     keeper.nomad.hcl
 #
@@ -18,7 +18,7 @@
 #
 # Secrets note: this cluster runs no Vault/Consul, so the bearer reaches the
 # alloc via task env (visible to the Nomad management token holder).
-# Source of truth stays Bao (secret/projects/pi-multi-providers/KEEPER_TOKEN,
+# Source of truth stays Bao (secret/projects/pi-infinity-llm/KEEPER_TOKEN,
 # versioned — revoked tokens remain recoverable there, never re-accepted).
 
 variable "keeper_token" {
@@ -32,7 +32,7 @@ variable "keeper_token_next" {
 
 # ArtificialAnalysis API key for AA-desc open-provider ordering.
 # Never in git: pass via -var=aa_api_key="$(bao kv get -field=key
-# secret/projects/pi-multi-providers/ARTIFICIALANALYSIS_API_KEY)".
+# secret/projects/pi-infinity-llm/ARTIFICIALANALYSIS_API_KEY)".
 # Empty (default) = name order, no stale badge (graceful, by design).
 # Sent as x-api-key (AA rejects Authorization: Bearer).
 
@@ -42,7 +42,7 @@ variable "aa_api_key" {
 }
 
 # Live seed routes as JSON ({"routes": [...]}), rendered at deploy time
-# from Bao (secret/projects/pi-multi-providers/*). Never in git: pass via
+# from Bao (secret/projects/pi-infinity-llm/*). Never in git: pass via
 # -var=seeds_json="$(...)". Stored in the job spec like KEEPER_TOKEN
 # (cluster has no Vault; holder: Nomad management token only).
 

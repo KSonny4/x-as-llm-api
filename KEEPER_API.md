@@ -11,7 +11,7 @@ revoke. Browser login: `POST /api/v1/session` (bearer) mints a 12h
 accepted for GET pages only — POSTs stay bearer-only — and dies with
 restarts (in-memory). Token travels in the mint fetch header, never URL. Seeds come from `SEED_FILE` JSON
 (`{"routes": [...]}`); production seeds export live Bao refs
-(`secret/projects/pi-multi-providers/<NAME>`, excluding
+(`secret/projects/pi-infinity-llm/<NAME>`, excluding
 `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers).
 
 | Method & path | Auth | Status |

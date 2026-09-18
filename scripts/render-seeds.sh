@@ -5,7 +5,7 @@
 # Usage: bash scripts/render-seeds.sh > /tmp/seeds-live.json
 # Deploy: nomad job run -var=seeds_json="$(cat /tmp/seeds-live.json)" keeper.nomad.hcl
 set -u
-PREFIX="secret/projects/pi-multi-providers"
+PREFIX="secret/projects/pi-infinity-llm"
 FALLBACK_OWNER="ksonny4@gmail.com"
 
 get() { bao kv get -format=json "$PREFIX/$1" 2>/dev/null; }

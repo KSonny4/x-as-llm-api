@@ -8,7 +8,7 @@
 #   export NOMAD_ADDR=https://nomad.pkubelka.cz
 #   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
 #   nomad job run \
-#     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-multi-providers/KEEPER_TOKEN)" \
+#     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-infinity-llm/KEEPER_TOKEN)" \
 #     -var=seeds_json="$(cat /tmp/seeds-live.json)" \
 #     -var=opencode_auth_json="$(cat ~/.local/share/opencode/auth.json)" \
 #     keeper-probe.nomad.hcl

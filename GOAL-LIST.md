@@ -38,7 +38,7 @@ local-only green gates nothing.
 
 ## Item 7 — Extension repo minimal (in pi-infinity-llm checkout)
 ```
-/list In ~/git_projects/pi-infinity-llm: branch archive/pre-split + push, then strip to extension-only from the pi-multi-providers tree (keep extension/, tests, minimal README -> KEEPER_API.md, AGENTS.md pin). Then values mode: served credential.value injects Authorization + x-api-key, signin members surface re-mint, CONNECTION_KEY_ENV deleted. Done when: node --test passes (values.test.js) and npx tsc --noEmit is clean
+/list In ~/git_projects/pi-infinity-llm: branch archive/pre-split + push, then strip to extension-only from the pi-infinity-llm tree (keep extension/, tests, minimal README -> KEEPER_API.md, AGENTS.md pin). Then values mode: served credential.value injects Authorization + x-api-key, signin members surface re-mint, CONNECTION_KEY_ENV deleted. Done when: node --test passes (values.test.js) and npx tsc --noEmit is clean
 ```
 
 ## Item 8 — Rust keeper-helper

@@ -34,7 +34,7 @@ logs: operator kept `/tmp/smoke-v{2,3,4,5}-*.log` (17/17 ok-lines each).
 
 - New token: `openssl rand -hex 32`, proved via parallel-accept (v2/v4)
   BEFORE touching Bao.
-- Bao `secret/projects/pi-multi-providers/KEEPER_TOKEN`: v1 (old) → v2
+- Bao `secret/projects/pi-infinity-llm/KEEPER_TOKEN`: v1 (old) → v2
   (new). Old remains recoverable as Bao v1; server no longer accepts it
   (v5 smoke: 401). "Revoked" = rejected by every running alloc.
 - Note: during the window the recorded public-host 403 had already cleared

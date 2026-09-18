@@ -13,7 +13,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 - **`KSonny4/x-as-llm-api` = this folder = the keeper.** Keeper service (values API,
   curl/pi/opencode guides, quota-matrix UI, feedback), L1/L2 probe worker, compose,
   docs. No extension code — only the versioned **`KEEPER_API.md`** contract.
-- **`KSonny4/pi-infinity-llm` = rebuilt minimal = the extension.** Canonical source is the `pi-multi-providers` working tree (it carries the Zen-mint + `x-api-key` mirroring fix). Strip to
+- **`KSonny4/pi-infinity-llm` = rebuilt minimal = the extension.** Canonical source is the `pi-infinity-llm` working tree (it carries the Zen-mint + `x-api-key` mirroring fix). Strip to
   extension-only: `extension/` (v2 values-mode keeper extension), its tests, minimal
   README pointing at x-as-llm-api. Old material (`keeper/`, `packs/`, `prototype/`,
   keeper-spec docs, old e2e) snapshotted to `archive/pre-split` branch, then deleted
@@ -25,7 +25,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 - **Deploy target is Nomad, not Coolify.** Prod runs as a Nomad job (`keeper.nomad.hcl` in this repo); `compose.yaml` is local-dev only. Secrets reach the alloc from Bao (NomadSetup acl/registry; exact stanza at build time). The old Coolify path dies with the old keeper — no Coolify work in v2.
 - **`KSonny4/llm-quota`** (read-only OmniRoute quota matrix): full deprecation after
   matrix parity (ported `matrix.test.js` green). `DEPRECATED.md` + hostname move +
-  archive. `pi-multi-providers/` is not a repo (remote = pi-infinity-llm) — covered
+  archive. `pi-infinity-llm/` is not a repo (remote = pi-infinity-llm) — covered
   by that deprecation.
 
 ## §2 — Keeper API: values + sign-in guidance (approved)
@@ -130,9 +130,9 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 | 4 | Approach | C. Full rebuild |
 | 5 | Rust scope | Helper binary (mint/sign/shape) |
 | 6 | llm-quota | Absorbed minimal matrix, deprecate |
-| 7 | pi-infinity-llm | Rebuild minimal, extension-only (canonical: pi-multi-providers tree) |
+| 7 | pi-infinity-llm | Rebuild minimal, extension-only (canonical: pi-infinity-llm tree) |
 | 8 | Matrix source | Probes only, no OmniRoute; AA orders ties among probe-ok |
-| 9 | Seed source | Bao `projects/pi-multi-providers/` live refs (seed everything; exclude `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers); `KEEPER_TOKEN` reused from Bao, not re-minted |
+| 9 | Seed source | Bao `projects/pi-infinity-llm/` live refs (seed everything; exclude `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers); `KEEPER_TOKEN` reused from Bao, not re-minted |
 | 10 | Failure policy | 429 ⇒ limited+backoff; deny ⇒ down/suspect; rollback smoke-gated + rehearsed |
 | 11 | Gates | Phase gates + live proof (units + smoke + real inference per phase) |
 | 12 | Runnable goal | Keeper-first slice (Tasks 0–6d) through Nomad cutover; extension/matrix/probes deferred |

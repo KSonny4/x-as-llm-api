@@ -96,7 +96,7 @@ def test_packs_requires_bearer(self):
 - Modify: `keeper/server.py`, `KEEPER_API.md` (document v2 member shape)
 - Test: `keeper/test_server.py`
 
-**Step 1:** Failing test — seeded member with `credential.value` served when authed; `If-None-Match` → `304`; `Cache-Control: max-age=600`; seed via env `SEED_FILE` (test fixture JSON, never real secrets). Production seeds export live refs from Bao (`bao kv get secret/projects/pi-multi-providers/<NAME>`, excluding `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED`); `KEEPER_TOKEN` comes from the same path.
+**Step 1:** Failing test — seeded member with `credential.value` served when authed; `If-None-Match` → `304`; `Cache-Control: max-age=600`; seed via env `SEED_FILE` (test fixture JSON, never real secrets). Production seeds export live refs from Bao (`bao kv get secret/projects/pi-infinity-llm/<NAME>`, excluding `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED`); `KEEPER_TOKEN` comes from the same path.
 **Step 2:** Run, FAIL. **Step 3:** Minimal `freeze()` from seed file + ETag. **Step 4:** PASS. **Step 5:** Commit `feat: packs values wire + etag`.
 
 ### Task 5: `POST /feedback` (202 spool, 422 validation)
@@ -200,7 +200,7 @@ git commit -m "feat: OpenAI-out translator (anthropic both-ways)"
 - Create: `archive/pre-split` branch; `DEPRECATED-map.md` (where each removed piece lives now)
 
 **Step 1:** `git checkout -b archive/pre-split; git push -u origin archive/pre-split; git checkout master`.
-**Step 2:** Delete `keeper/ packs/ prototype/`, old e2e vs old keeper **from the pi-multi-providers tree** (canonical — carries the Zen-mint fix); keep `extension/`, tests, README (rewritten minimal → points at `KEEPER_API.md` in x-as-llm-api), `AGENTS.md` pin.
+**Step 2:** Delete `keeper/ packs/ prototype/`, old e2e vs old keeper **from the pi-infinity-llm tree** (canonical — carries the Zen-mint fix); keep `extension/`, tests, README (rewritten minimal → points at `KEEPER_API.md` in x-as-llm-api), `AGENTS.md` pin.
 **Step 3:** Commit `chore: strip to extension-only (keeper lives in x-as-llm-api)`. No test (surgery, verified by Task 13).
 
 ### Task 13: Extension values mode (replaces `CONNECTION_KEY_ENV`)

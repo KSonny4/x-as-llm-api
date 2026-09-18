@@ -39,7 +39,7 @@ is unavailable rather than invented; the page HTML is asserted in tests
 
 ## Addendum 2026-09-18 — 33-key reseed (job v20, images :main-76660e7)
 
-All 33 `secret/projects/pi-multi-providers/` keys seeded via
+All 33 `secret/projects/pi-infinity-llm/` keys seeded via
 `scripts/render-seeds.sh` (values Bao→`/tmp` only, never git): 11 live
 routes with credentials (openrouter ×4, zen ×2, gemini, moonshot, claude
 OAuth ×3 — same-model spares share columns, each keeps its own verdict

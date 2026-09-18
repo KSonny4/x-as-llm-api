@@ -3,19 +3,19 @@
 Public base: `https://keeper.pkubelka.cz` (Nomad `keeper` job, Cloudflare
 tunnel → node loopback :8102). `GET /healthz` is public; everything else
 needs `Authorization: Bearer $KEEPER_TOKEN` (source of truth: Bao
-`secret/projects/pi-multi-providers/KEEPER_TOKEN`) or a browser session
+`secret/projects/pi-infinity-llm/KEEPER_TOKEN`) or a browser session
 cookie. No token in URLs, ever.
 
 ## Matrix shape (33 keys, ok-only open view)
 
-Seeds cover all 33 `secret/projects/pi-multi-providers/` keys
+Seeds cover all 33 `secret/projects/pi-infinity-llm/` keys
 (`scripts/render-seeds.sh` renders them, values never in git): 11 live
 routes with credentials + 22 keyless placeholders (`wire: none`, never
 probed, honestly `unknown`). Rows are Bao `email` owners (8 today).
 Opening a provider shows only `ok` model columns, best
 ArtificialAnalysis score first (unscored last; stale badge when AA is
 stale) — live since 2026-09-18 (key in Bao
-`pi-multi-providers/ARTIFICIALANALYSIS_API_KEY`, sent as `x-api-key`;
+`pi-infinity-llm/ARTIFICIALANALYSIS_API_KEY`, sent as `x-api-key`;
 slugs are the join key, provider/model ids match on the bare name).
 Internal ids with no AA counterpart (e.g. big-pickle) stay honestly
 unscored — display-only: `/packs` + matrix JSON keep every column.

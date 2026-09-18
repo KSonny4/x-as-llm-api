@@ -13,7 +13,7 @@ worktree; lanes never share files.
 | L3 matrix+AA | x-as-llm-api `wt/matrix` | `keeper/matrix.py`, `keeper/test_matrix.py`, AA fetch + cache | ported llm-quota grouping cases PASS; fixture AA → scores; failure → last-good |
 | L4 probes | x-as-llm-api `wt/probe` | `probe/worker.py`, `probe/test_worker.py` | PASS vs stub baseURL + stub CLI; states ok/degraded/down/suspect/limited/misconfigured proven |
 | L5 rust helper | pi-infinity-llm `helper/` | `helper/Cargo.toml`, `helper/src/main.rs` | `cargo test` PASS (u64 mint vectors, sign, shape; never log values) |
-| L6 extension | pi-infinity-llm (pi-multi-providers tree) | strip (archive/pre-split first) + `extension/` values mode + helper spawn | `node --test` PASS, `tsc --noEmit` clean, no `CONNECTION_KEY_ENV` |
+| L6 extension | pi-infinity-llm (pi-infinity-llm tree) | strip (archive/pre-split first) + `extension/` values mode + helper spawn | `node --test` PASS, `tsc --noEmit` clean, no `CONNECTION_KEY_ENV` |
 
 Lane contract (read before starting): `docs/plans/2026-09-17-keeper-rebuild-design.md`
 (§2 wire/translation, §3 matrix, §4+helper, §5 states) + `GOAL-LIST.md` item text.
