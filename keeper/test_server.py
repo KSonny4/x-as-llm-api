@@ -643,12 +643,27 @@ class ModelColumnsPageTest(RouteCase):
     def test_model_headers_with_provider_sub(self):
         code, body, _ = self.render()
         self.assertEqual(code, 200)
-        self.assertIn(b"claude-opus<br><small>anthropic</small>", body)
-        self.assertIn(b"muse-x<br><small>muse</small>", body)
+        self.assertIn(b'th class="prov" data-p="anthropic"', body)
+        self.assertIn(b'th class="mod" data-p="muse" hidden', body)
+        self.assertIn(b"claude-opus", body)
+
+    def test_provider_summary_and_toggle(self):
+        _, body, _ = self.render()
+        self.assertIn(b'td class="provsum" data-p="anthropic"', body)
+        self.assertIn(b"EXP=new Set", body)
+        self.assertIn(b"closest('th.prov')", body)
+        self.assertEqual(server._worst_state(["ok", "suspect"]),
+                         "suspect")
+        self.assertEqual(server._worst_state(["unknown", "ok"]),
+                         "unknown")
+        self.assertEqual(server._worst_state([]), "unknown")
+        self.assertEqual(server._worst_state(["down", "suspect", "ok"]),
+                         "down")
 
     def test_unprobed_column_gray(self):
         _, body, _ = self.render()
-        self.assertIn(b'class="unprobed"', body)
+        self.assertIn(b'class="mod unprobed"', body)
+        self.assertIn(b'class="provsum unprobed"', body)
 
     def test_legend_colors_and_reload_hint(self):
         _, body, _ = self.render()
