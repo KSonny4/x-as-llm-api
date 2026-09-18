@@ -483,7 +483,7 @@ def health_view(state):
 def page_login():
     """Public login form: token goes in a fetch Authorization header (POST
     body path), never in the URL. On 200 the session cookie is set."""
-    return ("<html><head><title>keeper login</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>keeper login</title></head><body>"
             "<h1>keeper login</h1>"
             "<form id=\"f\"><input id=\"t\" type=\"password\" "
             "autocomplete=\"off\" placeholder=\"KEEPER_TOKEN\"/>"
@@ -508,18 +508,21 @@ def _col_probed(doc, col):
     return any(row["cells"].get(col) for row in doc["rows"])
 
 
-def _col_head(col):
-    label = col.get("model") or col["id"]
-    sub = col.get("provider", "")
-    if sub and sub != label:
-        return "<th>%s<br><small>%s</small></th>" % (html.escape(label),
-                                                     html.escape(sub))
-    return "<th>%s</th>" % html.escape(label)
-
-
 def _state_class(state):
     return "st-" + "".join(c if c.isalpha() else "-"
                             for c in str(state).lower())
+
+
+_STATE_RANK = {"down": 0, "degraded": 0, "suspect": 1, "limited": 2,
+               "misconfigured": 2, "unknown": 3, "ok": 4}
+
+
+def _worst_state(states):
+    """Worst of a set of cell states for provider summaries."""
+    states = [str(s) for s in states]
+    if not states:
+        return "unknown"
+    return min(states, key=lambda s: _STATE_RANK.get(s, 2))
 
 
 def page_index(state):
@@ -534,25 +537,78 @@ def page_index(state):
     doc = matrix_view(state)
     col_ids = [p["id"] for p in doc["providers"]]
     probed = {c: _col_probed(doc, c) for c in col_ids}
+    groups = []
+    for p in doc["providers"]:
+        if p.get("provider") not in groups:
+            groups.append(p.get("provider"))
+    cols_of = {g: [p for p in doc["providers"]
+                    if p.get("provider") == g] for g in groups}
+
+    def _prov_states(prov):
+        states = []
+        for row in doc["rows"]:
+            for p in cols_of.get(prov, []):
+                for e in row["cells"].get(p["id"], []):
+                    states.append(e.get("state", "unknown"))
+        return states
+
+    prov_head = []
+    for g in groups:
+        worst = _worst_state(_prov_states(g))
+        prov_head.append(
+            '<th class="prov" data-p="%s" title="click to expand">'
+            '<span class="st %s">\u25cf</span> %s</th>'
+            % (html.escape(g or ""), _state_class(worst),
+               html.escape(g or "unknown")))
+    mod_head = []
+    for g in groups:
+        for p in cols_of[g]:
+            label = p.get("model") or p["id"]
+            mod_head.append(
+                '<th class="mod" data-p="%s" hidden>%s</th>'
+                % (html.escape(g or ""), html.escape(label)))
     rows = []
     for row in doc["rows"]:
         cells = []
-        for cid in col_ids:
-            entries = row["cells"].get(cid, [])
-            if entries:
-                cells.append("<td>%s</td>" % ", ".join(
-                    _cell_html(e) for e in entries))
-            elif probed[cid]:
-                cells.append("<td>—</td>")
+        for g in groups:
+            states = []
+            for p in cols_of[g]:
+                for e in row["cells"].get(p["id"], []):
+                    states.append(e.get("state", "unknown"))
+            worst = _worst_state(states) if states else "unknown"
+            if states:
+                cells.append(
+                    '<td class="provsum" data-p="%s">'
+                    '<span class="st %s">\u25cf %s</span></td>'
+                    % (html.escape(g or ""), _state_class(worst),
+                       html.escape(worst)))
             else:
-                cells.append('<td class="unprobed" '
-                             'title="unprobed">—</td>')
+                cells.append(
+                    '<td class="provsum unprobed" data-p="%s" '
+                    'title="unprobed">\u2014</td>'
+                    % html.escape(g or ""))
+            for p in cols_of[g]:
+                entries = row["cells"].get(p["id"], [])
+                if entries:
+                    cells.append(
+                        '<td class="mod" data-p="%s" hidden>%s</td>'
+                        % (html.escape(g or ""), ", ".join(
+                            _cell_html(e) for e in entries)))
+                elif probed[p["id"]]:
+                    cells.append(
+                        '<td class="mod" data-p="%s" hidden>\u2014</td>'
+                        % html.escape(g or ""))
+                else:
+                    cells.append(
+                        '<td class="mod unprobed" data-p="%s" hidden '
+                        'title="unprobed">\u2014</td>'
+                        % html.escape(g or ""))
         rows.append("<tr><td>%s</td>%s</tr>" % (html.escape(row["email"]),
                                                "".join(cells)))
     unassigned = "".join("<li>%s</li>" % html.escape(
         "%s (%s)" % (u.get("name", "?"), u.get("provider", "?")))
         for u in doc["diagnostics"]["unassigned"])
-    return ("<html><head><title>keeper matrix</title>"
+    return ("<html><head><meta charset=\"utf-8\"><title>keeper matrix</title>"
             "<style>body{font-family:system-ui,sans-serif;margin:2em}"
             "table{border-collapse:collapse}"
             "td,th{border:1px solid #ccc;padding:.3em .6em;text-align:left}"
@@ -565,10 +621,12 @@ def page_index(state):
             ".legend{font-size:.85em;color:#555}"
             "#stale{display:none;background:#f39c12;color:#000;"
             "padding:.5em;margin-bottom:1em}"
-            "small{color:#666}</style></head><body>"
+            "small{color:#666}th.prov{cursor:pointer;white-space:nowrap}"
+            ".mod[hidden]{display:none}</style></head><body>"
             "<h1>keeper matrix</h1>"
             "<p id=\"stale\"></p>"
-            "<table id=\"tbl\" data-cols=\"%s\"><thead><tr><th>owner</th>%s</tr></thead>"
+            "<table id=\"tbl\" data-cols=\"%s\"><thead>"
+            "<tr><th>owner</th>%s</tr><tr><th></th>%s</tr></thead>"
             "<tbody id=\"cells\">%s</tbody></table>"
             "<p><small id=\"updated\"></small> "
             "<button id=\"lo\">log out</button></p>"
@@ -584,6 +642,13 @@ def page_index(state):
             "document.getElementById('lo').onclick=async()=>{"
             "await fetch('/api/v1/session/logout',{method:'POST'});"
             "location='/login';};"
+            "const EXP=new Set();"
+            "document.getElementById('tbl').addEventListener('click',ev=>{"
+            "const th=ev.target.closest('th.prov');if(!th)return;"
+            "const p=th.dataset.p;"
+            "document.querySelectorAll('#tbl .mod').forEach(el=>{"
+            "if(el.dataset.p===p)el.hidden=!el.hidden;});"
+            "if(EXP.has(p))EXP.delete(p);else EXP.add(p);});"
             "function cell(e){const s=document.createElement('span');"
             "s.className='st st-'+String(e.state).replace(/[^a-z]/g,'-');"
             "s.textContent=e.name+' ('+e.state+')';"
@@ -597,6 +662,14 @@ def page_index(state):
             "try{const r=await fetch('/api/v1/matrix?refresh=1');"
             "if(!r.ok)throw new Error(r.status);"
             "const d=await r.json();"
+            "const groups=[];for(const p of d.providers)"
+            "{if(groups.indexOf(p.provider)<0)groups.push(p.provider);}"
+            "const rank={down:0,degraded:0,suspect:1,limited:2,"
+            "misconfigured:2,unknown:3,ok:4};"
+            "const worst=ss=>{ss=ss.map(String);"
+            "return ss.length?ss.reduce((a,b)=>rank[a]<rank[b]?a:b):"
+            "'unknown';};"
+            "const cls=s=>'st st-'+String(s).replace(/[^a-z]/g,'-');"
             "const init=document.getElementById('tbl').dataset.cols.split(',');"
             "const ids=d.providers.map(p=>p.id);"
             "if(ids.join(',')!==init.join(',')){S.style.display='block';"
@@ -605,13 +678,38 @@ def page_index(state):
             "const tr=document.createElement('tr'),"
             "td=document.createElement('td');"
             "td.textContent=row.email;tr.appendChild(td);"
-            "for(const q of d.providers){const c=document.createElement('td'),"
-            "es=row.cells[q.id]||[];"
-            "if(!es.length){if(q.probed===false){c.className='unprobed';"
-            "c.title='unprobed';}c.textContent='—';}"
+            "for(const g of groups){"
+            "const cols=d.providers.filter(p=>p.provider===g),st=[];"
+            "for(const q of cols)"
+            "for(const e of (row.cells[q.id]||[]))st.push(e.state);"
+            "const w=worst(st),sum=document.createElement('td');"
+            "sum.className='provsum'+(st.length?'':' unprobed');"
+            "sum.dataset.p=g;"
+            "if(st.length){const sp=document.createElement('span');"
+            "sp.className=cls(w);sp.textContent='\\u25cf '+w;"
+            "sum.appendChild(sp);}"
+            "else{sum.title='unprobed';sum.textContent='\\u2014';}"
+            "tr.appendChild(sum);"
+            "for(const q of cols){const c=document.createElement('td');"
+            "c.dataset.p=g;c.hidden=!EXP.has(g);"
+            "const es=row.cells[q.id]||[];"
+            "if(!es.length){c.textContent='\\u2014';"
+            "if(q.probed===false){c.className='mod unprobed';"
+            "c.title='unprobed';}else{c.className='mod';}}"
+            "else{c.className='mod';"
             "es.forEach((e,i)=>{if(i)c.appendChild("
-            "document.createTextNode(', '));c.appendChild(cell(e));});"
-            "tr.appendChild(c);}return tr;}));"
+            "document.createTextNode(', '));c.appendChild(cell(e));});}"
+            "tr.appendChild(c);}}return tr;}));"
+            "for(const g of groups){"
+            "const cols=d.providers.filter(p=>p.provider===g),st=[];"
+            "for(const row of d.rows)for(const q of cols)"
+            "for(const e of (row.cells[q.id]||[]))st.push(e.state);"
+            "const w=worst(st);"
+            "document.querySelectorAll('#tbl th.prov').forEach(h=>{"
+            "if(h.dataset.p!==g)return;"
+            "const sp=h.querySelector('span');"
+            "if(sp){sp.className=cls(w);"
+            "sp.textContent='\\u25cf '+(st.length?w:g);}});}"
             "N.replaceChildren(...d.diagnostics.unassigned.map(u=>{"
             "const li=document.createElement('li');"
             "li.textContent=u.name+' ('+u.provider+')';return li;}));"
@@ -625,7 +723,7 @@ def page_index(state):
             "setInterval(poll,30000);"
             "</script></body></html>"
             % (",".join(html.escape(c) for c in col_ids),
-               "".join(_col_head(p) for p in doc["providers"]),
+               "".join(prov_head), "".join(mod_head),
                "".join(rows), unassigned or "<li>none</li>"))
 
 
@@ -647,7 +745,7 @@ def page_guides(state):
         curls = "\n".join(html.escape(c["curl"]) for c in view["curls"])
         cards.append("<h2>%s</h2><pre>%s\n%s</pre>"
                      % (html.escape(who), html.escape(view["header"]), curls))
-    return ("<html><head><title>guides</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>guides</title></head><body>"
             "<h1>guides</h1>%s</body></html>" % "".join(cards))
 
 
@@ -659,7 +757,7 @@ def page_signin(state):
                          "provider dashboard</li>"
                          % (html.escape(route.get("model", "?")),
                             html.escape(route.get("env_var", "?"))))
-    return ("<html><head><title>signin</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>signin</title></head><body>"
             "<h1>signin: re-mint steps</h1><ul>%s</ul></body></html>"
             % ("".join(steps) or "<li>all routes have live credentials</li>"))
 
@@ -669,7 +767,7 @@ def page_report(state):
         "%s/%s:%s" % (r.get("provider", ""), r.get("model", ""),
                       state["probe"].get(connection_id(r), "unknown")))
         for r in state["routes"])
-    return ("<html><head><title>report</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>report</title></head><body>"
             "<h1>report a route problem</h1>"
             "<p>live route state is shown per option</p>"
             "<form method=\"post\" action=\"/feedback\">"
@@ -766,7 +864,9 @@ def route(method, path, headers, token, body=None, query="", state=None):
     params = urllib.parse.parse_qs(query)
 
     if method == "GET" and clean_path == "/packs":
-        doc = freeze(state)
+        refresh = params.get("refresh", ["0"])[0] == "1"
+        doc = freeze(state, enumerate_inventory(state["routes"],
+                                                refresh))
         tag = '"%s"' % etag_for(doc)
         if headers.get("If-None-Match", headers.get("if-none-match", "")) == tag:
             return 304, b"", [("ETag", tag)]

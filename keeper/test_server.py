@@ -524,7 +524,8 @@ class SessionCase(RouteCase):
         self.assertEqual(code, 200)
         for needle in (b"/api/v1/matrix?refresh=1",
                        b"setInterval(poll,30000)", b"id=\"stale\"",
-                       b"/api/v1/session/logout"):
+                       b"/api/v1/session/logout",
+                       b'<meta charset="utf-8">'):
             self.assertIn(needle, body)
 
     def test_index_shows_divergent_badge_and_checked_at(self):
@@ -570,6 +571,15 @@ class PacksPathTest(RouteCase):
             self.assertEqual(pack["path"], "infinity/%s/%s" % (
                 pack["provider"], pack["model"]))
             self.assertIsInstance(pack["model"], str)
+
+    def test_route_serves_inventory_packs(self):
+        server.enumerate_inventory = lambda routes, refresh=False: \
+            {"zen": ["new-model"]}
+        code, raw, _ = self.call("GET", "/packs")
+        self.assertEqual(code, 200)
+        by_path = {p["path"]: p for p in json.loads(raw)["packs"]}
+        self.assertIn("infinity/zen/new-model", by_path)
+        self.assertIn("signin", by_path["infinity/zen/new-model"])
 
     def test_inventory_only_models_get_signin_packs(self):
         doc = server.freeze(self.state,
@@ -633,12 +643,27 @@ class ModelColumnsPageTest(RouteCase):
     def test_model_headers_with_provider_sub(self):
         code, body, _ = self.render()
         self.assertEqual(code, 200)
-        self.assertIn(b"claude-opus<br><small>anthropic</small>", body)
-        self.assertIn(b"muse-x<br><small>muse</small>", body)
+        self.assertIn(b'th class="prov" data-p="anthropic"', body)
+        self.assertIn(b'th class="mod" data-p="muse" hidden', body)
+        self.assertIn(b"claude-opus", body)
+
+    def test_provider_summary_and_toggle(self):
+        _, body, _ = self.render()
+        self.assertIn(b'td class="provsum" data-p="anthropic"', body)
+        self.assertIn(b"EXP=new Set", body)
+        self.assertIn(b"closest('th.prov')", body)
+        self.assertEqual(server._worst_state(["ok", "suspect"]),
+                         "suspect")
+        self.assertEqual(server._worst_state(["unknown", "ok"]),
+                         "unknown")
+        self.assertEqual(server._worst_state([]), "unknown")
+        self.assertEqual(server._worst_state(["down", "suspect", "ok"]),
+                         "down")
 
     def test_unprobed_column_gray(self):
         _, body, _ = self.render()
-        self.assertIn(b'class="unprobed"', body)
+        self.assertIn(b'class="mod unprobed"', body)
+        self.assertIn(b'class="provsum unprobed"', body)
 
     def test_legend_colors_and_reload_hint(self):
         _, body, _ = self.render()

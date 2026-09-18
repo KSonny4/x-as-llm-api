@@ -1,0 +1,8 @@
+emails: ['ksonny4@gmail.com']
+columns: 46
+inventory_more: {'openrouter': 424, 'gemini': 29}
+  big-pickle -> down suspect
+  claude-sonnet-4-6 -> down suspect
+  gemini-3.6-flash -> down suspect
+  kimi-k2.7-code -> limited limited
+  openai/gpt-4o-mini -> ok ok

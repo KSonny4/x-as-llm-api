@@ -1,0 +1,5 @@
+keeper_route_divergent{provider="claude",model="claude-sonnet-4-6",connection="claude/claude-sonnet-4-6"} 0
+keeper_route_divergent{provider="gemini",model="gemini-3.6-flash",connection="gemini/gemini-3.6-flash"} 0
+keeper_route_divergent{provider="moonshot",model="kimi-k2.7-code",connection="moonshot/kimi-k2.7-code"} 0
+keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 0
+keeper_route_divergent{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 0
