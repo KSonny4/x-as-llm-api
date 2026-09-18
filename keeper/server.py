@@ -66,6 +66,7 @@ def make_state(token, seed=None, feedback_log=None, aa_cache=None,
         "aa_scores": {},
         "aa_stale": False,
         "probe": {},  # connection_id -> state (feedback flips to suspect)
+        "probe_detail": {},  # connection_id -> probe_route result (L1/L2)
         "matrix_cache": None,
     }
 
@@ -349,7 +350,8 @@ def matrix_view(state, refresh=False):
     if state["matrix_cache"] is not None and not refresh:
         return state["matrix_cache"]
     doc = matrix_mod.build_matrix(seed_connections(state), state["probe"],
-                                  state["aa_scores"])
+                                  state["aa_scores"],
+                                  state.get("probe_detail", {}))
     doc["aa_stale"] = state["aa_stale"]
     doc["keeperPackVersion"] = KEEPER_PACK_VERSION
     state["matrix_cache"] = doc
@@ -378,7 +380,8 @@ def page_index(state):
             entries = row["cells"].get(provider, [])
             if entries:
                 cells.append("<td>%s</td>" % html.escape(
-                    ", ".join("%s (%s)" % (e["name"], e["state"])
+                    ", ".join("%s (%s%s)" % (e["name"], e["state"],
+                                               " divergent" if e.get("divergent") else "")
                               for e in entries)))
             else:
                 cells.append("<td>—</td>")

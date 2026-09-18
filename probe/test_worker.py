@@ -132,6 +132,15 @@ class ProbeTest(unittest.TestCase):
                                  l2env=self.env)["state"]
         self.assertEqual(state, "degraded")
 
+    def test_l2_ref_overrides_cli_model_ref(self):
+        self.set_cli("#!/bin/sh\necho \"ref=$4\"\n")
+        ok, text = self.probe_l2(
+            dict(self.route("http://x", model="big-pickle",
+                            provider="opencode-zen"),
+                 l2_ref="opencode/big-pickle"), env=self.env)
+        self.assertTrue(ok)
+        self.assertIn("ref=opencode/big-pickle", text)
+
     def test_l2_fail_means_down(self):
         self.set_cli("#!/bin/sh\necho boom >&2\nexit 1\n")
         state = self.probe_route(self.route("http://127.0.0.1:1", model="p/m"),

@@ -84,19 +84,53 @@ def group_connections_by_email(connections):
     }
 
 
+L1_OK = ("ok", "limited", "misconfigured")
+
+
+def dual_verdict(res):
+    """Compare L1 (curl) vs L2 (opencode CLI) for one probe_route result.
+    divergent ⟺ L1-fail + L2-pass on the same route+run (the 'weird'
+    case). L2 runs only on L1 non-ok, so l2 == 'not-run' whenever L1
+    passed; report-path results never carry l2 and never diverge."""
+    res = res or {}
+    state = res.get("state", "unknown")
+    detail = res.get("detail") or {}
+    l1 = detail.get("l1", state if state in L1_OK else "unknown")
+    if state == "degraded":
+        l2 = "pass"
+    elif state == "down":
+        l2 = "fail"
+    else:
+        l2 = "not-run"
+    return {
+        "state": state,
+        "l1": l1,
+        "l2": l2,
+        "divergent": l1 not in L1_OK and l2 == "pass",
+        "checked_at": res.get("checked_at", ""),
+    }
+
+
 def _cell_sort_key(cell):
     ok_first = 0 if cell["state"] in _OK_STATES else 1
     return (ok_first, -(cell.get("aa_score") or 0.0))
 
 
-def build_matrix(connections, probe_states=None, aa_scores=None):
-    """Email x provider rows; cells ordered ok-first then AA desc."""
+def build_matrix(connections, probe_states=None, aa_scores=None,
+                 probe_detail=None):
+    """Email x provider rows; cells ordered ok-first then AA desc.
+    probe_states maps connection id -> state string (legacy) while
+    probe_detail optionally maps the same id -> full probe_route result;
+    cells then also carry l1/l2/divergent and diagnostics lists the
+    divergent ids."""
     probe_states = probe_states or {}
+    probe_detail = probe_detail or {}
     aa_scores = aa_scores or {}
     grouped = group_connections_by_email(connections)
     rows = []
     providers = []
     seen_providers = set()
+    divergent = []
     for email in grouped["emails"]:
         cells = {}
         for conn in grouped["by_email"][email]:
@@ -105,11 +139,24 @@ def build_matrix(connections, probe_states=None, aa_scores=None):
                 seen_providers.add(provider)
                 providers.append({"id": provider})
             model = conn.get("model")
+            cid = str(conn.get("id"))
+            det = probe_detail.get(cid)
+            if det is None:
+                raw = probe_states.get(cid, "unknown")
+                verdict = {"state": raw, "l1": raw, "l2": "not-run",
+                           "divergent": False}
+            else:
+                verdict = dual_verdict(det)
+            if verdict["divergent"]:
+                divergent.append(cid)
             cells.setdefault(provider, []).append({
-                "connection_id": str(conn.get("id")),
+                "connection_id": cid,
                 "name": connection_display_name(conn),
                 "model": model,
-                "state": probe_states.get(str(conn.get("id")), "unknown"),
+                "state": verdict["state"],
+                "l1": verdict["l1"],
+                "l2": verdict["l2"],
+                "divergent": verdict["divergent"],
                 "aa_score": aa_scores.get(model) if model else None,
             })
         for plist in cells.values():
@@ -122,5 +169,6 @@ def build_matrix(connections, probe_states=None, aa_scores=None):
         "diagnostics": {
             "unassigned": grouped["unassigned"],
             "skipped_inactive": grouped["skipped_inactive"],
+            "divergent": sorted(divergent),
         },
     }
