@@ -30,6 +30,16 @@ variable "keeper_token_next" {
   default = ""
 }
 
+# Live seed routes as JSON ({"routes": [...]}), rendered at deploy time
+# from Bao (secret/projects/pi-multi-providers/*). Never in git: pass via
+# -var=seeds_json="$(...)". Stored in the job spec like KEEPER_TOKEN
+# (cluster has no Vault; holder: Nomad management token only).
+
+variable "seeds_json" {
+  type    = string
+  default = "{\"routes\": []}"
+}
+
 job "keeper" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -70,6 +80,13 @@ job "keeper" {
         PORT              = "8080"
         KEEPER_TOKEN      = var.keeper_token
         KEEPER_TOKEN_NEXT = var.keeper_token_next
+        SEED_FILE         = "${NOMAD_SECRETS_DIR}/seeds.json"
+      }
+
+      template {
+        data        = var.seeds_json
+        destination = "${NOMAD_SECRETS_DIR}/seeds.json"
+        change_mode = "restart"
       }
 
       resources {
