@@ -83,6 +83,9 @@ def main():
             continue
         try:
             res = probe_route(route)
+            res["connection_id"] = (route.get("connection_id") or
+                                     "%s/%s" % (route.get("provider", "?"),
+                                                  route.get("model", "?")))
         except Exception as e:
             print("dispatch: %s probe error" % label, flush=True)
             failed += 1

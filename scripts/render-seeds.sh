@@ -27,6 +27,8 @@ r = {"provider": provider, "model": model, "base_url": base,
      "wire": wire, "env_var": key, "owner": owner, "name": name,
      "connection_id": conn, "active": True,
      "bao_status": status or "unknown"}
+if provider == "opencode-zen":
+    r["l2_ref"] = "opencode/big-pickle"
 if cred != "live:0":
     r["api_key"] = cred
 print(json.dumps(r))

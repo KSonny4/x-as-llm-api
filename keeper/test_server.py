@@ -435,6 +435,37 @@ class ProbeIngestTest(RouteCase):
             body=json.dumps(self.SPLIT).encode(), state=self.state)
         self.assertEqual(code, 401)
 
+    def test_ingest_connection_id_targets_one_spare(self):
+        self.state["routes"].append(
+            {"provider": "acme-openai", "model": "acme-chat",
+             "base_url": "https://acme.example/v1", "api_key": "k9",
+             "wire": "openai", "env_var": "ACME_KEY_2",
+             "owner": "owner@example.com", "name": "Acme Chat spare",
+             "connection_id": "c9", "active": True})
+        body = dict(self.SPLIT, state="ok", connection_id="c9",
+                    detail={"l1": "ok"})
+        code, _, _ = self.post_probe(body)
+        self.assertEqual(code, 202)
+        self.assertEqual(self.state["probe"]["c9"], "ok")
+        self.assertNotIn("c1", self.state["probe"])
+
+    def test_ingest_unknown_connection_rejected(self):
+        body = dict(self.SPLIT, connection_id="ghost")
+        code, _, _ = self.post_probe(body)
+        self.assertEqual(code, 422)
+
+    def test_ingest_legacy_fans_out_to_spares(self):
+        self.state["routes"].append(
+            {"provider": "acme-openai", "model": "acme-chat",
+             "base_url": "https://acme.example/v1", "api_key": "k9",
+             "wire": "openai", "env_var": "ACME_KEY_2",
+             "owner": "owner@example.com", "name": "Acme Chat spare",
+             "connection_id": "c9", "active": True})
+        code, _, _ = self.post_probe(self.SPLIT)
+        self.assertEqual(code, 202)
+        self.assertEqual(self.state["probe"]["c1"], "degraded")
+        self.assertEqual(self.state["probe"]["c9"], "degraded")
+
 
 class SessionCase(RouteCase):
     """Cookie login: browsers read pages, never mutate state."""

@@ -799,14 +799,26 @@ def ingest_probe(state, doc):
     if not routes:
         return False, "unknown route: %s/%s" % (doc["provider"],
                                                  doc["model"])
-    cid = connection_id(routes[0])
     if not isinstance(doc.get("detail"), dict):
         return False, "detail must be an object"
+    claim = doc.get("connection_id") or ""
+    if claim:
+        targets = [r for r in routes if connection_id(r) == claim]
+        if not targets:
+            return False, "unknown connection: %s" % claim
+    else:
+        # Legacy bodies without a connection id fan out to every seeded
+        # route with this provider/model (rotation spares share models).
+        targets = routes
     record = {"provider": doc["provider"], "model": doc["model"],
               "state": doc["state"], "detail": doc["detail"],
               "checked_at": doc.get("checked_at", "")}
-    state["probe_detail"][cid] = record
-    state["probe"][cid] = doc["state"]
+    # Every targeted route keeps its own verdict: same-model keys are each
+    # probed separately, so each connection id records its own result.
+    for route in targets:
+        each = connection_id(route)
+        state["probe_detail"][each] = record
+        state["probe"][each] = doc["state"]
     state["matrix_cache"] = None
     return True, ""
 

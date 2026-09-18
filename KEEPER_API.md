@@ -19,7 +19,7 @@ restarts (in-memory). Token travels in the mint fetch header, never URL. Seeds c
 | `GET /healthz` | none | `200` → `ok` |
 | `GET /packs` | bearer | frozen snapshot `{keeperPackVersion, packs[]}`; `ETag`/`304`, `Cache-Control: max-age=600`; one standalone pack per model with `path: infinity/<provider>/<model>`; inventory-only models get signin packs |
 | `POST /feedback` | bearer | `202` spool to JSONL; `422` with `missing[]` / `bad_errorClass` |
-| `POST /api/v1/probe` | bearer | ingest one probe_route result `{provider, model, state, detail{l1,l2}, checkedAt?}` → `202` (records probe_detail + probe state, busts matrix cache); `422` shape/unknown-route. Probe L1 wires: `openai` (`/models` + chat ping), `anthropic` (`/v1/messages` ping), `gemini` (`generateContent` ping); L2 is the opencode CLI leg on the route provider/model ref. |
+| `POST /api/v1/probe` | bearer | ingest one probe_route result `{provider, model, state, detail{l1,l2}, checkedAt?, connection_id?}` → `202` (records probe_detail + probe state per connection — `connection_id` targets one spare, omitted fans out to all same-model routes; busts matrix cache); `422` shape/unknown-route/unknown-connection. Probe L1 wires: `openai` (`/models` + chat ping), `anthropic` (`/v1/messages` ping), `gemini` (`generateContent` ping); L2 is the opencode CLI leg on the route provider/model ref. |
 | `GET /v1/providers` | bearer | per provider: `baseURL`, `modelIDs[]`, `envVar`, ready OpenAI `curl` |
 | `GET /v1/guide/:who` | bearer | `who` in `curl\|pi\|opencode`; one OpenAI curl per model |
 | `POST /v1/chat/completions` | bearer | OpenAI-in/out on either upstream wire; `stream: true` → SSE `data:` chunks + `[DONE]` |
