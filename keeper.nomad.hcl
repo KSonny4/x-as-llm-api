@@ -38,7 +38,11 @@ job "keeper" {
     count = 1
 
     network {
+      # Static loopback port: the Cloudflare tunnel ingress for
+      # keeper.pkubelka.cz targets http://localhost:8102 on the node.
+      # (Cluster pattern: dump-dev/dev-prod use 8100/8101 the same way.)
       port "http" {
+        static       = 8102
         to           = 8080
         host_network = "loopback"
       }
