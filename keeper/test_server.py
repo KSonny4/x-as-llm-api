@@ -394,6 +394,20 @@ class MetricsTest(RouteCase):
         self.assertIn("keeper_probe_checked_at_seconds{", text)
         self.assertIn("# TYPE keeper_route_divergent gauge", text)
 
+    def test_down_gauge_mirrors_both_legs_fail(self):
+        self.state["probe_detail"] = {"zen/big-pickle": self.SPLIT,
+                                        "zen/other": self.DOWN}
+        code, raw, _ = self.get_metrics()
+        self.assertEqual(code, 200)
+        text = raw.decode()
+        self.assertIn('keeper_route_down{provider="zen",'
+                      'model="other",connection="zen/other"} 1',
+                      text)
+        self.assertIn('keeper_route_down{provider="zen",'
+                      'model="big-pickle",connection="zen/big-pickle"} 0',
+                      text)
+        self.assertIn("# TYPE keeper_route_down gauge", text)
+
     def test_empty_detail_exposes_no_series(self):
         code, raw, _ = self.get_metrics()
         self.assertEqual(code, 200)

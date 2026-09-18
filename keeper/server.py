@@ -451,12 +451,14 @@ def probe_epoch(when):
 
 
 def metrics_view(state):
-    """Prometheus text: divergent gauge + per-connection probe timestamp.
+    """Prometheus text: divergent + down gauges + per-connection probe timestamp.
     Only connections with a recorded dual verdict get series (L2 runs on
     demand, so 'no series' means 'never dual-probed', not 'fine')."""
     lines = [
         "# HELP keeper_route_divergent L1 curl fails while L2 opencode CLI passes.",
         "# TYPE keeper_route_divergent gauge",
+        "# HELP keeper_route_down Both legs fail (L1 non-ok and L2 fail).",
+        "# TYPE keeper_route_down gauge",
         "# HELP keeper_probe_checked_at_seconds Unix time of last dual probe.",
         "# TYPE keeper_probe_checked_at_seconds gauge",
     ]
@@ -468,6 +470,8 @@ def metrics_view(state):
             prom_esc(det.get("model", "")), prom_esc(cid))
         lines.append("keeper_route_divergent{%s} %d"
                      % (labels, 1 if verdict["divergent"] else 0))
+        lines.append("keeper_route_down{%s} %d"
+                     % (labels, 1 if verdict["state"] == "down" else 0))
         ts = probe_epoch(det.get("checked_at", ""))
         if ts is not None:
             lines.append("keeper_probe_checked_at_seconds{%s} %d"

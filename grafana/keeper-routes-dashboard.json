@@ -1,0 +1,54 @@
+{
+  "uid": "keeper-routes",
+  "title": "Keeper routes",
+  "tags": ["keeper"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Divergent routes (L1 fails, L2 passes)",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+        "expr": "max by (provider, model, connection) (keeper_route_divergent)",
+        "range": true, "instant": false
+      }]
+    },
+    {
+      "id": 2,
+      "title": "Down routes (both legs fail)",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+      "description": "Empty until keeper_route_down ships (M2); no-down is honestly empty, not broken.",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+        "expr": "max by (provider, model, connection) (keeper_route_down)",
+        "range": true, "instant": false
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Probe freshness (seconds since last dual probe)",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "prometheus", "uid": "grafanacloud-prom"},
+        "expr": "time() - max by (provider, model, connection) (keeper_probe_checked_at_seconds)",
+        "range": true, "instant": false
+      }],
+      "fieldConfig": {"defaults": {"thresholds": {
+        "mode": "absolute",
+        "steps": [{"value": 0, "color": "green"}, {"value": 900, "color": "red"}]
+      }}, "overrides": []}
+    }
+  ]
+}
