@@ -9,6 +9,7 @@ import unittest
 from matrix import (
     build_matrix,
     connection_owner_email,
+    dual_verdict,
     extract_owner_email,
     group_connections_by_email,
     is_active_connection,
@@ -103,6 +104,77 @@ class MatrixTest(unittest.TestCase):
         # ok first ordered by AA desc; down last despite highest AA
         self.assertEqual(ids, ["high", "low", "dead"])
         self.assertEqual(data["rows"][0]["cells"]["zen"][0]["aa_score"], 90.0)
+
+
+class DualVerifyTest(unittest.TestCase):
+    """L1-vs-L2 comparison: divergent ⟺ L1-fail + L2-pass, same route+run."""
+    SPLIT = {"provider": "zen", "model": "big-pickle",
+             "state": "degraded",
+             "detail": {"l1": "suspect", "l2": "pong-text"},
+             "checked_at": "2026-09-18T00:00:00+00:00"}
+    DOWN = {"provider": "zen", "model": "big-pickle",
+            "state": "down",
+            "detail": {"l1": "suspect", "l2": ""},
+            "checked_at": "2026-09-18T00:00:00+00:00"}
+    OK = {"provider": "openrouter", "model": "gpt-4o-mini",
+          "state": "ok", "detail": {},
+          "checked_at": "2026-09-18T00:00:00+00:00"}
+
+    def test_split_is_divergent(self):
+        v = dual_verdict(self.SPLIT)
+        self.assertEqual(v["l1"], "suspect")
+        self.assertEqual(v["l2"], "pass")
+        self.assertTrue(v["divergent"])
+
+    def test_both_fail_is_down_not_divergent(self):
+        v = dual_verdict(self.DOWN)
+        self.assertEqual(v["state"], "down")
+        self.assertEqual(v["l2"], "fail")
+        self.assertFalse(v["divergent"])
+
+    def test_ok_means_l2_not_run_not_divergent(self):
+        v = dual_verdict(self.OK)
+        self.assertEqual(v["l2"], "not-run")
+        self.assertFalse(v["divergent"])
+
+    def test_report_path_suspect_without_l2_not_divergent(self):
+        v = dual_verdict({"provider": "p", "model": "m",
+                          "state": "suspect",
+                          "detail": {"report": {}, "l1": "suspect"},
+                          "checked_at": "t"})
+        self.assertEqual(v["l1"], "suspect")
+        self.assertEqual(v["l2"], "not-run")
+        self.assertFalse(v["divergent"])
+
+    def test_cells_carry_verdict_and_diagnostics_lists_divergent(self):
+        conns = [
+            {"id": "z", "provider": "zen", "model": "big-pickle",
+             "name": "Z", "email": "a@b.cz"},
+            {"id": "o", "provider": "openrouter",
+             "model": "gpt-4o-mini", "name": "O", "email": "a@b.cz"},
+        ]
+        data = build_matrix(conns, probe_states={"z": "degraded",
+                                                 "o": "ok"},
+                            probe_detail={"z": self.SPLIT, "o": self.OK})
+        cells = {c["connection_id"]: c
+                 for c in data["rows"][0]["cells"]["zen"]}
+        cells.update({c["connection_id"]: c
+                      for c in data["rows"][0]["cells"]["openrouter"]})
+        self.assertTrue(cells["z"]["divergent"])
+        self.assertEqual(cells["z"]["l1"], "suspect")
+        self.assertEqual(cells["z"]["l2"], "pass")
+        self.assertFalse(cells["o"]["divergent"])
+        self.assertEqual(data["diagnostics"]["divergent"], ["z"])
+
+    def test_string_states_stay_compatible(self):
+        data = build_matrix([
+            {"id": "a", "provider": "p", "name": "A",
+             "email": "a@b.cz"},
+        ], probe_states={"a": "ok"})
+        cell = data["rows"][0]["cells"]["p"][0]
+        self.assertEqual(cell["state"], "ok")
+        self.assertFalse(cell["divergent"])
+        self.assertEqual(data["diagnostics"]["divergent"], [])
 
 
 if __name__ == "__main__":

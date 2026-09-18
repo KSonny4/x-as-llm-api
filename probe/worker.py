@@ -129,10 +129,12 @@ def probe_l1(route):
 
 
 def probe_l2(route, env=None):
-    """opencode CLI sanity check. Returns (ok, text)."""
+    """opencode CLI sanity check. Returns (ok, text).
+    The CLI model ref is route['l2_ref'] when set (e.g. zen seeds map
+    to the CLI's built-in provider id); otherwise provider/model."""
     model = route.get("model", "")
     provider = route.get("provider", "")
-    ref = model if "/" in model else f"{provider}/{model}"
+    ref = route.get("l2_ref") or (model if "/" in model else f"{provider}/{model}")
     try:
         p = subprocess.run(["opencode", "run", "--pure", "-m", ref, "ping"],
                            capture_output=True, text=True, timeout=120,
@@ -161,7 +163,8 @@ def probe_route(route, report=None, l2env=None):
     else:
         ok, text = probe_l2(route, env=l2env)
         state = "degraded" if ok else "down"
-        detail = {**detail, "l2": text[:200]}
+        # Record both legs explicitly: the matrix compares L1 vs L2.
+        detail = {"l1": out, **detail, "l2": text[:200]}
     res = {"provider": route.get("provider", ""), "model": route.get("model", ""),
            "state": state, "detail": detail, "checked_at": _now().isoformat()}
     if fb is not None:
