@@ -517,6 +517,38 @@ _STATE_RANK = {"down": 0, "degraded": 0, "suspect": 1, "limited": 2,
                "misconfigured": 2, "unknown": 3, "ok": 4}
 
 
+def _open_sort_key(doc):
+    """Provider-open column order: AA score desc, unscored last, name
+    tiebreak. Display-only: the matrix JSON keeps insertion order and
+    every column; only the opened view sorts + filters (see data-anyok).
+    AA scores ride on cell entries, so the key derives from the doc."""
+    scores, anyok = {}, {}
+    for row in doc["rows"]:
+        for col, entries in row["cells"].items():
+            for e in entries:
+                s = e.get("aa_score")
+                if isinstance(s, (int, float)) and (
+                        col not in scores or s > scores[col]):
+                    scores[col] = s
+                if e.get("state") == "ok":
+                    anyok[col] = True
+
+    def key(p):
+        col = p["id"]
+        aa = scores.get(col)
+        return (-(aa if aa is not None else -1.0),
+                str(p.get("model") or col))
+    return key
+
+
+def _open_attrs(doc, col):
+    """data-c + data-anyok flags the poller + click handler reuse."""
+    ok = any(e.get("state") == "ok"
+             for row in doc["rows"]
+             for e in row["cells"].get(col, []))
+    return col, "1" if ok else "0"
+
+
 def _worst_state(states):
     """Worst of a set of cell states for provider summaries."""
     states = [str(s) for s in states]
@@ -541,8 +573,11 @@ def page_index(state):
     for p in doc["providers"]:
         if p.get("provider") not in groups:
             groups.append(p.get("provider"))
-    cols_of = {g: [p for p in doc["providers"]
-                    if p.get("provider") == g] for g in groups}
+    cols_of = {}
+    for g in groups:
+        members = [p for p in doc["providers"]
+                   if p.get("provider") == g]
+        cols_of[g] = sorted(members, key=_open_sort_key(doc))
 
     def _prov_states(prov):
         states = []
@@ -564,9 +599,12 @@ def page_index(state):
     for g in groups:
         for p in cols_of[g]:
             label = p.get("model") or p["id"]
+            col, anyok = _open_attrs(doc, p["id"])
             mod_head.append(
-                '<th class="mod" data-p="%s" hidden>%s</th>'
-                % (html.escape(g or ""), html.escape(label)))
+                '<th class="mod" data-p="%s" data-c="%s" '
+                'data-anyok="%s" hidden>%s</th>'
+                % (html.escape(g or ""), html.escape(col),
+                   anyok, html.escape(label)))
     rows = []
     for row in doc["rows"]:
         cells = []
@@ -589,20 +627,27 @@ def page_index(state):
                     % html.escape(g or ""))
             for p in cols_of[g]:
                 entries = row["cells"].get(p["id"], [])
+                col, anyok = _open_attrs(doc, p["id"])
                 if entries:
                     cells.append(
-                        '<td class="mod" data-p="%s" hidden>%s</td>'
-                        % (html.escape(g or ""), ", ".join(
+                        '<td class="mod" data-p="%s" data-c="%s" '
+                        'data-anyok="%s" hidden>%s</td>'
+                        % (html.escape(g or ""), html.escape(col),
+                           anyok, ", ".join(
                             _cell_html(e) for e in entries)))
                 elif probed[p["id"]]:
                     cells.append(
-                        '<td class="mod" data-p="%s" hidden>\u2014</td>'
-                        % html.escape(g or ""))
+                        '<td class="mod" data-p="%s" data-c="%s" '
+                        'data-anyok="%s" hidden>\u2014</td>'
+                        % (html.escape(g or ""), html.escape(col),
+                           anyok))
                 else:
                     cells.append(
-                        '<td class="mod unprobed" data-p="%s" hidden '
+                        '<td class="mod unprobed" data-p="%s" '
+                        'data-c="%s" data-anyok="%s" hidden '
                         'title="unprobed">\u2014</td>'
-                        % html.escape(g or ""))
+                        % (html.escape(g or ""), html.escape(col),
+                           anyok))
         rows.append("<tr><td>%s</td>%s</tr>" % (html.escape(row["email"]),
                                                "".join(cells)))
     unassigned = "".join("<li>%s</li>" % html.escape(
@@ -625,14 +670,18 @@ def page_index(state):
             ".mod[hidden]{display:none}</style></head><body>"
             "<h1>keeper matrix</h1>"
             "<p id=\"stale\"></p>"
+            "<p id=\"aastale\"%s>AA scores stale — open-provider "
+            "order may lag</p>"
             "<table id=\"tbl\" data-cols=\"%s\"><thead>"
-            "<tr><th>owner</th>%s</tr><tr><th></th>%s</tr></thead>"
+            "<tr><th>owner</th>%s</tr><tr id=\"modhead\"><th></th>%s</tr>"
+            "</thead>"
             "<tbody id=\"cells\">%s</tbody></table>"
             "<p><small id=\"updated\"></small> "
             "<button id=\"lo\">log out</button></p>"
             "<p class=\"legend\">green ok · amber suspect · red down · "
             "gray unknown · <span class=\"div\">DIVERGENT</span> split · "
-            "gray — unprobed</p>"
+            "gray — unprobed · opening a provider shows only ok models, "
+            "best AA score first</p>"
             "<h2>diagnostics.unassigned</h2><ul id=\"unassigned\">%s</ul>"
             "<script>"
             "const T=document.getElementById('cells'),"
@@ -645,10 +694,11 @@ def page_index(state):
             "const EXP=new Set();"
             "document.getElementById('tbl').addEventListener('click',ev=>{"
             "const th=ev.target.closest('th.prov');if(!th)return;"
-            "const p=th.dataset.p;"
+            "const p=th.dataset.p,open=!EXP.has(p);"
+            "if(open)EXP.add(p);else EXP.delete(p);"
             "document.querySelectorAll('#tbl .mod').forEach(el=>{"
-            "if(el.dataset.p===p)el.hidden=!el.hidden;});"
-            "if(EXP.has(p))EXP.delete(p);else EXP.add(p);});"
+            "if(el.dataset.p!==p)return;"
+            "el.hidden=open?el.dataset.anyok!=='1':true;});});"
             "function cell(e){const s=document.createElement('span');"
             "s.className='st st-'+String(e.state).replace(/[^a-z]/g,'-');"
             "s.textContent=e.name+' ('+e.state+')';"
@@ -670,8 +720,30 @@ def page_index(state):
             "return ss.length?ss.reduce((a,b)=>rank[a]<rank[b]?a:b):"
             "'unknown';};"
             "const cls=s=>'st st-'+String(s).replace(/[^a-z]/g,'-');"
-            "const init=document.getElementById('tbl').dataset.cols.split(',');"
-            "const ids=d.providers.map(p=>p.id);"
+            "const AAS={},OKC={};"
+            "d.rows.forEach(row=>{for(const id in (row.cells||{}))"
+            "for(const e of (row.cells[id]||[])){"
+            "if(e.aa_score!=null)AAS[id]=Math.max("
+            "AAS[id]==null?-1:AAS[id],e.aa_score);"
+            "if(e.state==='ok')OKC[id]=1;}});"
+            "const colKey=q=>[AAS[q.id]==null?-1:AAS[q.id],"
+            "String(q.model||q.id)];"
+            "const colOrd=(a,b)=>(colKey(b)[0]-colKey(a)[0])||"
+            "(colKey(a)[1]<colKey(b)[1]?-1:1);"
+            "const MH=document.getElementById('modhead');"
+            "MH.replaceChildren(...(()=>{const out=["
+            "document.createElement('th')];"
+            "for(const g of groups){d.providers.filter("
+            "p=>p.provider===g).sort(colOrd).forEach(q=>{"
+            "const h=document.createElement('th');h.className='mod';"
+            "h.dataset.p=g;h.dataset.c=q.id;"
+            "h.dataset.anyok=OKC[q.id]?'1':'0';"
+            "h.hidden=!(EXP.has(g)&&OKC[q.id]);"
+            "h.textContent=q.model||q.id;out.push(h);});}"
+            "return out;})());"
+            "const init=document.getElementById('tbl').dataset.cols."
+            "split(',').sort();"
+            "const ids=d.providers.map(p=>p.id).sort();"
             "if(ids.join(',')!==init.join(',')){S.style.display='block';"
             "S.textContent='new models available — reload the page.';return;}"
             "T.replaceChildren(...d.rows.map(row=>{"
@@ -679,7 +751,8 @@ def page_index(state):
             "td=document.createElement('td');"
             "td.textContent=row.email;tr.appendChild(td);"
             "for(const g of groups){"
-            "const cols=d.providers.filter(p=>p.provider===g),st=[];"
+            "const cols=d.providers.filter(p=>p.provider===g).sort(colOrd),"
+            "st=[];"
             "for(const q of cols)"
             "for(const e of (row.cells[q.id]||[]))st.push(e.state);"
             "const w=worst(st),sum=document.createElement('td');"
@@ -691,7 +764,9 @@ def page_index(state):
             "else{sum.title='unprobed';sum.textContent='\\u2014';}"
             "tr.appendChild(sum);"
             "for(const q of cols){const c=document.createElement('td');"
-            "c.dataset.p=g;c.hidden=!EXP.has(g);"
+            "c.dataset.p=g;c.dataset.c=q.id;"
+            "c.dataset.anyok=OKC[q.id]?'1':'0';"
+            "c.hidden=!(EXP.has(g)&&OKC[q.id]);"
             "const es=row.cells[q.id]||[];"
             "if(!es.length){c.textContent='\\u2014';"
             "if(q.probed===false){c.className='mod unprobed';"
@@ -718,11 +793,14 @@ def page_index(state):
             "N.replaceChildren(li);}"
             "S.style.display='none';"
             "U.textContent='updated '+new Date().toLocaleTimeString();"
+            "document.getElementById('aastale').style.display="
+            "d.aa_stale?'block':'none';"
             "}catch(e){S.style.display='block';"
             "S.textContent='stale — refresh failed ('+e.message+')';}}"
             "setInterval(poll,30000);"
             "</script></body></html>"
-            % (",".join(html.escape(c) for c in col_ids),
+            % (("" if doc.get("aa_stale") else " style=\"display:none\""),
+               ",".join(html.escape(c) for c in col_ids),
                "".join(prov_head), "".join(mod_head),
                "".join(rows), unassigned or "<li>none</li>"))
 

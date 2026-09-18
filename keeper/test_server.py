@@ -630,6 +630,84 @@ class PacksPathTest(RouteCase):
         self.assertIn("credential", seeded)
 
 
+class OpenViewTest(RouteCase):
+    """Provider-open view: ok-only columns, AA-desc, display-only.
+    The matrix JSON keeps every column in insertion order; only the
+    served HTML carries the open-view order + visibility flags."""
+
+    def open_state(self, stale=False):
+        routes = [
+            {"provider": "p1", "model": "m-hi",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "K",
+             "owner": "owner@example.com", "name": "Hi",
+             "connection_id": "hi", "active": True},
+            {"provider": "p1", "model": "m-lo",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "K",
+             "owner": "owner@example.com", "name": "Lo",
+             "connection_id": "lo", "active": True},
+            {"provider": "p1", "model": "m-dead",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "K",
+             "owner": "owner@example.com", "name": "Dead",
+             "connection_id": "dead", "active": True},
+            {"provider": "p1", "model": "m-na",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "K",
+             "owner": "owner@example.com", "name": "Na",
+             "connection_id": "na", "active": True},
+        ]
+        self.state["routes"] = routes
+        self.state["aa_scores"] = {"m-hi": 90.0, "m-lo": 10.0,
+                                    "m-dead": 99.0}
+        self.state["aa_stale"] = stale
+        self.state["probe"] = {"hi": "ok", "lo": "ok",
+                                 "dead": "down", "na": "ok"}
+        self.state["matrix_cache"] = None
+
+    def mod_headers(self, html):
+        import re
+        return re.findall(
+            r'<th class="mod" data-p="([^"]*)" data-c="([^"]*)" '
+            r'data-anyok="([01])"', html)
+
+    def test_open_columns_aa_desc_unscored_last(self):
+        self.open_state()
+        code, raw, _ = self.call("GET", "/")
+        self.assertEqual(code, 200)
+        heads = self.mod_headers(raw.decode())
+        self.assertEqual([c for _, c, _ in heads],
+                         ["m-dead", "m-hi", "m-lo", "m-na"])
+
+    def test_only_ok_columns_flagged_visible(self):
+        self.open_state()
+        code, raw, _ = self.call("GET", "/")
+        flags = {c: v for _, c, v in self.mod_headers(raw.decode())}
+        self.assertEqual(flags, {"m-dead": "0", "m-hi": "1",
+                                 "m-lo": "1", "m-na": "1"})
+
+    def test_matrix_json_keeps_all_columns_insertion_order(self):
+        self.open_state()
+        code, raw, _ = self.call("GET", "/api/v1/matrix")
+        ids = [p["id"] for p in json.loads(raw)["providers"]]
+        self.assertEqual(ids, ["m-hi", "m-lo", "m-dead", "m-na"])
+
+    def test_stale_badge_tracks_aa_stale(self):
+        self.open_state(stale=False)
+        _, fresh, _ = self.call("GET", "/")
+        self.assertIn('id="aastale" style="display:none"',
+                      fresh.decode())
+        self.open_state(stale=True)
+        _, stale, _ = self.call("GET", "/")
+        self.assertIn('id="aastale">', stale.decode())
+
+    def test_legend_names_ok_only_view(self):
+        self.open_state()
+        _, raw, _ = self.call("GET", "/")
+        self.assertIn("shows only ok models", raw.decode())
+
+
 class InventoryWiringTest(RouteCase):
     def test_matrix_view_calls_enumerate_with_refresh(self):
         seen = {}
@@ -675,7 +753,8 @@ class ModelColumnsPageTest(RouteCase):
         code, body, _ = self.render()
         self.assertEqual(code, 200)
         self.assertIn(b'th class="prov" data-p="anthropic"', body)
-        self.assertIn(b'th class="mod" data-p="muse" hidden', body)
+        self.assertIn(b'th class="mod" data-p="muse" data-c="muse-x"',
+                        body)
         self.assertIn(b"claude-opus", body)
 
     def test_provider_summary_and_toggle(self):
