@@ -14,9 +14,11 @@ routes with credentials + 22 keyless placeholders (`wire: none`, never
 probed, honestly `unknown`). Rows are Bao `email` owners (8 today).
 Opening a provider shows only `ok` model columns, best
 ArtificialAnalysis score first (unscored last; stale badge when AA is
-stale) — display-only: `/packs` + matrix JSON keep every column.
-AA sorting activates once `ARTIFICIALANALYSIS_API_KEY` is configured;
-unkeyed servers order by model name with no badge.
+stale) — live since 2026-09-18 (key in Bao
+`pi-multi-providers/ARTIFICIALANALYSIS_API_KEY`, sent as `x-api-key`;
+slugs are the join key, provider/model ids match on the bare name).
+Internal ids with no AA counterpart (e.g. big-pickle) stay honestly
+unscored — display-only: `/packs` + matrix JSON keep every column.
 
 ## Endpoints
 
