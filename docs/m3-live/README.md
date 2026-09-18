@@ -90,8 +90,30 @@ efcikfz53nr40e, owner-confirmed). `grafana/keeper-divergent-alert.json`
   Test-firing to the owner's Telegram was NOT done (noise, unasked).
 - Deleted same-day: stale twin `cfyn4k7ofc16of` (earlier 2-stage attempt,
   no receiver, permanent eval error) + `keeper-bisect` scratch group.
-- Caveat: the RW token does NOT authenticate Prometheus basic-auth
-  (instance user fails); the running Alloy still ships on its baked
-  pre-rotation basic pair (series age 0s, verified). Re-registering
-  Alloy will need a metrics-write credential — owner to confirm before
-  the next Alloy redeploy.
+- Caveat (2026-09-19, worker-verified): the RW token does NOT authenticate
+  Prometheus basic-auth, and post-revocation the baked basic pair is dead
+  too — Cloud shows 0 series: green alloc shipping nothing (the exact
+  failure mode warned about). Re-registering Alloy needs the fresh
+  metrics-write token escrowed; `keeper-alloy.nomad.hcl` is prepped
+  (password via `env("GRAFANA_TOKEN")`, validated, commit 2922546).
+  Owner: revoke exposed token, mint fresh under the alloy metrics:write
+  policy, escrow via owner terminal, record expiry in #85 — then tell
+  the agent to re-register + JIT-verify.
+
+## Addendum — audit capture files + token revocation (job v26, :main-382c2cd)
+
+- `alloc.txt` is now a full `nomad job status keeper` capture (v26
+  running, image `main-382c2cd` + digest appended); `alloy-job.txt` the
+  same for `keeper-alloy` (v2 running). `arch.txt` re-pinned to the
+  current digest. packs/matrix/metrics/healthz re-captured (528 packs,
+  11 checked_at + AA scores in matrix, 11 metric series).
+- `grafana/keeper-divergent-alert.json` now mirrors the applied rule
+  field-for-field (condition C, A→B→C, `notification_settings.receiver:
+  HonzaTraderBot`); legacy `notifications` key removed.
+- 2026-09-19 ~01:00Z: Bao `nomad/GRAFANA_CLOUD_RW` token revoked
+  (exposed-token hygiene) — Grafana API + Hosted-Prometheus captures
+  (`prom-query.json`, `grafana-rule-get.json`, `grafana-rule-state.json`)
+  are staged pending owner escrow of the fresh token to the same Bao
+  path/field via owner terminal. Rule + shipper verified working before
+  revocation (11 series, inactive/health-ok @22:43:30Z); running Alloy
+  unaffected (baked basic pair).
