@@ -8,9 +8,9 @@ real route state, `normal`/`nodata` are captured rule evaluations.
 
 | Rule | State @ evaluated-at | Health | Evidence |
 |---|---|---|---|
-| keeper-route-divergent | inactive @ 2026-09-18T23:53:30Z | ok | `grafana-rule-state` in docs/m3-live + rule GET `grafana/keeper-divergent-alert.json` |
-| keeper-route-down | **firing** @ 2026-09-18T23:54:10Z | ok | real down routes exist (both legs fail); `grafana/keeper-route-down.json` (provisioning GET) |
-| keeper-probe-stale | nodata @ 2026-09-18T23:54:10Z | nodata = CORRECT | max probe age 698s < 900s threshold, 11 `checked_at` series present; empty result is the honest nothing-stale signal |
+| keeper-route-divergent | inactive @ 2026-09-18T23:57:30Z | ok | `docs/m3-live/grafana-rule-state.json` + rule GET `grafana/keeper-divergent-alert.json` |
+| keeper-route-down | **firing** @ 2026-09-18T23:57:10Z | ok | real down routes exist (both legs fail); `grafana/keeper-route-down.json` (provisioning GET) |
+| keeper-probe-stale | inactive @ 2026-09-18T23:57:10Z | ok | fresh probes landed after the earlier nodata reading; max age under threshold; `grafana/keeper-probe-stale.json` |
 
 Rule files committed verbatim from provisioning GETs:
 `grafana/keeper-divergent-alert.json`, `grafana/keeper-route-down.json`,

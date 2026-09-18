@@ -1,0 +1,21 @@
+{
+ "fetched_at": "2026-09-18T23:57:50Z",
+ "query": "count(keeper_route_down)",
+ "via": "grafanacloud-prom datasource proxy",
+ "series_count": 11,
+ "response": {
+  "status": "success",
+  "data": {
+   "resultType": "vector",
+   "result": [
+    {
+     "metric": {},
+     "value": [
+      1789775870.871,
+      "11"
+     ]
+    }
+   ]
+  }
+ }
+}
