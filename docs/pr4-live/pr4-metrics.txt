@@ -1,0 +1,8 @@
+# HELP keeper_route_divergent L1 curl fails while L2 opencode CLI passes.
+# TYPE keeper_route_divergent gauge
+# HELP keeper_probe_checked_at_seconds Unix time of last dual probe.
+# TYPE keeper_probe_checked_at_seconds gauge
+keeper_route_divergent{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 0
+keeper_probe_checked_at_seconds{provider="openrouter",model="openai/gpt-4o-mini",connection="openrouter/gpt-4o-mini"} 1789738049
+keeper_route_divergent{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 1
+keeper_probe_checked_at_seconds{provider="opencode-zen",model="big-pickle",connection="zen/big-pickle"} 1789738056
