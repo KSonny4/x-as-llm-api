@@ -53,3 +53,24 @@ documented per route). `reseed-33.json` holds the redacted shape.
 emails × 66 columns, 11 live cells with `checked_at`, 22 placeholders
 `unknown` without `checked_at` (never probed — by design, not by gap).
 Zen `l2_ref: opencode/big-pickle` preserved on both live zen routes.
+
+## Addendum 2026-09-19 — Alloy shipper live + KEEPER_TOKEN rotation
+
+- `keeper-alloy.nomad.hcl` committed with one fix: Nomad template
+  destinations must be task-relative — the absolute
+  `/etc/alloy/config.alloy` never rendered (alloc ran Alloy's stock
+  example config). Now `local/config.alloy` via `${NOMAD_TASK_DIR}`.
+- Shipper deployed (`keeper-alloy` service, Alloy v1.19.2), creds from
+  Bao `secret/projects/nomad/GRAFANA_CLOUD_RW` (`user`+`token`, passed
+  via `-var`, never git). Cloud query
+  `count(keeper_route_divergent)` → **11 series** (all live routes),
+  verified via the Hosted Prometheus API (the `grafanacloud-prom`
+  datasource proxy needs a working Grafana API key — Bao's
+  `GRAFANA_CLOUD_API_KEY` returns 401 invalid).
+- KEEPER_TOKEN rotated (Bao v3) after the old value appeared in an
+  operator debug transcript: parallel-accept window (old 200 + new
+  200) → cutover (old 401, new 200) → Alloy + keeper-probe jobs
+  re-registered on the new token. Old token rejected everywhere.
+- STILL OWNER-ONLY: Grafana alert-rule apply (needs a working Cloud
+  API token with alerting write) + contact-point choice
+  (`notifications: []` stays empty until then).
