@@ -166,6 +166,20 @@ class DualVerifyTest(unittest.TestCase):
         self.assertFalse(cells["o"]["divergent"])
         self.assertEqual(data["diagnostics"]["divergent"], ["z"])
 
+    def test_cells_carry_checked_at(self):
+        data = build_matrix([
+            {"id": "z", "provider": "zen", "model": "big-pickle",
+             "name": "Z", "email": "a@b.cz"},
+            {"id": "n", "provider": "zen", "model": "m",
+             "name": "N", "email": "a@b.cz"},
+        ], probe_states={"z": "degraded", "n": "ok"},
+            probe_detail={"z": self.SPLIT})
+        cells = {c["connection_id"]: c
+                 for c in data["rows"][0]["cells"]["zen"]}
+        self.assertEqual(cells["z"]["checked_at"],
+                         "2026-09-18T00:00:00+00:00")
+        self.assertEqual(cells["n"]["checked_at"], "")
+
     def test_unassigned_divergent_still_listed(self):
         data = build_matrix([
             {"id": "z", "provider": "zen", "model": "big-pickle",

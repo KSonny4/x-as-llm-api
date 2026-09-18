@@ -157,6 +157,8 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
                 "l1": verdict["l1"],
                 "l2": verdict["l2"],
                 "divergent": verdict["divergent"],
+                "checked_at": (det.get("checked_at", "")
+                                if isinstance(det, dict) else ""),
                 "aa_score": aa_scores.get(model) if model else None,
             })
         for plist in cells.values():
