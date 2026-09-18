@@ -433,5 +433,127 @@ class ProbeIngestTest(RouteCase):
         self.assertEqual(code, 401)
 
 
+class SessionCase(RouteCase):
+    """Cookie login: browsers read pages, never mutate state."""
+
+    def mint(self, bearer="Bearer t"):
+        return server.route("POST", "/api/v1/session",
+                            {"authorization": bearer}, "t",
+                            state=self.state)
+
+    def raw_cookie(self, headers):
+        for key, value in headers:
+            if key == "Set-Cookie":
+                return value.split(";", 1)[0].split("=", 1)[1]
+        return ""
+
+    def test_login_page_is_public(self):
+        code, body, _ = server.route("GET", "/login", {}, "t",
+                                     state=self.state)
+        self.assertEqual(code, 200)
+        self.assertIn(b"<form", body)
+        self.assertIn(b"/api/v1/session", body)
+
+    def test_mint_ok_sets_hardened_cookie(self):
+        code, body, headers = self.mint()
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(body), {"ok": True})
+        jar = [v for k, v in headers if k == "Set-Cookie"]
+        self.assertEqual(len(jar), 1)
+        for flag in ("HttpOnly", "Secure", "SameSite=Lax", "Path=/",
+                     "Max-Age=43200"):
+            self.assertIn(flag, jar[0])
+        self.assertTrue(self.raw_cookie(headers))
+
+    def test_mint_bad_bearer_sets_no_cookie(self):
+        for headers in ({}, {"authorization": "Bearer wrong"}):
+            code, _, out = self.mint(
+                headers.get("authorization", ""))
+            self.assertEqual(code, 401, headers)
+            self.assertEqual([k for k, _ in out if k == "Set-Cookie"],
+                             [])
+
+    def test_mint_requires_bearer_not_cookie(self):
+        _, _, headers = self.mint()
+        cookie = {"cookie": "keeper_session=" +
+                  self.raw_cookie(headers)}
+        code, _, _ = server.route("POST", "/api/v1/session", cookie,
+                                  "t", state=self.state)
+        self.assertEqual(code, 401)
+
+    def test_cookie_gets_page_but_no_mutation(self):
+        _, _, headers = self.mint()
+        cookie = {"cookie": "keeper_session=" +
+                  self.raw_cookie(headers)}
+        code, body, _ = server.route("GET", "/", cookie, "t",
+                                     state=self.state)
+        self.assertEqual(code, 200)
+        self.assertIn(b"<table>", body)
+        code, _, _ = server.route(
+            "POST", "/feedback", cookie, "t",
+            body=json.dumps({"provider": "x"}).encode(),
+            state=self.state)
+        self.assertEqual(code, 401)
+
+    def test_unknown_cookie_is_401(self):
+        code, _, _ = server.route(
+            "GET", "/", {"cookie": "keeper_session=nope"}, "t",
+            state=self.state)
+        self.assertEqual(code, 401)
+
+    def test_expired_session_is_401(self):
+        _, _, headers = self.mint()
+        raw = self.raw_cookie(headers)
+        digest = server.hashlib.sha256(raw.encode()).hexdigest()
+        self.state["sessions"][digest] = 1.0  # long past
+        code, _, _ = server.route(
+            "GET", "/", {"cookie": "keeper_session=" + raw}, "t",
+            state=self.state)
+        self.assertEqual(code, 401)
+        self.assertNotIn(digest, self.state["sessions"])  # swept
+
+    def test_index_has_live_poller_and_logout(self):
+        _, _, headers = self.mint()
+        cookie = {"cookie": "keeper_session=" +
+                  self.raw_cookie(headers)}
+        code, body, _ = server.route("GET", "/", cookie, "t",
+                                     state=self.state)
+        self.assertEqual(code, 200)
+        for needle in (b"/api/v1/matrix?refresh=1",
+                       b"setInterval(poll,30000)", b"id=\"stale\"",
+                       b"/api/v1/session/logout"):
+            self.assertIn(needle, body)
+
+    def test_index_shows_divergent_badge_and_checked_at(self):
+        self.state["probe_detail"]["c1"] = {
+            "provider": "acme-openai", "model": "acme-chat",
+            "state": "degraded",
+            "detail": {"l1": "suspect", "l2": "pong-text"},
+            "checked_at": "2026-09-18T00:00:00+00:00"}
+        code, body, _ = self.call("GET", "/")
+        self.assertEqual(code, 200)
+        self.assertIn(b"DIVERGENT", body)
+        self.assertIn(b"2026-09-18", body)
+
+    def test_index_escapes_route_names(self):
+        out = server._cell_html({"name": "<img src=x>",
+                                 "state": "ok"}).encode()
+        self.assertNotIn(b"<img", out)
+        self.assertIn(b"&lt;img", out)
+
+    def test_logout_clears_and_kills(self):
+        _, _, headers = self.mint()
+        raw = self.raw_cookie(headers)
+        cookie = {"cookie": "keeper_session=" + raw}
+        code, _, out = server.route("POST", "/api/v1/session/logout",
+                                    dict(cookie), "t", state=self.state)
+        self.assertEqual(code, 200)
+        jar = [v for k, v in out if k == "Set-Cookie"]
+        self.assertTrue(any("Max-Age=0" in v for v in jar))
+        code, _, _ = server.route("GET", "/", cookie, "t",
+                                  state=self.state)
+        self.assertEqual(code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()

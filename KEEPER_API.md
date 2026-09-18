@@ -4,9 +4,12 @@ One-way contract: pi-infinity-llm pins this; keeper never imports from it.
 Changes are additive + version-bumped.
 
 Auth: `Authorization: Bearer $KEEPER_TOKEN` on everything except
-`GET /healthz` ( else `401`). Rotation window: `KEEPER_TOKEN_NEXT`, when
+`GET /healthz` and `GET /login` ( else `401`). Rotation window: `KEEPER_TOKEN_NEXT`, when
 set, is accepted alongside `KEEPER_TOKEN` (parallel-accept); unset it to
-revoke. Seeds come from `SEED_FILE` JSON
+revoke. Browser login: `POST /api/v1/session` (bearer) mints a 12h
+`keeper_session` cookie (`HttpOnly; Secure; SameSite=Lax`); the cookie is
+accepted for GET pages only — POSTs stay bearer-only — and dies with
+restarts (in-memory). Token travels in the mint fetch header, never URL. Seeds come from `SEED_FILE` JSON
 (`{"routes": [...]}`); production seeds export live Bao refs
 (`secret/projects/pi-multi-providers/<NAME>`, excluding
 `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers).
@@ -29,6 +32,9 @@ revoke. Seeds come from `SEED_FILE` JSON
 | `GET /` | bearer | server-rendered matrix table + `diagnostics.unassigned` (values never in HTML) |
 | `GET /guides` | bearer | per-consumer copy-paste cards |
 | `GET /signin` | bearer | re-mint steps for keyless members |
+| `GET /login` | none | public token form; POSTs bearer via fetch, redirects to `/` |
+| `POST /api/v1/session` | bearer (never cookie) | mint browser session → `200 {ok:true}` + `Set-Cookie`; `401` mints nothing |
+| `POST /api/v1/session/logout` | session cookie or bearer | clear session → expiring `Set-Cookie` |
 | `GET /report` | bearer | feedback form posting to `/feedback`, shows live route state |
 
 Member shape: `{provider, model, base_url, env_var}` plus

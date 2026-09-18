@@ -11,7 +11,9 @@ import hashlib
 import html
 import json
 import os
+import secrets
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,6 +26,9 @@ import translate as translate_mod
 
 PORT = int(os.environ.get("PORT", "8080"))
 KEEPER_PACK_VERSION = "v2"
+
+SESSION_COOKIE = "keeper_session"
+SESSION_TTL = 12 * 3600  # 12h browser sessions, in-memory: restart = re-login
 
 # Assignable in tests to stub upstream providers (no live calls in suite).
 urlopen = urllib.request.urlopen
@@ -69,6 +74,7 @@ def make_state(token, seed=None, feedback_log=None, aa_cache=None,
         "probe": {},  # connection_id -> state (feedback flips to suspect)
         "probe_detail": {},  # connection_id -> probe_route result (L1/L2)
         "matrix_cache": None,
+        "sessions": {},  # sha256(raw cookie) -> expiry epoch (GET-only login)
     }
 
 
@@ -127,6 +133,39 @@ def _authed(headers, token):
         if key.lower() == "authorization":
             auth = value
     return auth == "Bearer " + token
+
+
+def _session_raw(headers):
+    for key, value in headers.items():
+        if key.lower() != "cookie":
+            continue
+        for part in str(value).split(";"):
+            name, _, val = part.strip().partition("=")
+            if name.strip() == SESSION_COOKIE and val.strip():
+                return val.strip()
+    return ""
+
+
+def _valid_session(state, raw):
+    if not raw or state is None:
+        return False
+    now = time.time()
+    sessions = state.setdefault("sessions", {})
+    for key in [k for k, exp in sessions.items() if exp <= now]:
+        del sessions[key]
+    return sessions.get(hashlib.sha256(raw.encode()).hexdigest(), 0) > now
+
+
+def _set_session_cookie(raw):
+    return ("Set-Cookie",
+            "%s=%s; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=%d"
+            % (SESSION_COOKIE, raw, SESSION_TTL))
+
+
+def _clear_session_cookie():
+    return ("Set-Cookie",
+            "%s=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"
+            % SESSION_COOKIE)
 
 
 def validate_feedback(doc):
@@ -408,7 +447,36 @@ def health_view(state):
             "routes": dict(state["probe"])}
 
 
+def page_login():
+    """Public login form: token goes in a fetch Authorization header (POST
+    body path), never in the URL. On 200 the session cookie is set."""
+    return ("<html><head><title>keeper login</title></head><body>"
+            "<h1>keeper login</h1>"
+            "<form id=\"f\"><input id=\"t\" type=\"password\" "
+            "autocomplete=\"off\" placeholder=\"KEEPER_TOKEN\"/>"
+            "<button type=\"submit\">sign in</button></form>"
+            "<p id=\"e\"></p>"
+            "<script>"
+            "document.getElementById('f').onsubmit=async(ev)=>{"
+            "ev.preventDefault();"
+            "const t=document.getElementById('t').value;"
+            "const r=await fetch('/api/v1/session',{method:'POST',"
+            "headers:{'Authorization':'Bearer '+t}});"
+            "if(r.ok){location='/';}else{"
+            "document.getElementById('e').textContent='rejected ('+r.status+')';}"
+            "};"
+            "</script></body></html>")
+
+
 def page_index(state):
+    """Server-rendered matrix + just-in-time poller.
+
+    The initial table is rendered here (works without JS); the embedded
+    script re-reads the SAME agent endpoint browsers would use anyway
+    (GET /api/v1/matrix?refresh=1) every 30s and re-renders cells in
+    place. A failed fetch surfaces a stale banner — never silent old data.
+    DOM is built with textContent (no innerHTML) so route names cannot
+    inject markup."""
     doc = matrix_view(state)
     rows = []
     providers = [p["id"] for p in doc["providers"]]
@@ -417,10 +485,8 @@ def page_index(state):
         for provider in providers:
             entries = row["cells"].get(provider, [])
             if entries:
-                cells.append("<td>%s</td>" % html.escape(
-                    ", ".join("%s (%s%s)" % (e["name"], e["state"],
-                                               " divergent" if e.get("divergent") else "")
-                              for e in entries)))
+                cells.append("<td>%s</td>" % ", ".join(
+                    _cell_html(e) for e in entries))
             else:
                 cells.append("<td>—</td>")
         rows.append("<tr><td>%s</td>%s</tr>" % (html.escape(row["email"]),
@@ -428,13 +494,75 @@ def page_index(state):
     unassigned = "".join("<li>%s</li>" % html.escape(
         "%s (%s)" % (u.get("name", "?"), u.get("provider", "?")))
         for u in doc["diagnostics"]["unassigned"])
-    return ("<html><head><title>keeper matrix</title></head><body>"
+    return ("<html><head><title>keeper matrix</title>"
+            "<style>body{font-family:system-ui,sans-serif;margin:2em}"
+            "table{border-collapse:collapse}"
+            "td,th{border:1px solid #ccc;padding:.3em .6em;text-align:left}"
+            ".div{color:#fff;background:#c0392b;border-radius:3px;"
+            "padding:0 .4em;font-size:.8em}"
+            "#stale{display:none;background:#f39c12;color:#000;"
+            "padding:.5em;margin-bottom:1em}"
+            "small{color:#666}</style></head><body>"
             "<h1>keeper matrix</h1>"
-            "<table><tr><th>owner</th>%s</tr>%s</table>"
-            "<h2>diagnostics.unassigned</h2><ul>%s</ul>"
-            "</body></html>"
+            "<p id=\"stale\"></p>"
+            "<table><thead><tr><th>owner</th>%s</tr></thead>"
+            "<tbody id=\"cells\">%s</tbody></table>"
+            "<p><small id=\"updated\"></small> "
+            "<button id=\"lo\">log out</button></p>"
+            "<h2>diagnostics.unassigned</h2><ul id=\"unassigned\">%s</ul>"
+            "<script>"
+            "const T=document.getElementById('cells'),"
+            "S=document.getElementById('stale'),"
+            "U=document.getElementById('updated'),"
+            "N=document.getElementById('unassigned');"
+            "document.getElementById('lo').onclick=async()=>{"
+            "await fetch('/api/v1/session/logout',{method:'POST'});"
+            "location='/login';};"
+            "function cell(e){const s=document.createElement('span');"
+            "s.textContent=e.name+' ('+e.state+')';"
+            "if(e.divergent){const b=document.createElement('span');"
+            "b.className='div';b.textContent='DIVERGENT';"
+            "s.appendChild(document.createTextNode(' '));s.appendChild(b);}"
+            "if(e.checked_at){const t=document.createElement('small');"
+            "t.textContent=' '+e.checked_at;s.appendChild(t);}"
+            "return s;}"
+            "async function poll(){"
+            "try{const r=await fetch('/api/v1/matrix?refresh=1');"
+            "if(!r.ok)throw new Error(r.status);"
+            "const d=await r.json(),provs=d.providers.map(p=>p.id);"
+            "T.replaceChildren(...d.rows.map(row=>{"
+            "const tr=document.createElement('tr'),"
+            "td=document.createElement('td');"
+            "td.textContent=row.email;tr.appendChild(td);"
+            "for(const p of provs){const c=document.createElement('td'),"
+            "es=row.cells[p]||[];"
+            "if(!es.length)c.textContent='—';"
+            "es.forEach((e,i)=>{if(i)c.appendChild("
+            "document.createTextNode(', '));c.appendChild(cell(e));});"
+            "tr.appendChild(c);}return tr;}));"
+            "N.replaceChildren(...d.diagnostics.unassigned.map(u=>{"
+            "const li=document.createElement('li');"
+            "li.textContent=u.name+' ('+u.provider+')';return li;}));"
+            "if(!d.diagnostics.unassigned.length){const li="
+            "document.createElement('li');li.textContent='none';"
+            "N.replaceChildren(li);}"
+            "S.style.display='none';"
+            "U.textContent='updated '+new Date().toLocaleTimeString();"
+            "}catch(e){S.style.display='block';"
+            "S.textContent='stale — refresh failed ('+e.message+')';}}"
+            "setInterval(poll,30000);"
+            "</script></body></html>"
             % ("".join("<th>%s</th>" % html.escape(p) for p in providers),
                "".join(rows), unassigned or "<li>none</li>"))
+
+
+def _cell_html(entry):
+    out = html.escape("%s (%s)" % (entry["name"], entry["state"]))
+    if entry.get("divergent"):
+        out += ' <span class="div">DIVERGENT</span>'
+    if entry.get("checked_at"):
+        out += " <small>%s</small>" % html.escape(entry["checked_at"])
+    return out
 
 
 def page_guides(state):
@@ -528,14 +656,38 @@ def route(method, path, headers, token, body=None, query="", state=None):
     query = parsed.query or query
     if method == "GET" and clean_path == "/healthz":
         return 200, b"ok", [("Content-Type", "text/plain")]
+    if method == "GET" and clean_path == "/login":
+        return text_resp(200, page_login(), "text/html")
     auth = ""
     for key, value in headers.items():
         if key.lower() == "authorization":
             auth = value
-    if not accepted(auth, token):
+    # Cookie sessions are GET-only, except logout (destroying your own
+    # session is safe; SameSite=Lax already blocks cross-site POST). Browsers
+    # read pages, never mutate state.
+    cookie_ok = (state is not None
+                 and _valid_session(state, _session_raw(headers)))
+    via_cookie = cookie_ok and (
+        method == "GET" or (method == "POST"
+                              and clean_path == "/api/v1/session/logout"))
+    if not accepted(auth, token) and not via_cookie:
         return 401, b"unauthorized", [("Content-Type", "text/plain")]
     if state is None:
         return 404, b"not found", [("Content-Type", "text/plain")]
+    if method == "POST" and clean_path == "/api/v1/session":
+        # Minting requires the bearer itself (never a session cookie).
+        if not accepted(auth, token):
+            return 401, b"unauthorized", [("Content-Type", "text/plain")]
+        raw = secrets.token_urlsafe(32)
+        state.setdefault("sessions", {})[
+            hashlib.sha256(raw.encode()).hexdigest()] = time.time() + SESSION_TTL
+        return json_resp(200, {"ok": True}, [_set_session_cookie(raw)])
+    if method == "POST" and clean_path == "/api/v1/session/logout":
+        raw = _session_raw(headers)
+        if raw:
+            state.get("sessions", {}).pop(
+                hashlib.sha256(raw.encode()).hexdigest(), None)
+        return json_resp(200, {"ok": True}, [_clear_session_cookie()])
     params = urllib.parse.parse_qs(query)
 
     if method == "GET" and clean_path == "/packs":
