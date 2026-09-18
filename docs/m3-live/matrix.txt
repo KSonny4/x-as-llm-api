@@ -1,8 +1,36 @@
-emails: ['ksonny4@gmail.com']
-columns: 46
+emails: ['friedmanbob2@gmail.com', 'jannovak12390@gmail.com', 'ksonny4@gmail.com', 'ksonny@apple.com', 'kubelkatropkova@seznam.cz', 'petaazdenicka@gmail.com', 'petr1kubelka@gmail.com', 'zdenickaapeta@gmail.com']
+columns: 66
 inventory_more: {'openrouter': 425, 'gemini': 29}
-  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:23.049272+00:00
-  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:31.651928+00:00
-  gemini-3.6-flash -> down l1=suspect l2=fail checked_at=2026-09-18T20:32:26.961710+00:00
-  kimi-k2.7-code -> limited l1=limited l2=not-run checked_at=2026-09-18T20:32:27.809380+00:00
-  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T20:30:22.542799+00:00
+  inactive foreign key (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 3 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  inactive foreign key (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 1 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  antigravity 1 (CLI-only) -> unknown l1=unknown l2=not-run checked_at=
+  banned key (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:08.511405+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:16.791918+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:20.576139+00:00
+  claude-sonnet-4-6 -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:24.871477+00:00
+  codex (no verified wire) -> unknown l1=unknown l2=not-run checked_at=
+  cursor (unavailable) -> unknown l1=unknown l2=not-run checked_at=
+  devin sessions (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
+  gemini-3.6-flash -> down l1=suspect l2=fail checked_at=2026-09-18T21:23:12.485589+00:00
+  kilocode-key (endpoint TBD) -> unknown l1=unknown l2=not-run checked_at=
+  kimi-k2.7-code -> limited l1=limited l2=not-run checked_at=2026-09-18T21:23:13.142406+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:03.663215+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:04.953944+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:06.404248+00:00
+  openai/gpt-4o-mini -> ok l1=ok l2=not-run checked_at=2026-09-18T21:19:07.507249+00:00
+  opencode-go (unavailable) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 5 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 6 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 7 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 8 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  workers-ai key 1 (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
+  banned key (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  workers-ai key 2 (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
+  workers-ai key 3 (no wire yet) -> unknown l1=unknown l2=not-run checked_at=
+  retired zen 2 (placeholder) -> unknown l1=unknown l2=not-run checked_at=
+  antigravity 2 (CLI-only) -> unknown l1=unknown l2=not-run checked_at=
+  big-pickle -> down l1=suspect l2=fail checked_at=2026-09-18T21:21:08.005601+00:00
+  retired zen 4 (placeholder) -> unknown l1=unknown l2=not-run checked_at=

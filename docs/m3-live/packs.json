@@ -13,10 +13,54 @@
    }
   },
   {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "env_var": "OPENROUTER_API_KEY",
+   "path": "infinity/openrouter/openai/gpt-4o-mini",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "env_var": "OPENROUTER_API_KEY_3",
+   "path": "infinity/openrouter/openai/gpt-4o-mini",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "env_var": "OPENROUTER_API_KEY_4",
+   "path": "infinity/openrouter/openai/gpt-4o-mini",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
    "provider": "opencode-zen",
    "model": "big-pickle",
    "base_url": "https://opencode.ai/zen/v1",
    "env_var": "OPENCODE_ZEN_API_KEY_PETR",
+   "path": "infinity/opencode-zen/big-pickle",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "big-pickle",
+   "base_url": "https://opencode.ai/zen/v1",
+   "env_var": "OPENCODE_ZEN_API_KEY",
    "path": "infinity/opencode-zen/big-pickle",
    "credential": {
     "type": "bearer",
@@ -54,6 +98,314 @@
    "credential": {
     "type": "bearer",
     "present": true
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "env_var": "MUSE_CODE_OAUTH_2",
+   "path": "infinity/claude/claude-sonnet-4-6",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "env_var": "MUSE_CODE_OAUTH_3",
+   "path": "infinity/claude/claude-sonnet-4-6",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "kilocode",
+   "model": "kilocode-key (endpoint TBD)",
+   "base_url": "",
+   "env_var": "KILOCODE_TOKEN",
+   "path": "infinity/kilocode/kilocode-key (endpoint TBD)",
+   "signin": {
+    "steps": [
+     "export KILOCODE_TOKEN=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 1 (no wire yet)",
+   "base_url": "",
+   "env_var": "CLOUDFLARE_AI_KEY",
+   "path": "infinity/cloudflare-ai/workers-ai key 1 (no wire yet)",
+   "signin": {
+    "steps": [
+     "export CLOUDFLARE_AI_KEY=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 2 (no wire yet)",
+   "base_url": "",
+   "env_var": "CLOUDFLARE_AI_KEY_2",
+   "path": "infinity/cloudflare-ai/workers-ai key 2 (no wire yet)",
+   "signin": {
+    "steps": [
+     "export CLOUDFLARE_AI_KEY_2=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 3 (no wire yet)",
+   "base_url": "",
+   "env_var": "CLOUDFLARE_AI_KEY_3",
+   "path": "infinity/cloudflare-ai/workers-ai key 3 (no wire yet)",
+   "signin": {
+    "steps": [
+     "export CLOUDFLARE_AI_KEY_3=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "devin-cli",
+   "model": "devin sessions (no wire yet)",
+   "base_url": "",
+   "env_var": "DEVIN_CLI_TOKEN",
+   "path": "infinity/devin-cli/devin sessions (no wire yet)",
+   "signin": {
+    "steps": [
+     "export DEVIN_CLI_TOKEN=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "codex",
+   "model": "codex (no verified wire)",
+   "base_url": "",
+   "env_var": "CODEX_OAUTH",
+   "path": "infinity/codex/codex (no verified wire)",
+   "signin": {
+    "steps": [
+     "export CODEX_OAUTH=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "antigravity",
+   "model": "antigravity 1 (CLI-only)",
+   "base_url": "",
+   "env_var": "ANTIGRAVITY_OAUTH",
+   "path": "infinity/antigravity/antigravity 1 (CLI-only)",
+   "signin": {
+    "steps": [
+     "export ANTIGRAVITY_OAUTH=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "antigravity",
+   "model": "antigravity 2 (CLI-only)",
+   "base_url": "",
+   "env_var": "ANTIGRAVITY_OAUTH_2",
+   "path": "infinity/antigravity/antigravity 2 (CLI-only)",
+   "signin": {
+    "steps": [
+     "export ANTIGRAVITY_OAUTH_2=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "antigravity",
+   "model": "inactive foreign key (placeholder)",
+   "base_url": "",
+   "env_var": "ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2",
+   "path": "infinity/antigravity/inactive foreign key (placeholder)",
+   "signin": {
+    "steps": [
+     "export ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "antigravity",
+   "model": "inactive foreign key (placeholder)",
+   "base_url": "",
+   "env_var": "ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390",
+   "path": "infinity/antigravity/inactive foreign key (placeholder)",
+   "signin": {
+    "steps": [
+     "export ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 1 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_1",
+   "path": "infinity/opencode-zen/retired zen 1 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_1=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 2 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_2",
+   "path": "infinity/opencode-zen/retired zen 2 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_2=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 3 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_3",
+   "path": "infinity/opencode-zen/retired zen 3 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_3=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 4 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_4",
+   "path": "infinity/opencode-zen/retired zen 4 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_4=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 5 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_5",
+   "path": "infinity/opencode-zen/retired zen 5 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_5=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 6 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_6",
+   "path": "infinity/opencode-zen/retired zen 6 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_6=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 7 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_7",
+   "path": "infinity/opencode-zen/retired zen 7 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_7=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 8 (placeholder)",
+   "base_url": "",
+   "env_var": "OPENCODE_ZEN_RETIRED_8",
+   "path": "infinity/opencode-zen/retired zen 8 (placeholder)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_ZEN_RETIRED_8=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "github",
+   "model": "banned key (placeholder)",
+   "base_url": "",
+   "env_var": "GITHUB_BANNED_KSONNY",
+   "path": "infinity/github/banned key (placeholder)",
+   "signin": {
+    "steps": [
+     "export GITHUB_BANNED_KSONNY=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "github",
+   "model": "banned key (placeholder)",
+   "base_url": "",
+   "env_var": "GITHUB_BANNED_NOEMAIL",
+   "path": "infinity/github/banned key (placeholder)",
+   "signin": {
+    "steps": [
+     "export GITHUB_BANNED_NOEMAIL=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "cursor",
+   "model": "cursor (unavailable)",
+   "base_url": "",
+   "env_var": "CURSOR_UNAVAILABLE",
+   "path": "infinity/cursor/cursor (unavailable)",
+   "signin": {
+    "steps": [
+     "export CURSOR_UNAVAILABLE=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
+   }
+  },
+  {
+   "provider": "opencode-go",
+   "model": "opencode-go (unavailable)",
+   "base_url": "",
+   "env_var": "OPENCODE_GO_UNAVAILABLE",
+   "path": "infinity/opencode-go/opencode-go (unavailable)",
+   "signin": {
+    "steps": [
+     "export OPENCODE_GO_UNAVAILABLE=<your-key>",
+     "re-mint via your provider dashboard, then retry"
+    ]
    }
   },
   {

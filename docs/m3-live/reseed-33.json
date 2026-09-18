@@ -1,0 +1,446 @@
+{
+ "routes": [
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "wire": "openai",
+   "env_var": "OPENROUTER_API_KEY_2",
+   "owner": "ksonny4@gmail.com",
+   "name": "GPT-4o mini via OpenRouter (key 2)",
+   "connection_id": "openrouter/gpt-4o-mini",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 73
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "wire": "openai",
+   "env_var": "OPENROUTER_API_KEY",
+   "owner": "ksonny4@gmail.com",
+   "name": "GPT-4o mini via OpenRouter (key 1)",
+   "connection_id": "openrouter/gpt-4o-mini-key1",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 73
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "wire": "openai",
+   "env_var": "OPENROUTER_API_KEY_3",
+   "owner": "ksonny4@gmail.com",
+   "name": "GPT-4o mini via OpenRouter (key 3)",
+   "connection_id": "openrouter/gpt-4o-mini-key3",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 73
+   }
+  },
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "wire": "openai",
+   "env_var": "OPENROUTER_API_KEY_4",
+   "owner": "ksonny4@gmail.com",
+   "name": "GPT-4o mini via OpenRouter (key 4)",
+   "connection_id": "openrouter/gpt-4o-mini-key4",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 73
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "big-pickle",
+   "base_url": "https://opencode.ai/zen/v1",
+   "wire": "openai",
+   "env_var": "OPENCODE_ZEN_API_KEY_PETR",
+   "owner": "petr1kubelka@gmail.com",
+   "name": "Big Pickle (Petr key)",
+   "connection_id": "zen/big-pickle",
+   "active": true,
+   "bao_status": "active",
+   "l2_ref": "opencode/big-pickle",
+   "api_key": {
+    "present": true,
+    "len": 67
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "big-pickle",
+   "base_url": "https://opencode.ai/zen/v1",
+   "wire": "openai",
+   "env_var": "OPENCODE_ZEN_API_KEY",
+   "owner": "ksonny4@gmail.com",
+   "name": "Big Pickle (spare key)",
+   "connection_id": "zen/big-pickle-spare",
+   "active": true,
+   "bao_status": "active",
+   "l2_ref": "opencode/big-pickle",
+   "api_key": {
+    "present": true,
+    "len": 67
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.6-flash",
+   "base_url": "https://generativelanguage.googleapis.com",
+   "wire": "gemini",
+   "env_var": "GEMINI_API_KEY",
+   "owner": "ksonny4@gmail.com",
+   "name": "Gemini 3.6 Flash",
+   "connection_id": "gemini/gemini-3.6-flash",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 53
+   }
+  },
+  {
+   "provider": "moonshot",
+   "model": "kimi-k2.7-code",
+   "base_url": "https://api.moonshot.ai/v1",
+   "wire": "openai",
+   "env_var": "MOONSHOT_API_KEY",
+   "owner": "ksonny4@gmail.com",
+   "name": "Kimi K2.7 Code",
+   "connection_id": "moonshot/kimi-k2.7-code",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 51
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "wire": "anthropic",
+   "env_var": "MUSE_CODE_OAUTH",
+   "owner": "ksonny4@gmail.com",
+   "name": "Claude Sonnet 4.6 (oauth 1)",
+   "connection_id": "claude/claude-sonnet-4-6",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 169
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "wire": "anthropic",
+   "env_var": "MUSE_CODE_OAUTH_2",
+   "owner": "ksonny4@gmail.com",
+   "name": "Claude Sonnet 4.6 (oauth 2)",
+   "connection_id": "claude/claude-sonnet-4-6-oauth2",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 169
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "wire": "anthropic",
+   "env_var": "MUSE_CODE_OAUTH_3",
+   "owner": "ksonny4@gmail.com",
+   "name": "Claude Sonnet 4.6 (oauth 3)",
+   "connection_id": "claude/claude-sonnet-4-6-oauth3",
+   "active": true,
+   "bao_status": "active",
+   "api_key": {
+    "present": true,
+    "len": 169
+   }
+  },
+  {
+   "provider": "kilocode",
+   "model": "kilocode-key (endpoint TBD)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "KILOCODE_TOKEN",
+   "owner": "ksonny4@gmail.com",
+   "name": "Kilocode token (no keeper wire yet)",
+   "connection_id": "kilocode/placeholder",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 1 (no wire yet)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "CLOUDFLARE_AI_KEY",
+   "owner": "ksonny4@gmail.com",
+   "name": "Cloudflare AI key 1 (needs account id + wire)",
+   "connection_id": "cloudflare/key-1",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 2 (no wire yet)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "CLOUDFLARE_AI_KEY_2",
+   "owner": "ksonny@apple.com",
+   "name": "Cloudflare AI key 2 (needs account id + wire)",
+   "connection_id": "cloudflare/key-2",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "cloudflare-ai",
+   "model": "workers-ai key 3 (no wire yet)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "CLOUDFLARE_AI_KEY_3",
+   "owner": "kubelkatropkova@seznam.cz",
+   "name": "Cloudflare AI key 3 (needs account id + wire)",
+   "connection_id": "cloudflare/key-3",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "devin-cli",
+   "model": "devin sessions (no wire yet)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "DEVIN_CLI_TOKEN",
+   "owner": "ksonny4@gmail.com",
+   "name": "Devin CLI token (no keeper wire yet)",
+   "connection_id": "devin/placeholder",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "codex",
+   "model": "codex (no verified wire)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "CODEX_OAUTH",
+   "owner": "ksonny4@gmail.com",
+   "name": "Codex OAuth (no verified keeper wire)",
+   "connection_id": "codex/placeholder",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "antigravity",
+   "model": "antigravity 1 (CLI-only)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "ANTIGRAVITY_OAUTH",
+   "owner": "ksonny4@gmail.com",
+   "name": "Antigravity OAuth 1 (CLI-only, no API)",
+   "connection_id": "antigravity/key-1",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "antigravity",
+   "model": "antigravity 2 (CLI-only)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "ANTIGRAVITY_OAUTH_2",
+   "owner": "petr1kubelka@gmail.com",
+   "name": "Antigravity OAuth 2 (CLI-only, no API)",
+   "connection_id": "antigravity/key-2",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "antigravity",
+   "model": "inactive foreign key (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2",
+   "owner": "friedmanbob2@gmail.com",
+   "name": "Inactive Antigravity key (foreign account)",
+   "connection_id": "antigravity/inactive-friedmanbob2",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "antigravity",
+   "model": "inactive foreign key (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390",
+   "owner": "jannovak12390@gmail.com",
+   "name": "Inactive Antigravity key (foreign account)",
+   "connection_id": "antigravity/inactive-jannovak12390",
+   "active": true,
+   "bao_status": "active"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 1 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_1",
+   "owner": "jannovak12390@gmail.com",
+   "name": "Retired Zen key 1 (expired-gateway)",
+   "connection_id": "zen/retired-1",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 2 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_2",
+   "owner": "petaazdenicka@gmail.com",
+   "name": "Retired Zen key 2 (expired-gateway)",
+   "connection_id": "zen/retired-2",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 3 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_3",
+   "owner": "friedmanbob2@gmail.com",
+   "name": "Retired Zen key 3 (expired-gateway)",
+   "connection_id": "zen/retired-3",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 4 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_4",
+   "owner": "zdenickaapeta@gmail.com",
+   "name": "Retired Zen key 4 (expired-gateway)",
+   "connection_id": "zen/retired-4",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 5 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_5",
+   "owner": "ksonny4@gmail.com",
+   "name": "Retired Zen key 5 (expired-gateway)",
+   "connection_id": "zen/retired-5",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 6 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_6",
+   "owner": "ksonny4@gmail.com",
+   "name": "Retired Zen key 6 (expired-gateway)",
+   "connection_id": "zen/retired-6",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 7 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_7",
+   "owner": "ksonny4@gmail.com",
+   "name": "Retired Zen key 7 (expired-gateway)",
+   "connection_id": "zen/retired-7",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "retired zen 8 (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_ZEN_RETIRED_8",
+   "owner": "ksonny4@gmail.com",
+   "name": "Retired Zen key 8 (expired-gateway)",
+   "connection_id": "zen/retired-8",
+   "active": true,
+   "bao_status": "expired-gateway"
+  },
+  {
+   "provider": "github",
+   "model": "banned key (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "GITHUB_BANNED_KSONNY",
+   "owner": "ksonny@apple.com",
+   "name": "Banned GitHub key (placeholder)",
+   "connection_id": "github/banned-ksonny",
+   "active": true,
+   "bao_status": "banned"
+  },
+  {
+   "provider": "github",
+   "model": "banned key (placeholder)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "GITHUB_BANNED_NOEMAIL",
+   "owner": "ksonny4@gmail.com",
+   "name": "Banned GitHub key (placeholder)",
+   "connection_id": "github/banned-noemail",
+   "active": true,
+   "bao_status": "banned"
+  },
+  {
+   "provider": "cursor",
+   "model": "cursor (unavailable)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "CURSOR_UNAVAILABLE",
+   "owner": "ksonny4@gmail.com",
+   "name": "Cursor (marked unavailable in Bao)",
+   "connection_id": "cursor/placeholder",
+   "active": true,
+   "bao_status": "unavailable"
+  },
+  {
+   "provider": "opencode-go",
+   "model": "opencode-go (unavailable)",
+   "base_url": "",
+   "wire": "none",
+   "env_var": "OPENCODE_GO_UNAVAILABLE",
+   "owner": "ksonny4@gmail.com",
+   "name": "Opencode Go (marked unavailable in Bao)",
+   "connection_id": "opencode-go/placeholder",
+   "active": true,
+   "bao_status": "unavailable"
+  }
+ ]
+}

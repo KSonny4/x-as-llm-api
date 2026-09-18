@@ -36,3 +36,20 @@ cells to unknown until the next `keeper-probe` dispatch; that is why
 is attached: this environment has no image-input path, so visual proof
 is unavailable rather than invented; the page HTML is asserted in tests
 (legend, colors, Muse column, poller).
+
+## Addendum 2026-09-18 — 33-key reseed (job v20, images :main-76660e7)
+
+All 33 `secret/projects/pi-multi-providers/` keys seeded via
+`scripts/render-seeds.sh` (values Bao→`/tmp` only, never git): 11 live
+routes with credentials (openrouter ×4, zen ×2, gemini, moonshot, claude
+OAuth ×3 — same-model spares share columns, each keeps its own verdict
+via per-`connection_id` probe ingest) + 22 keyless placeholders
+(`wire: none`, never probed, honestly `unknown`): kilocode, cloudflare
+×3, devin, codex, antigravity ×2, 2 inactive foreign keys, 8 retired
+zen, 2 banned github, cursor + opencode-go unavailable. Owners come from
+Bao `email` metadata (8 distinct rows; empty → operator fallback,
+documented per route). `reseed-33.json` holds the redacted shape.
+`packs.json` now 528 packs (11 credential + 517 signin); `matrix.txt` 8
+emails × 66 columns, 11 live cells with `checked_at`, 22 placeholders
+`unknown` without `checked_at` (never probed — by design, not by gap).
+Zen `l2_ref: opencode/big-pickle` preserved on both live zen routes.
