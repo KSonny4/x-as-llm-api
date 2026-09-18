@@ -4,7 +4,9 @@ One-way contract: pi-infinity-llm pins this; keeper never imports from it.
 Changes are additive + version-bumped.
 
 Auth: `Authorization: Bearer $KEEPER_TOKEN` on everything except
-`GET /healthz` ( else `401`). Seeds come from `SEED_FILE` JSON
+`GET /healthz` ( else `401`). Rotation window: `KEEPER_TOKEN_NEXT`, when
+set, is accepted alongside `KEEPER_TOKEN` (parallel-accept); unset it to
+revoke. Seeds come from `SEED_FILE` JSON
 (`{"routes": [...]}`); production seeds export live Bao refs
 (`secret/projects/pi-multi-providers/<NAME>`, excluding
 `*_UNAVAILABLE/*_RETIRED/*_INACTIVE/*_BANNED` markers).
