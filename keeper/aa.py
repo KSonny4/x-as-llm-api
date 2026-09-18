@@ -46,7 +46,7 @@ def _read_cache(cache_path):
 def fetch_snapshot(api_key, cache_path, url=AA_MODELS_URL, timeout=20):
     """Returns (scores, stale). Writes cache on success only."""
     try:
-        req = _request.Request(url, headers={"Authorization": f"Bearer {api_key}"})
+        req = _request.Request(url, headers={"x-api-key": api_key})
         with urlopen(req, timeout=timeout) as res:
             scores = parse_scores(json.loads(res.read().decode("utf-8")))
         try:

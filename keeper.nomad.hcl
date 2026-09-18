@@ -30,6 +30,17 @@ variable "keeper_token_next" {
   default = ""
 }
 
+# ArtificialAnalysis API key for AA-desc open-provider ordering.
+# Never in git: pass via -var=aa_api_key="$(bao kv get -field=key
+# secret/projects/pi-multi-providers/ARTIFICIALANALYSIS_API_KEY)".
+# Empty (default) = name order, no stale badge (graceful, by design).
+# Sent as x-api-key (AA rejects Authorization: Bearer).
+
+variable "aa_api_key" {
+  type    = string
+  default = ""
+}
+
 # Live seed routes as JSON ({"routes": [...]}), rendered at deploy time
 # from Bao (secret/projects/pi-multi-providers/*). Never in git: pass via
 # -var=seeds_json="$(...)". Stored in the job spec like KEEPER_TOKEN
@@ -80,6 +91,7 @@ job "keeper" {
         PORT              = "8080"
         KEEPER_TOKEN      = var.keeper_token
         KEEPER_TOKEN_NEXT = var.keeper_token_next
+        ARTIFICIALANALYSIS_API_KEY = var.aa_api_key
         SEED_FILE         = "${NOMAD_SECRETS_DIR}/seeds.json"
       }
 

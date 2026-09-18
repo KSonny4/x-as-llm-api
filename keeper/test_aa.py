@@ -49,6 +49,22 @@ class FetchTest(unittest.TestCase):
         self.assertFalse(stale)
         self.assertTrue(os.path.exists(cache))
 
+    def test_uses_x_api_key_header(self):
+        seen = {}
+
+        class Cap(self.Resp):
+            pass
+
+        def fake(req, timeout=20):
+            seen["x-api-key"] = req.get_header("X-api-key")
+            seen["authorization"] = req.get_header("Authorization")
+            return self.Resp(FIXTURE)
+
+        with patch("aa.urlopen", side_effect=fake):
+            fetch_snapshot("KEY", self._cache())
+        self.assertEqual(seen["x-api-key"], "KEY")
+        self.assertIsNone(seen["authorization"])
+
     def test_failure_serves_last_good_stale(self):
         cache = self._cache()
         with patch("aa.urlopen", return_value=self.Resp(FIXTURE)):
