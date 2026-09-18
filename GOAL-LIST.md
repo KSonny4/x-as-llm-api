@@ -48,5 +48,5 @@ local-only green gates nothing.
 
 ## Item 9 — Nomad cutover + deprecations
 ```
-/list Rehearse rollback (Nomad revert forth/back, smoke both), rotate KEEPER_TOKEN to fix the recorded 403 (parallel-accept until smoke green), cut v2 to keeper.pkubelka.cz from Nomad, remove Coolify keeper app, write llm-quota DEPRECATED.md + archive. Done when: public curl https://keeper.pkubelka.cz/healthz -> 200, authed chat completion via hostname returns text, and smoke.sh against the hostname is green
+/list Rehearse rollback (Nomad revert forth/back, smoke both), rotate KEEPER_TOKEN to fix the recorded 403 (parallel-accept until smoke green), cut v2 to keeper.pkubelka.cz from Nomad, remove retired keeper app, write llm-quota DEPRECATED.md + archive. Done when: public curl https://keeper.pkubelka.cz/healthz -> 200, authed chat completion via hostname returns text, and smoke.sh against the hostname is green
 ```

@@ -6,7 +6,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
 
 - **E2E first, always — against Nomad, not localhost.** First deployable slice (healthz + packs) goes to Nomad immediately; breadth is added only on top of a live deployment. Local-only curls are never sufficient evidence: every phase gate replays the same curls against the Nomad URL. (Also recorded in engineering-guidance as a standing principle.)
 - **Deployed baseline 2026-09-17:** `/healthz` 200; `/packs` no-bearer → 401, garbage bearer → 401, Bao-stored `KEEPER_TOKEN` → **403** (differs from server.py's 401-only logic — OPEN: reconcile/rotate token with deploy owner before v2 reads depend on it).
-- **Origin UNPROVEN:** Coolify project `keeper` (uuid `pp7eq33nlgkszotau67p2eym`) + app `keeper` (uuid `kv4gvawhgshjaxdggb2vgvuf`) exist, but the recorded first deploy FAILED (private-repo clone); no success recorded since. Cloudflare masks origin (all hosts show `server: cloudflare`), so outside probing cannot distinguish Coolify vs Nomad vs manual. OPEN (owner): check Coolify dashboard deployments for the app uuid; whatever serves the hostname today is deprecated in favor of the Nomad v2 job, then the Coolify app is removed.
+- **Origin UNPROVEN:** retired-plane project `keeper` (uuid `pp7eq33nlgkszotau67p2eym`) + app `keeper` (uuid `kv4gvawhgshjaxdggb2vgvuf`) exist, but the recorded first deploy FAILED (private-repo clone); no success recorded since. Cloudflare masks origin (all hosts show `server: cloudflare`), so outside probing cannot distinguish retired plane vs Nomad vs manual. OPEN (owner): check retired-plane deployments for the app uuid; whatever serves the hostname today is deprecated in favor of the Nomad v2 job, then the retired app is removed (done 2026-09-18, see cutover doc).
 
 ## §1 — Repos: two, one contract (REVISED, approved)
 
@@ -22,7 +22,7 @@ All six sections approved by owner in brainstorming review. Full rebuild (option
   `KEEPER_API.md`; keeper never imports from the extension repo. Contract changes are
   additive + version-bumped; breaking changes get a new `keeperPackVersion` served in
   parallel until cutover is proven.
-- **Deploy target is Nomad, not Coolify.** Prod runs as a Nomad job (`keeper.nomad.hcl` in this repo); `compose.yaml` is local-dev only. Secrets reach the alloc from Bao (NomadSetup acl/registry; exact stanza at build time). The old Coolify path dies with the old keeper — no Coolify work in v2.
+- **Deploy target is Nomad only.** Prod runs as a Nomad job (`keeper.nomad.hcl` in this repo); `compose.yaml` is local-dev only. Secrets reach the alloc from Bao (NomadSetup acl/registry; exact stanza at build time). The old retired path died with the old keeper — no retired-plane work in v2.
 - **`KSonny4/llm-quota`** (read-only OmniRoute quota matrix): full deprecation after
   matrix parity (ported `matrix.test.js` green). `DEPRECATED.md` + hostname move +
   archive. `pi-multi-providers/` is not a repo (remote = pi-infinity-llm) — covered
