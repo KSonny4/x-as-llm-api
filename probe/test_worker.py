@@ -158,5 +158,78 @@ class ProbeTest(unittest.TestCase):
         self.assertEqual(saved["routes"][0]["state"], "suspect")
 
 
+class DispatchTest(unittest.TestCase):
+    """dispatch.py posts probe results to keeper (stub both sides)."""
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.bin = os.path.join(self.tmp, "bin")
+        os.makedirs(self.bin)
+        self.cli_path = os.path.join(self.bin, "opencode")
+        self.set_cli("#!/bin/sh\necho pong\n")
+
+    def set_cli(self, script):
+        with open(self.cli_path, "w") as f:
+            f.write(script)
+        os.chmod(self.cli_path, os.stat(self.cli_path).st_mode | stat.S_IEXEC)
+
+    def test_reports_ok_route_and_posts(self):
+        import dispatch
+        srv = make_stub({"/models": (200, OPENAI_MODELS),
+                         "/chat/completions": (200, OPENAI_CHAT)})
+        posted = []
+
+        import urllib.request as urlreq
+        real_urlopen = urlreq.urlopen
+
+        class Resp:
+            status = 202
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def fake_urlopen(req, timeout=15):
+            if req.full_url.startswith("http://127.0.0.1:9"):
+                posted.append(json.loads(req.data.decode()))
+                return Resp()
+            return real_urlopen(req, timeout=timeout)
+
+        urlreq.urlopen = fake_urlopen
+        old = dict(os.environ)
+        old_path = os.environ.get("PATH", "")
+        try:
+            os.environ["PATH"] = self.bin + ":" + old_path
+            self.set_cli("#!/bin/sh\necho pong\n")
+            os.environ["SEEDS_JSON"] = json.dumps({"routes": [{
+                "provider": "p", "model": "muse",
+                "base_url": f"http://127.0.0.1:{srv.server_port}",
+                "wire": "openai", "api_key": "k",
+                "connection_id": "p/muse", "active": True}]})
+            os.environ["KEEPER_URL"] = "http://127.0.0.1:9"
+            os.environ["KEEPER_TOKEN"] = "t"
+            self.assertEqual(dispatch.main(), 0)
+        finally:
+            urlreq.urlopen = real_urlopen
+            os.environ.clear()
+            os.environ.update(old)
+            srv.shutdown()
+        self.assertEqual(len(posted), 1)
+        self.assertEqual(posted[0]["state"], "ok")
+        self.assertEqual(posted[0]["model"], "muse")
+
+    def test_refuses_without_token(self):
+        import dispatch
+        old = dict(os.environ)
+        try:
+            os.environ["SEEDS_JSON"] = '{"routes": []}'
+            os.environ.pop("KEEPER_TOKEN", None)
+            self.assertEqual(dispatch.main(), 1)
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+
+
 if __name__ == "__main__":
     unittest.main()

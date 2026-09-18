@@ -397,5 +397,41 @@ class MetricsTest(RouteCase):
         self.assertNotIn("keeper_route_divergent{", raw.decode())
 
 
+class ProbeIngestTest(RouteCase):
+    SPLIT = {"provider": "acme-openai", "model": "acme-chat",
+             "state": "degraded",
+             "detail": {"l1": "suspect", "l2": "pong"},
+             "checked_at": "2026-09-18T00:00:00+00:00"}
+
+    def post_probe(self, body, token="Bearer t"):
+        raw = json.dumps(body).encode() if body is not None else b"{"
+        return server.route("POST", "/api/v1/probe",
+                            {"authorization": token}, "t", body=raw,
+                            state=self.state)
+
+    def test_ingest_split_lands_in_matrix(self):
+        code, raw, _ = self.post_probe(self.SPLIT)
+        self.assertEqual(code, 202)
+        self.assertEqual(self.state["probe"]["c1"], "degraded")
+        self.assertEqual(
+            self.state["probe_detail"]["c1"]["detail"]["l1"], "suspect")
+        code, raw, _ = self.call("GET", "/api/v1/matrix")
+        doc = json.loads(raw)
+        self.assertEqual(doc["diagnostics"]["divergent"], ["c1"])
+
+    def test_ingest_rejects_shape(self):
+        for bad in (None, {}, {"provider": "acme-openai"},
+                    dict(self.SPLIT, state="bogus"),
+                    dict(self.SPLIT, model="nope")):
+            code, _, _ = self.post_probe(bad)
+            self.assertEqual(code, 422, bad)
+
+    def test_ingest_requires_bearer(self):
+        code, _, _ = server.route(
+            "POST", "/api/v1/probe", {}, "t",
+            body=json.dumps(self.SPLIT).encode(), state=self.state)
+        self.assertEqual(code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()

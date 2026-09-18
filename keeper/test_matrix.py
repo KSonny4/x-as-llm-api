@@ -166,6 +166,15 @@ class DualVerifyTest(unittest.TestCase):
         self.assertFalse(cells["o"]["divergent"])
         self.assertEqual(data["diagnostics"]["divergent"], ["z"])
 
+    def test_unassigned_divergent_still_listed(self):
+        data = build_matrix([
+            {"id": "z", "provider": "zen", "model": "big-pickle",
+             "name": "Z", "email": "keeper"},
+        ], probe_states={"z": "degraded"},
+            probe_detail={"z": self.SPLIT})
+        self.assertEqual(data["rows"], [])
+        self.assertEqual(data["diagnostics"]["divergent"], ["z"])
+
     def test_string_states_stay_compatible(self):
         data = build_matrix([
             {"id": "a", "provider": "p", "name": "A",

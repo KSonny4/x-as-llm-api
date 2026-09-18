@@ -476,6 +476,40 @@ def page_report(state):
             "<button>send</button></form></body></html>" % options)
 
 
+PROBE_STATES = ("ok", "limited", "misconfigured", "suspect",
+                "degraded", "down", "unknown")
+
+
+def ingest_probe(state, doc):
+    """Store one probe_route result (POST /api/v1/probe body).
+    Returns (ok, error): validates shape, records probe_detail + probe
+    state, busts the matrix cache. Never raises on bad input."""
+    if not isinstance(doc, dict):
+        return False, "body must be an object"
+    missing = [k for k in ("provider", "model", "state")
+               if not doc.get(k)]
+    if missing:
+        return False, "missing: " + ",".join(missing)
+    if doc["state"] not in PROBE_STATES:
+        return False, "bad state: %s" % doc["state"]
+    routes = [r for r in state["routes"]
+              if r.get("provider") == doc["provider"]
+              and r.get("model") == doc["model"]]
+    if not routes:
+        return False, "unknown route: %s/%s" % (doc["provider"],
+                                                 doc["model"])
+    cid = connection_id(routes[0])
+    if not isinstance(doc.get("detail"), dict):
+        return False, "detail must be an object"
+    record = {"provider": doc["provider"], "model": doc["model"],
+              "state": doc["state"], "detail": doc["detail"],
+              "checked_at": doc.get("checked_at", "")}
+    state["probe_detail"][cid] = record
+    state["probe"][cid] = doc["state"]
+    state["matrix_cache"] = None
+    return True, ""
+
+
 def accepted(auth, token):
     """Bearer check against one token or a tuple (current + next).
     Rotation: pass (KEEPER_TOKEN, KEEPER_TOKEN_NEXT); empty entries never
@@ -525,6 +559,18 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return json_resp(422, {"bad_errorClass": bad})
         spool_feedback(state, doc)
         return json_resp(202, {"ok": True})
+
+    if method == "POST" and clean_path == "/api/v1/probe":
+        try:
+            probe_doc = json.loads((body or b"").decode("utf-8") or "{}")
+        except Exception:
+            return 422, b"bad json", [("Content-Type", "text/plain")]
+        ok, err = ingest_probe(state, probe_doc)
+        if not ok:
+            return 422, ("probe rejected: " + err).encode(), [
+                ("Content-Type", "text/plain")]
+        return json_resp(202, {"ok": True,
+                              "keeperPackVersion": KEEPER_PACK_VERSION})
 
     if method == "GET" and clean_path == "/v1/providers":
         return json_resp(200, {"providers": provider_view(state),

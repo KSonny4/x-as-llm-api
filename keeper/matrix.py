@@ -147,7 +147,7 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
                            "divergent": False}
             else:
                 verdict = dual_verdict(det)
-            if verdict["divergent"]:
+            if verdict["divergent"] and cid not in divergent:
                 divergent.append(cid)
             cells.setdefault(provider, []).append({
                 "connection_id": cid,
@@ -162,6 +162,11 @@ def build_matrix(connections, probe_states=None, aa_scores=None,
         for plist in cells.values():
             plist.sort(key=_cell_sort_key)
         rows.append({"email": email, "cells": cells})
+    # Unassigned connections have no row cells — scan their dual verdicts
+    # too so divergence is visible regardless of email grouping.
+    for cid, det in probe_detail.items():
+        if cid not in divergent and dual_verdict(det)["divergent"]:
+            divergent.append(cid)
     return {
         "emails": grouped["emails"],
         "rows": rows,
