@@ -29,7 +29,7 @@ restarts (in-memory). Token travels in the mint fetch header, never URL. Seeds c
 | `GET /api/v1/accounts` | bearer | `{emails, unassigned_count}` |
 | `GET /api/v1/health` | bearer | `{ok, keeperPackVersion, routes}` |
 | `GET /metrics` | bearer | Prometheus text: `keeper_route_divergent{provider,model,connection}` 0/1 (L1-fail+L2-pass) + `keeper_probe_checked_at_seconds`; series only for dual-probed connections |
-| `GET /` | bearer or session cookie (GET only) | server-rendered matrix table + `diagnostics.unassigned` (values never in HTML); 30s just-in-time poller of `matrix?refresh=1` with stale banner; standard state colors + divergent badges + legend |
+| `GET /` | bearer or session cookie (GET only) | server-rendered matrix table + `diagnostics.unassigned` (values never in HTML); 30s just-in-time poller of `matrix?refresh=1` with stale banner; standard state colors + divergent badges + legend; opening a provider shows only `ok` model columns sorted by AA score desc (unscored last, `aa_stale` badge when scores are stale) — display-only, JSON keeps every column |
 | `GET /guides` | bearer | per-consumer copy-paste cards |
 | `GET /signin` | bearer | re-mint steps for keyless members |
 | `GET /login` | none | public token form; POSTs bearer via fetch, redirects to `/` |
