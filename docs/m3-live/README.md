@@ -74,3 +74,24 @@ Zen `l2_ref: opencode/big-pickle` preserved on both live zen routes.
 - STILL OWNER-ONLY: Grafana alert-rule apply (needs a working Cloud
   API token with alerting write) + contact-point choice
   (`notifications: []` stays empty until then).
+
+## Addendum 2026-09-18T22:43Z — alert rule APPLIED, state captured live
+
+- Token: Bao `secret/projects/nomad/GRAFANA_CLOUD_RW` (admin,
+  Bearer-authenticated against `https://meowlabs.grafana.net/api`).
+  Bao `control-panel/GRAFANA_CLOUD_API_KEY` is 401-invalid (dead).
+- Rule: folder `keeper`, group `keeper-divergence`, uid
+  `keeper-route-divergent`, `datasourceUid: grafanacloud-prom`,
+  `notification_settings.receiver: HonzaTraderBot` (telegram, uid
+efcikfz53nr40e, owner-confirmed). `grafana/keeper-divergent-alert.json`
+  updated to the applied A→B→C shape; lessons recorded in its `_comment`.
+- Live state @ 2026-09-18T22:43:30Z: **inactive / health ok** — correct,
+  all 11 series are 0 (no L1-fail+L2-pass split exists); nothing faked.
+  Test-firing to the owner's Telegram was NOT done (noise, unasked).
+- Deleted same-day: stale twin `cfyn4k7ofc16of` (earlier 2-stage attempt,
+  no receiver, permanent eval error) + `keeper-bisect` scratch group.
+- Caveat: the RW token does NOT authenticate Prometheus basic-auth
+  (instance user fails); the running Alloy still ships on its baked
+  pre-rotation basic pair (series age 0s, verified). Re-registering
+  Alloy will need a metrics-write credential — owner to confirm before
+  the next Alloy redeploy.

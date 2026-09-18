@@ -1,13 +1,21 @@
 {
   "_comment": [
-    "Keeper L1-vs-L2 divergence alert (Grafana unified alerting, file-provisioned shape).",
+    "Keeper L1-vs-L2 divergence alert (Grafana unified alerting).",
     "Fires when keeper_route_divergent == 1 on any route: L1 curl failed while",
     "L2 opencode CLI passed on the same route+run (the 'weird' case).",
     "Plain down (both legs fail) does NOT page here by design.",
-    "DATASOURCE_UID: filled as grafanacloud-prom (Hosted Prometheus fed by",
-    "  keeper-alloy; Cloud cannot scrape bearer-gated /metrics directly).",
-    "CONTACT: `notifications` stays empty until the owner picks a receiver;",
-    "  attach the contact point uid here before apply (owner-only step).",
+    "APPLIED LIVE 2026-09-18 via provisioning API (folder keeper, group",
+    "  keeper-divergence, uid keeper-route-divergent): datasourceUid",
+    "  grafanacloud-prom (Hosted Prometheus fed by keeper-alloy; Cloud cannot",
+    "  scrape bearer-gated /metrics directly), receiver HonzaTraderBot",
+    "  (notification_settings). Shape: A range query -> B reduce(last) ->",
+    "  C threshold gt 0. The reduce step is MANDATORY: this Cloud version",
+    "  rejects unreduced time-series input ('only reduced data can be",
+    "  alerted on'); multi-series labels survive reduce (one instance per",
+    "  route). Group interval is SECONDS (60), not '1m' (string 400s).",
+    "  for 0s: pages immediately on a split (splits are rare + actionable).",
+    "Deleted same-day: stale twin rule cfyn4k7ofc16of (earlier 2-stage attempt,",
+    "  no receiver, permanent eval error) + bisect scratch group."
   ],
   "apiVersion": 1,
   "groups": [
@@ -20,11 +28,11 @@
         {
           "uid": "keeper-route-divergent",
           "title": "Keeper route divergent (curl fails, opencode CLI passes)",
-          "condition": "fire",
+          "condition": "C",
           "for": "0s",
           "annotations": {
             "summary": "L1/L2 split on {{ $labels.provider }}/{{ $labels.model }} ({{ $labels.connection }})",
-            "description": "Direct HTTP probing failed but the opencode CLI leg passed on the same route+run. Credential or policy anomaly, not an outage. Matrix: https://keeper.pkubelka.cz/ ; runbook: docs/cutover-rehearsal-2026-09-18.md"
+            "description": "Direct HTTP probing failed but the opencode CLI leg passed on the same route+run. Credential or policy anomaly, not an outage. Matrix: https://keeper.pkubelka.cz/"
           },
           "labels": {
             "severity": "page",
@@ -32,7 +40,7 @@
           },
           "data": [
             {
-              "refId": "divergent",
+              "refId": "A",
               "datasourceUid": "grafanacloud-prom",
               "model": {
                 "expr": "max by (provider, model, connection) (keeper_route_divergent)",
@@ -41,11 +49,20 @@
               }
             },
             {
-              "refId": "fire",
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "reduce",
+                "expression": "A",
+                "reducer": "last"
+              }
+            },
+            {
+              "refId": "C",
               "datasourceUid": "__expr__",
               "model": {
                 "type": "threshold",
-                "expression": "divergent",
+                "expression": "B",
                 "conditions": [
                   {
                     "evaluator": {"type": "gt", "params": [0]},
@@ -58,7 +75,7 @@
               }
             }
           ],
-          "notifications": []
+          "notifications": ["HonzaTraderBot"]
         }
       ]
     }
