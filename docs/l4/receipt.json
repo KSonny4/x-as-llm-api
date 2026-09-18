@@ -1,0 +1,26 @@
+{
+  "schema": "pr-evidence/v1",
+  "repository": "KSonny4/x-as-llm-api",
+  "revision": "a5e74112e423024744108ed9314fd26b779dd5ce",
+  "base_revision": "b4ce05a70503f53deac0807c87e9e7766c7b3032",
+  "definitions_sha256": "90cccbb91f64b8435387f90b248790a31bb41d2cf3d655e8ade7371f1e36f454",
+  "verification_exit_code": 0,
+  "inputs": {
+    "keeper-tests": {
+      "status": "complete",
+      "tool": "python3 unittest",
+      "tool_version": "Python 3.9.6",
+      "exit_code": 0,
+      "sha256": "11b877a404a1ce9e98e7332d1cb4ffe72c8d18d7a747bd741ddbc512d37c578a",
+      "path": "artefacts/keeper-tests.json"
+    },
+    "probe-tests": {
+      "status": "complete",
+      "tool": "python3 unittest",
+      "tool_version": "Python 3.9.6",
+      "exit_code": 0,
+      "sha256": "23ea3ccc21a72d3ec0d2edfdf5934205ae9123b91acaec8ef35a610c1dfd9cdb",
+      "path": "artefacts/probe-tests.json"
+    }
+  }
+}
