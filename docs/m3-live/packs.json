@@ -1,0 +1,60 @@
+{
+ "keeperPackVersion": "v2",
+ "packs": [
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "env_var": "OPENROUTER_API_KEY_2",
+   "path": "infinity/openrouter/openai/gpt-4o-mini",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "big-pickle",
+   "base_url": "https://opencode.ai/zen/v1",
+   "env_var": "OPENCODE_ZEN_API_KEY_PETR",
+   "path": "infinity/opencode-zen/big-pickle",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.6-flash",
+   "base_url": "https://generativelanguage.googleapis.com",
+   "env_var": "GEMINI_API_KEY",
+   "path": "infinity/gemini/gemini-3.6-flash",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "moonshot",
+   "model": "kimi-k2.7-code",
+   "base_url": "https://api.moonshot.ai/v1",
+   "env_var": "MOONSHOT_API_KEY",
+   "path": "infinity/moonshot/kimi-k2.7-code",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "env_var": "MUSE_CODE_OAUTH",
+   "path": "infinity/claude/claude-sonnet-4-6",
+   "credential": {
+    "type": "bearer",
+    "present": true
+   }
+  }
+ ]
+}

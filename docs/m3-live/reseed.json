@@ -1,0 +1,80 @@
+{
+ "routes": [
+  {
+   "provider": "openrouter",
+   "model": "openai/gpt-4o-mini",
+   "base_url": "https://openrouter.ai/api/v1",
+   "api_key": {
+    "present": true,
+    "len": 73
+   },
+   "wire": "openai",
+   "env_var": "OPENROUTER_API_KEY_2",
+   "owner": "ksonny4@gmail.com",
+   "name": "GPT-4o mini via OpenRouter",
+   "connection_id": "openrouter/gpt-4o-mini",
+   "active": true
+  },
+  {
+   "provider": "opencode-zen",
+   "model": "big-pickle",
+   "base_url": "https://opencode.ai/zen/v1",
+   "api_key": {
+    "present": true,
+    "len": 67
+   },
+   "wire": "openai",
+   "env_var": "OPENCODE_ZEN_API_KEY_PETR",
+   "owner": "ksonny4@gmail.com",
+   "name": "Big Pickle",
+   "connection_id": "zen/big-pickle",
+   "l2_ref": "opencode/big-pickle",
+   "active": true
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.6-flash",
+   "base_url": "https://generativelanguage.googleapis.com",
+   "wire": "gemini",
+   "env_var": "GEMINI_API_KEY",
+   "api_key": {
+    "present": true,
+    "len": 53
+   },
+   "connection_id": "gemini/gemini-3.6-flash",
+   "owner": "ksonny4@gmail.com",
+   "name": "Gemini 3.6 Flash",
+   "active": true
+  },
+  {
+   "provider": "moonshot",
+   "model": "kimi-k2.7-code",
+   "base_url": "https://api.moonshot.ai/v1",
+   "wire": "openai",
+   "env_var": "MOONSHOT_API_KEY",
+   "api_key": {
+    "present": true,
+    "len": 51
+   },
+   "connection_id": "moonshot/kimi-k2.7-code",
+   "owner": "ksonny4@gmail.com",
+   "name": "Kimi K2.7 Code",
+   "active": true
+  },
+  {
+   "provider": "claude",
+   "model": "claude-sonnet-4-6",
+   "base_url": "https://api.anthropic.com",
+   "wire": "anthropic",
+   "env_var": "MUSE_CODE_OAUTH",
+   "api_key": {
+    "present": true,
+    "len": 169
+   },
+   "connection_id": "claude/claude-sonnet-4-6",
+   "owner": "ksonny4@gmail.com",
+   "name": "Claude Sonnet 4.6",
+   "active": true
+  }
+ ]
+}
