@@ -483,7 +483,7 @@ def health_view(state):
 def page_login():
     """Public login form: token goes in a fetch Authorization header (POST
     body path), never in the URL. On 200 the session cookie is set."""
-    return ("<html><head><meta charset="utf-8"><title>keeper login</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>keeper login</title></head><body>"
             "<h1>keeper login</h1>"
             "<form id=\"f\"><input id=\"t\" type=\"password\" "
             "autocomplete=\"off\" placeholder=\"KEEPER_TOKEN\"/>"
@@ -552,7 +552,7 @@ def page_index(state):
     unassigned = "".join("<li>%s</li>" % html.escape(
         "%s (%s)" % (u.get("name", "?"), u.get("provider", "?")))
         for u in doc["diagnostics"]["unassigned"])
-    return ("<html><head><meta charset="utf-8"><title>keeper matrix</title>"
+    return ("<html><head><meta charset=\"utf-8\"><title>keeper matrix</title>"
             "<style>body{font-family:system-ui,sans-serif;margin:2em}"
             "table{border-collapse:collapse}"
             "td,th{border:1px solid #ccc;padding:.3em .6em;text-align:left}"
@@ -647,7 +647,7 @@ def page_guides(state):
         curls = "\n".join(html.escape(c["curl"]) for c in view["curls"])
         cards.append("<h2>%s</h2><pre>%s\n%s</pre>"
                      % (html.escape(who), html.escape(view["header"]), curls))
-    return ("<html><head><meta charset="utf-8"><title>guides</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>guides</title></head><body>"
             "<h1>guides</h1>%s</body></html>" % "".join(cards))
 
 
@@ -659,7 +659,7 @@ def page_signin(state):
                          "provider dashboard</li>"
                          % (html.escape(route.get("model", "?")),
                             html.escape(route.get("env_var", "?"))))
-    return ("<html><head><meta charset="utf-8"><title>signin</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>signin</title></head><body>"
             "<h1>signin: re-mint steps</h1><ul>%s</ul></body></html>"
             % ("".join(steps) or "<li>all routes have live credentials</li>"))
 
@@ -669,7 +669,7 @@ def page_report(state):
         "%s/%s:%s" % (r.get("provider", ""), r.get("model", ""),
                       state["probe"].get(connection_id(r), "unknown")))
         for r in state["routes"])
-    return ("<html><head><meta charset="utf-8"><title>report</title></head><body>"
+    return ("<html><head><meta charset=\"utf-8\"><title>report</title></head><body>"
             "<h1>report a route problem</h1>"
             "<p>live route state is shown per option</p>"
             "<form method=\"post\" action=\"/feedback\">"
