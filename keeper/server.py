@@ -15,6 +15,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import aa
@@ -365,6 +366,43 @@ def accounts_view(state):
             "keeperPackVersion": KEEPER_PACK_VERSION}
 
 
+def prom_esc(value):
+    return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+def probe_epoch(when):
+    try:
+        return int(datetime.fromisoformat(
+            str(when).replace("Z", "+00:00")).timestamp())
+    except Exception:
+        return None
+
+
+def metrics_view(state):
+    """Prometheus text: divergent gauge + per-connection probe timestamp.
+    Only connections with a recorded dual verdict get series (L2 runs on
+    demand, so 'no series' means 'never dual-probed', not 'fine')."""
+    lines = [
+        "# HELP keeper_route_divergent L1 curl fails while L2 opencode CLI passes.",
+        "# TYPE keeper_route_divergent gauge",
+        "# HELP keeper_probe_checked_at_seconds Unix time of last dual probe.",
+        "# TYPE keeper_probe_checked_at_seconds gauge",
+    ]
+    for cid in sorted((state.get("probe_detail") or {})):
+        det = state["probe_detail"][cid] or {}
+        verdict = matrix_mod.dual_verdict(det)
+        labels = 'provider="%s",model="%s",connection="%s"' % (
+            prom_esc(det.get("provider", "")),
+            prom_esc(det.get("model", "")), prom_esc(cid))
+        lines.append("keeper_route_divergent{%s} %d"
+                     % (labels, 1 if verdict["divergent"] else 0))
+        ts = probe_epoch(det.get("checked_at", ""))
+        if ts is not None:
+            lines.append("keeper_probe_checked_at_seconds{%s} %d"
+                         % (labels, ts))
+    return "\n".join(lines) + "\n"
+
+
 def health_view(state):
     return {"ok": True, "keeperPackVersion": KEEPER_PACK_VERSION,
             "routes": dict(state["probe"])}
@@ -530,6 +568,10 @@ def route(method, path, headers, token, body=None, query="", state=None):
 
     if method == "GET" and clean_path == "/api/v1/health":
         return json_resp(200, health_view(state))
+
+    if method == "GET" and clean_path == "/metrics":
+        return text_resp(200, metrics_view(state),
+                         "text/plain; version=0.0.4")
 
     if method == "GET" and clean_path == "/":
         refresh = params.get("refresh", ["0"])[0] == "1"
