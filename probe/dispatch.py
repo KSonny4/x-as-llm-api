@@ -40,6 +40,13 @@ def load_routes():
     return [r for r in routes if isinstance(r, dict)]
 
 
+def is_placeholder(route):
+    """Keyless routes are display placeholders (dead markers, unwired
+    providers): nothing to probe, so dispatch skips them and their
+    matrix cells stay honestly unknown instead of down."""
+    return not (route.get("api_key") or "")
+
+
 def post_result(base, token, result):
     req = urllib.request.Request(
         base.rstrip("/") + "/api/v1/probe",
@@ -70,6 +77,10 @@ def main():
     for route in routes:
         label = "%s/%s" % (route.get("provider", "?"),
                            route.get("model", "?"))
+        if is_placeholder(route):
+            print("dispatch: %s skipped (placeholder, no credential)"
+                  % label, flush=True)
+            continue
         try:
             res = probe_route(route)
         except Exception as e:
