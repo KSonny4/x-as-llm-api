@@ -524,7 +524,8 @@ class SessionCase(RouteCase):
         self.assertEqual(code, 200)
         for needle in (b"/api/v1/matrix?refresh=1",
                        b"setInterval(poll,30000)", b"id=\"stale\"",
-                       b"/api/v1/session/logout"):
+                       b"/api/v1/session/logout",
+                       b'<meta charset="utf-8">'):
             self.assertIn(needle, body)
 
     def test_index_shows_divergent_badge_and_checked_at(self):
