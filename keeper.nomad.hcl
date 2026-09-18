@@ -71,7 +71,7 @@ job "keeper" {
     task "server" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/keeper:cutover-1"
+        image      = "registry.pkubelka.cz/keeper:pr4-3"
         ports      = ["http"]
         force_pull = true
       }

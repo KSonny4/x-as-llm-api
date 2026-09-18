@@ -160,6 +160,7 @@ def probe_route(route, report=None, l2env=None):
     out, detail, fb = probe_l1(route)
     if out in ("ok", "limited", "misconfigured"):
         state = out
+        detail = {"l1": out, **detail}
     else:
         ok, text = probe_l2(route, env=l2env)
         state = "degraded" if ok else "down"

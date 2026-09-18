@@ -24,8 +24,12 @@ FAIL = []
 
 
 def req(path, token=None, etag=None, method="GET", data=None):
+    # NOTE: Cloudflare 403s Python-urllib's default UA on the public
+    # hostname (bot rule); identify honestly so smoke works both
+    # in-cluster and through the tunnel.
     r = urllib.request.Request(BASE + path, method=method,
-                               data=data)
+                               data=data,
+                               headers={"User-Agent": "keeper-smoke/1.0"})
     if token:
         r.add_header("Authorization", "Bearer " + token)
     if etag:
