@@ -49,9 +49,8 @@ variable "dr_user" {
 }
 
 variable "dr_pass" {
-  type      = string
-  sensitive = true
-  default   = ""
+  type    = string
+  default = ""
 }
 
 # Live seed routes as JSON ({"routes": [...]}), rendered at deploy time
