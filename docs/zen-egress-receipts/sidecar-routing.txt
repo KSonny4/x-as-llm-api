@@ -1,0 +1,6 @@
+[36mINFO[0m[0004] [[38;5;227m3423047899[0m 1ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
+[36mINFO[0m[0004] [[38;5;114m317779810[0m 0ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
+[36mINFO[0m[0005] [[38;5;36m3316937236[0m 0ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
+[36mINFO[0m[0005] [[38;5;171m792140955[0m 0ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
+[36mINFO[0m[0007] [[38;5;111m1780849503[0m 0ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
+[36mINFO[0m[0007] [[38;5;78m4161380926[0m 0ms] outbound/direct[direct]: outbound connection to openrouter.ai:443
