@@ -1233,6 +1233,17 @@ def route(method, path, headers, token, body=None, query="", state=None):
     if method == "GET" and clean_path == "/api/v1/health":
         return json_resp(200, health_view(state))
 
+    if method == "GET" and clean_path == "/api/v1/detail":
+        # Stored probe evidence for one connection (bearer-gated like
+        # everything else). Records carry provider/model/state/detail
+        # (incl. L2 CLI text) + checked_at — never credentials.
+        cid = params.get("connection", [""])[0]
+        det = (state.get("probe_detail") or {}).get(cid)
+        if det is None:
+            return json_resp(404, {"ok": False,
+                                   "error": "no probe record"})
+        return json_resp(200, {"ok": True, "record": det})
+
     if method == "GET" and clean_path == "/metrics":
         return text_resp(200, metrics_view(state),
                          "text/plain; version=0.0.4")

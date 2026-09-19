@@ -895,6 +895,26 @@ class TupleMatrixTest(RouteCase):
             "OPENCODE_ZEN_API_KEY", [("a@example.com", dict(fail))])
         self.assertIn("quota spent", vq)
 
+    def test_detail_endpoint_returns_stored_evidence(self):
+        self.zen_state()
+        self.state["probe_detail"] = {
+            "zen/m2-k1": {
+                "provider": "opencode-zen", "model": "m2",
+                "state": "down",
+                "detail": {"l1": "suspect",
+                             "l2": "exec-fail: quota spent"},
+                "checked_at": self.T1}}
+        code, raw, _ = self.call(
+            "GET", "/api/v1/detail?connection=zen/m2-k1")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertTrue(doc["ok"])
+        self.assertEqual(doc["record"]["detail"]["l2"],
+                         "exec-fail: quota spent")
+        self.assertNotIn("api_key", json.dumps(doc))
+        code, _, _ = self.call("GET", "/api/v1/detail?connection=nope")
+        self.assertEqual(code, 404)
+
     def test_matrix_json_shape_frozen(self):
         self.zen_state()
         _, raw, _ = self.call("GET", "/api/v1/matrix")
