@@ -36,7 +36,11 @@ EOF
 }
 
 OR_BASE="https://openrouter.ai/api/v1"
-ZEN_BASE="https://opencode.ai/zen/v1"
+# M3 adoption (2026-09-19): Zen L1 exits via Cloudflare Worker, not OVH.
+# Keyed curl through the worker returns 200 (ovh direct returns 403).
+# Trade-off: Cloudflare sees the per-request Authorization header in
+# transit (nothing stored at CF). Revisit if a second Mullvad key lands.
+ZEN_BASE="https://keeper-zen-egress.kubelkatropkova.workers.dev/zen/v1"
 ANTHropic_BASE="https://api.anthropic.com"
 
 {

@@ -17,15 +17,12 @@
 #   nomad job dispatch keeper-probe
 # Then: keeper matrix refresh (?refresh=1) shows fresh l2 verdicts.
 #
-# Zen L1 egress: an `egress` sidecar (sing-box userspace WireGuard to a
-# pinned Mullvad relay + HTTP CONNECT on 127.0.0.1:8888) carries ONLY
-# opencode.ai traffic (sing-box route rules; rest direct). The probe
-# task sets HTTPS_PROXY so urllib L1 + any proxy-aware L2 legs use it;
-# NO_PROXY keeps keeper POSTs on loopback. Zero privileges: no
-# NET_ADMIN, no TUN device, no node changes. WireGuard identity arrives
-# via -var (Bao-held, never git):
-#     -var=wg_private_key="$(bao kv get -field=private_key secret/projects/pi-infinity-llm/MULLVAD_WIREGUARD_KEY)" \
-#     -var=wg_addresses="$(bao kv get -field=addresses secret/projects/pi-infinity-llm/MULLVAD_WIREGUARD_KEY)" \
+# Zen L1 egress (M3 adoption 2026-09-19): base URLs point at the
+# keeper-zen-egress Cloudflare Worker (see probe/egress/worker.js),
+# which returned keyed 200 where OVH direct returns 403. The sing-box
+# sidecar experiment (probe/egress/*) is parked: it routes correctly
+# but shares one Mullvad key+address with Pi gluetun (conflict →
+# blackhole). Revive with a second key; see docs/zen-egress.md.
 #
 # Notes: network_mode host so the probe reaches keeper on node loopback
 # (:8102) without publishing ports. opencode auth arrives as a templated
@@ -45,26 +42,6 @@ variable "seeds_json" {
 variable "opencode_auth_json" {
   type    = string
   default = "{}"
-}
-
-variable "wg_private_key" {
-  type    = string
-  default = ""
-}
-
-variable "wg_addresses" {
-  type    = string
-  default = ""
-}
-
-variable "wg_peer_public_key" {
-  type    = string
-  default = "tzYLWgBdwrbbBCXYHRSoYIho4dHtrm+8bdONU1I8xzc="
-}
-
-variable "wg_peer_endpoint" {
-  type    = string
-  default = "185.209.196.74:51820"
 }
 
 job "keeper-probe" {
@@ -91,9 +68,6 @@ job "keeper-probe" {
         KEEPER_TOKEN        = var.keeper_token
         SEEDS_JSON          = var.seeds_json
         OPENCODE_AUTH_FILE  = "${NOMAD_SECRETS_DIR}/opencode-auth.json"
-        HTTPS_PROXY         = "http://127.0.0.1:8888"
-        HTTP_PROXY          = "http://127.0.0.1:8888"
-        NO_PROXY            = "127.0.0.1,localhost"
       }
 
       template {
@@ -105,31 +79,6 @@ job "keeper-probe" {
       resources {
         cpu    = 500
         memory = 1024
-      }
-    }
-    task "egress" {
-      driver = "docker"
-      config {
-        image        = "registry.pkubelka.cz/keeper-egress:main-dfbc2f1"
-        force_pull   = true
-        network_mode = "host"
-      }
-
-      lifecycle {
-        hook    = "prestart"
-        sidecar = true
-      }
-
-      env {
-        WG_PRIVATE_KEY   = var.wg_private_key
-        WG_ADDRESSES     = var.wg_addresses
-        WG_PEER_PUBLIC_KEY = var.wg_peer_public_key
-        WG_PEER_ENDPOINT   = var.wg_peer_endpoint
-      }
-
-      resources {
-        cpu    = 200
-        memory = 128
       }
     }
   }
