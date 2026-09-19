@@ -2,6 +2,8 @@
 # egress-entry.sh: render sing-box config from env, run the proxy.
 # Required env: WG_PRIVATE_KEY, WG_ADDRESSES (Mullvad tunnel address,
 # e.g. 10.x.x.x/32), WG_PEER_PUBLIC_KEY, WG_PEER_ENDPOINT (host:port).
+# sing-box >=1.11 schema: wireguard lives in `endpoints`, referenced
+# DIRECTLY from route rules (no outbound wrapper exists for it).
 set -eu
 : "${WG_PRIVATE_KEY:?WG_PRIVATE_KEY required}"
 : "${WG_ADDRESSES:?WG_ADDRESSES required}"
@@ -16,19 +18,24 @@ cat > /etc/sing-box/config.json <<EOF
   "inbounds": [
     {"type": "http", "tag": "http-in", "listen": "127.0.0.1", "listen_port": 8888}
   ],
-  "outbounds": [
+  "endpoints": [
     {
-      "type": "wireguard", "tag": "mullvad",
-      "server": "${PEER_HOST}", "server_port": ${PEER_PORT},
-      "local_address": ["${WG_ADDRESSES}"],
+      "type": "wireguard", "tag": "mullvad-ep",
+      "address": ["${WG_ADDRESSES}"],
       "private_key": "${WG_PRIVATE_KEY}",
-      "peer_public_key": "${WG_PEER_PUBLIC_KEY}",
+      "peers": [
+        {"address": "${PEER_HOST}", "port": ${PEER_PORT},
+         "public_key": "${WG_PEER_PUBLIC_KEY}",
+         "allowed_ips": ["0.0.0.0/0"]}
+      ],
       "mtu": 1420
-    },
+    }
+  ],
+  "outbounds": [
     {"type": "direct", "tag": "direct"}
   ],
   "route": {
-    "rules": [{"domain_suffix": ["opencode.ai"], "outbound": "mullvad"}],
+    "rules": [{"domain_suffix": ["opencode.ai"], "outbound": "mullvad-ep"}],
     "final": "direct"
   }
 }
