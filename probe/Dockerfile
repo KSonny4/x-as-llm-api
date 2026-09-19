@@ -1,7 +1,9 @@
 # keeper-probe image: on-demand dual prober (L1 curl always, L2 opencode
 # CLI only on L1 non-ok). No secrets baked: opencode auth arrives via a
 # Nomad template file (OPENCODE_AUTH_FILE), copied into place at start.
-FROM debian:bookworm-slim
+# Same base as keeper (python:3.12-slim): Zen's edge fingerprints the
+# TLS stack, and only this stack returns 200 on-cluster (measured).
+FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl unzip python3 \
     && rm -rf /var/lib/apt/lists/* \
