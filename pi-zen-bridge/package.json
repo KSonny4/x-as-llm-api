@@ -1,0 +1,11 @@
+{
+  "name": "pi-zen-bridge-spike",
+  "version": "0.1.0",
+  "private": true,
+  "description": "M1 spike: pi provider shelling to the opencode CLI so free Zen keys work inside pi without HTTP.",
+  "type": "module",
+  "dependencies": {
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-coding-agent": "latest"
+  }
+}
