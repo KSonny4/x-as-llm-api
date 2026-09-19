@@ -1,0 +1,8 @@
+local big-pickle CLI repro 2026-09-19
+cmd: opencode run --pure -m opencode/big-pickle "Reply with exactly: PICKLE-ALIVE"
+exit: 0
+wall: real 4.89s user 2.60s sys 1.28s
+--- stdout ---
+[2026-09-19 14:03:44 CEST]
+
+PICKLE-ALIVE
