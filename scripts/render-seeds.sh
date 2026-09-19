@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# render-seeds.sh — render keeper seed routes from Bao (all 33 provider keys).
+# render-seeds.sh — render keeper seed routes from Bao (33 provider keys +
+# zen free-model sweep: 7 free models x 10 zen keys = 70 e2e routes).
 # Values flow Bao -> stdout ONLY (redirect to /tmp/seeds-live.json, deploy-only).
 # NOTHING secret is stored: this file carries key names + route shapes only.
 # Usage: bash scripts/render-seeds.sh > /tmp/seeds-live.json
@@ -28,7 +29,7 @@ r = {"provider": provider, "model": model, "base_url": base,
      "connection_id": conn, "active": True,
      "bao_status": status or "unknown"}
 if provider == "opencode-zen" and cred != "live:0":
-    r["l2_ref"] = "opencode/big-pickle"
+    r["l2_ref"] = "opencode/" + model
 if cred != "live:0":
     r["api_key"] = cred
 print(json.dumps(r))
@@ -76,6 +77,23 @@ emit OPENCODE_ZEN_RETIRED_5 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/re
 emit OPENCODE_ZEN_RETIRED_6 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-6" "Big Pickle (retired key 6, owner-promoted)" 1
 emit OPENCODE_ZEN_RETIRED_7 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-7" "Big Pickle (retired key 7, owner-promoted)" 1
 emit OPENCODE_ZEN_RETIRED_8 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-8" "Big Pickle (retired key 8, owner-promoted)" 1
+# --- zen free-model sweep (e2e: every key x every free model) ---
+for spec in \
+  "ling-3.0-flash-fin-free:ling-flash:Ling Flash (free)" \
+  "mimo-v2.5-free:mimo:Mimo (free)" \
+  "muse-spark-1.2-contributor-free:spark12:Muse Spark 1.2 (free)" \
+  "muse-spark-1.3-contributor-free:spark13:Muse Spark 1.3 (free)" \
+  "nemotron-3-ultra-free:nemotron-ultra:Nemotron Ultra (free)" \
+  "nemotron-3.5-lightning-free:nemotron-lightning:Nemotron Lightning (free)" \
+  "jev-1.13-free:jev113:Jev 1.13 (free)"; do
+  model="${spec%%:*}"; rest="${spec#*:}"; tag="${rest%%:*}"; label="${rest#*:}"
+  emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-petr" "$label (Petr key)" 1
+  emit OPENCODE_ZEN_API_KEY opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-spare" "$label (spare key)" 1
+  n=1; while [ $n -le 8 ]; do
+    emit "OPENCODE_ZEN_RETIRED_$n" opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-retired-$n" "$label (retired key $n)" 1
+    n=$((n+1))
+done
+done
 emit GITHUB_BANNED_KSONNY github "banned key (placeholder)" "" none "github/banned-ksonny" "Banned GitHub key (placeholder)" 0
 emit GITHUB_BANNED_NOEMAIL github "banned key (placeholder)" "" none "github/banned-noemail" "Banned GitHub key (placeholder)" 0
 emit CURSOR_UNAVAILABLE cursor "cursor (unavailable)" "" none "cursor/placeholder" "Cursor (marked unavailable in Bao)" 0
