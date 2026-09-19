@@ -929,6 +929,26 @@ ZEN_QUOTA_NOTE = ("keyed chat quota spent as of 2026-09-19 morning; "
 ZEN_KEYED_NOTE = ("keyed opencode-zen-free path (quota-aware, not live "
                   "in keeper): proven 4s on RETIRED_1 2026-09-19; live "
                   "keys quota-spent; direct HTTP never (FreeTierError)")
+# Per-key keyed-chat evidence (measured 2026-09-19 morning; static
+# and dated by design — keeper never chats via zen-free itself).
+# Maps Bao key name -> models with a proven keyed answer. Live keys are
+# quota-spent (see ZEN_QUOTA_KEYS); other pairs are untested, never
+# claimed. See x-as-llm-api/docs/zen-egress-receipts/ + pi-infinity-llm
+# docs/M2-muse-keyed-proof.txt.
+ZEN_KEYED_PROVEN = {
+    "OPENCODE_ZEN_RETIRED_1": ["mimo-v2.5-free",
+                                  "muse-spark-1.3-contributor-free"],
+    "OPENCODE_ZEN_RETIRED_2": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_3": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_4": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_5": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_6": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_7": ["mimo-v2.5-free"],
+    "OPENCODE_ZEN_RETIRED_8": ["mimo-v2.5-free"],
+}
+ZEN_KEYED_DATE = "2026-09-19"
+ZEN_PLAIN_NEVER = ("plain completions: never (FreeTierError, vendor "
+                   "policy — key tier, not network)")
 
 
 def _zen_tuples(doc):
