@@ -1,0 +1,8 @@
+=== case: timeout
+=== started: 2026-09-19T09:38:28.170Z
+=== elapsed: 2014ms
+--- result:
+rejected: opencode code=null signal=SIGTERM elapsed=2013ms piAborted=undefined HOME=/Users/ksonny: [0m
+> build · mimo-v2.5-free
+[0m
+

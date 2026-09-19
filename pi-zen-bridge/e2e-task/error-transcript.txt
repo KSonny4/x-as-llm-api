@@ -1,0 +1,12 @@
+=== case: error
+=== started: 2026-09-19T09:38:30.994Z
+=== elapsed: 31ms
+--- result:
+rejected: opencode code=1 signal=null elapsed=31ms piAborted=undefined HOME=/Users/ksonny: node:internal/modules/cjs/loader:1573
+  throw err;
+  ^
+
+Error: Cannot find module '/Users/ksonny/git_projects/x-as-llm-api/pi-zen-bridge/run'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1569:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1123:27)
+    at default

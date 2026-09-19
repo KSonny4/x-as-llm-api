@@ -1,0 +1,8 @@
+=== case: abort
+=== started: 2026-09-19T09:38:30.184Z
+=== elapsed: 810ms
+--- result:
+rejected: opencode code=null signal=SIGKILL elapsed=809ms piAborted=true HOME=/Users/ksonny: [0m
+> build · mimo-v2.5-free
+[0m
+

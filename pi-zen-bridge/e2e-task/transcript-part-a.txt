@@ -4,3 +4,17 @@
 --- stdout:
 PART-A-DONE
 --- stderr:
+
+=== full CLI session trace: cli-session-a.json ===
+session: ses_f46fc85ebffeuHwHdgR4pJ0V62 | model: mimo-v2.5-free | created: 2026-09-19 09:33:27
+parts:
+  text: "[note: 18 tools were requested but this spike answers text-only] |  | [system] | You are an expert coding assistant operating inside pi, a coding agent har
+  step-start
+  reasoning: The user wants me to create a fizzbuzz.py file with a fizzbuzz function. I'll write it now.
+  tool: write (completed)
+  step-finish
+  patch
+  step-start
+  reasoning: File written. Now I need to reply ending with exactly: PART-A-DONE
+  text: PART-A-DONE
+  step-finish
