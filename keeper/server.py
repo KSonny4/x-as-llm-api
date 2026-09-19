@@ -571,6 +571,34 @@ def page_index(state):
     DOM is built with textContent (no innerHTML) so route names cannot
     inject markup."""
     doc = matrix_view(state)
+    keymap = _zen_keymap(state)
+    tuples = _zen_tuples(doc)
+    perkey = _zen_perkey(doc, keymap)
+    tuple_items = "".join(
+        '<li data-t="%s|%s">%s \u2014 %s \u2014 %s \u2014 %s</li>'
+        % (html.escape(c), html.escape(m), html.escape(c),
+           html.escape(m), html.escape(p), html.escape(t or ""))
+        for c, m, p, t in tuples) or "<li>none right now</li>"
+    perkey_secs = []
+    for tag in sorted(perkey):
+        pairs = perkey[tag]
+        owners = sorted(set(email for email, _e in pairs))
+        lis = "".join(
+            '<li>%s \u2014 %s (%s/%s) \u2014 %s</li>'
+            % (html.escape(e.get("model", "?")),
+               html.escape(e.get("state", "unknown")),
+               html.escape(str(e.get("l1", "?"))),
+               html.escape(str(e.get("l2", "?"))),
+               html.escape(e.get("checked_at", "") or ""))
+            for _email, e in pairs)
+        perkey_secs.append(
+            '<h3 data-k="%s">%s <small>(%s)</small></h3>'
+            '<p class="verdict" data-k="%s">%s</p><ul data-k="%s">%s</ul>'
+            % (html.escape(tag), html.escape(tag),
+               html.escape(", ".join(owners)), html.escape(tag),
+               html.escape(_zen_verdict(tag, pairs)), html.escape(tag),
+               lis))
+    keymap_js = json.dumps(keymap).replace("</", "<\\/")
     col_ids = [p["id"] for p in doc["providers"]]
     probed = {c: _col_probed(doc, c) for c in col_ids}
     groups = []
@@ -673,6 +701,10 @@ def page_index(state):
             "small{color:#666}th.prov{cursor:pointer;white-space:nowrap}"
             ".mod[hidden]{display:none}</style></head><body>"
             "<h1>keeper matrix</h1>"
+            "<h2>working tuples (key \u2014 model \u2014 pi path)</h2>"
+            "<ul id=\"tuples\">%s</ul>"
+            "<p class=\"legend\">keyed opencode-zen-free path "
+            "(quota-aware, not live in keeper): %s</p>"
             "<p id=\"stale\"></p>"
             "<p id=\"aastale\"%s>AA scores stale — open-provider "
             "order may lag</p>"
@@ -687,6 +719,8 @@ def page_index(state):
             "gray — unprobed · opening a provider shows only ok models, "
             "best AA score first</p>"
             "<h2>diagnostics.unassigned</h2><ul id=\"unassigned\">%s</ul>"
+            "<h2>per key (zen)</h2><div id=\"perkey\">%s</div>"
+            "<script>var KEYMAP=%s;</script>"
             "<script>"
             "const T=document.getElementById('cells'),"
             "S=document.getElementById('stale'),"
@@ -796,17 +830,160 @@ def page_index(state):
             "document.createElement('li');li.textContent='none';"
             "N.replaceChildren(li);}"
             "S.style.display='none';"
+            "rebuildTuples(d);rebuildPerKey(d);"
             "U.textContent='updated '+new Date().toLocaleTimeString();"
             "document.getElementById('aastale').style.display="
             "d.aa_stale?'block':'none';"
             "}catch(e){S.style.display='block';"
             "S.textContent='stale — refresh failed ('+e.message+')';}}"
+            "function tuplesOf(d){const out=[];"
+            "d.rows.forEach(row=>{for(const id in (row.cells||{}))"
+            "for(const e of (row.cells[id]||[])){"
+            "const cid=e.connection_id||'';"
+            "if(cid.indexOf('zen/')!==0)continue;"
+            "if(e.l2==='pass')out.push([cid,e.model||'?',"
+            "'CLI',e.checked_at||'']);"
+            "if(e.state==='ok')out.push([cid,e.model||'?',"
+            "'direct-HTTP',e.checked_at||'']);}});return out;}"
+            "function rebuildTuples(d){const T="
+            "document.getElementById('tuples');if(!T)return;"
+            "T.replaceChildren(...tuplesOf(d).map(t=>{"
+            "const li=document.createElement('li');"
+            "li.textContent=t[0]+' \u2014 '+t[1]+' \u2014 '+t[2]+"
+            "' \u2014 '+t[3];return li;}));"
+            "if(!T.children.length){const li="
+            "document.createElement('li');"
+            "li.textContent='none right now';T.appendChild(li);}}"
+            "function verdictOf(k,es){const ps=es.filter("
+            "e=>e.l2==='pass').length,oks=es.filter("
+            "e=>e.state==='ok').length,latest=es.map("
+            "e=>e.checked_at||'').sort().pop()||'';"
+            "let v;"
+            "if(ps)v='alive \u2014 CLI serves '+ps+'/'+es.length+"
+            "' models (checked '+latest+'); Bao: all 10 zen keys "
+            "status=active verified 2026-09-19; per-key auth masked "
+            "by cluster wall';"
+            "else if(oks)v='alive \u2014 direct HTTP ok on '+oks+"
+            "' models (checked '+latest+'); Bao: all 10 zen keys "
+            "status=active verified 2026-09-19; per-key auth masked "
+            "by cluster wall';"
+            "else v='no working path right now (checked '+latest+"
+            "'); key present in Bao; Bao: all 10 zen keys "
+            "status=active verified 2026-09-19; per-key auth masked "
+            "by cluster wall';"
+            "if(k==='OPENCODE_ZEN_API_KEY'||"
+            "k==='OPENCODE_ZEN_API_KEY_PETR')"
+            "v+='; keyed chat quota spent as of 2026-09-19 morning; "
+            "retired keys answered with fresh quota';"
+            "return v;}"
+            "function rebuildPerKey(d){const S="
+            "document.getElementById('perkey');if(!S)return;"
+            "const g={};d.rows.forEach(row=>{"
+            "for(const id in (row.cells||{}))"
+            "for(const e of (row.cells[id]||[])){"
+            "const cid=e.connection_id||'';"
+            "if(cid.indexOf('zen/')!==0)continue;"
+            "const k=(window.KEYMAP||{})[cid]||cid;"
+            "(g[k]=g[k]||[]).push(e);}});"
+            "S.replaceChildren(...Object.keys(g).sort().map(k=>{"
+            "const f=document.createDocumentFragment();"
+            "const h=document.createElement('h3');"
+            "h.textContent=k;f.appendChild(h);"
+            "const v=document.createElement('p');"
+            "v.className='verdict';v.textContent=verdictOf(k,g[k]);"
+            "f.appendChild(v);const ul=document.createElement('ul');"
+            "g[k].forEach(e=>{const li=document.createElement('li');"
+            "li.textContent=(e.model||'?')+' \u2014 '+e.state+' ('+"
+            "e.l1+'/'+e.l2+') \u2014 '+(e.checked_at||'');"
+            "ul.appendChild(li);});f.appendChild(ul);return f;}));}"
             "setInterval(poll,30000);"
             "</script></body></html>"
-            % (("" if doc.get("aa_stale") else " style=\"display:none\""),
+            % (tuple_items, html.escape(ZEN_KEYED_NOTE),
+               ("" if doc.get("aa_stale") else " style=\"display:none\""),
                ",".join(html.escape(c) for c in col_ids),
                "".join(prov_head), "".join(mod_head),
-               "".join(rows), unassigned or "<li>none</li>"))
+               "".join(rows), unassigned or "<li>none</li>",
+               "".join(perkey_secs), keymap_js))
+
+
+def _zen_keymap(state):
+    """connection_id -> Bao key name (env_var) for zen routes.
+    Rendered into the page (not matrix JSON) so the poller can group
+    per-key without changing the JSON shape. Key names are not secrets
+    (page_signin already lists env_var names)."""
+    out = {}
+    for r in state.get("routes", []):
+        if r.get("provider") == "opencode-zen" and r.get("connection_id"):
+            out[r["connection_id"]] = r.get("env_var", "?")
+    return out
+
+
+# Static, dated Bao knowledge (verified 2026-09-19 morning; keys
+# untouched). Live states come from the matrix; these strings never
+# pretend to be live. See docs/zen-diagnosis.md + zen-egress-receipts/.
+ZEN_KEY_NOTE = ("Bao: all 10 zen keys status=active verified "
+                "2026-09-19; per-key auth masked by cluster wall")
+ZEN_QUOTA_KEYS = {"OPENCODE_ZEN_API_KEY", "OPENCODE_ZEN_API_KEY_PETR"}
+ZEN_QUOTA_NOTE = ("keyed chat quota spent as of 2026-09-19 morning; "
+                  "retired keys answered with fresh quota")
+ZEN_KEYED_NOTE = ("keyed opencode-zen-free path (quota-aware, not live "
+                  "in keeper): proven 4s on RETIRED_1 2026-09-19; live "
+                  "keys quota-spent; direct HTTP never (FreeTierError)")
+
+
+def _zen_tuples(doc):
+    """Working (key-tag, model, pi-path) tuples from live matrix data.
+    CLI-usable: any zen entry with l2 == pass. Direct-HTTP: state == ok
+    (empty for free zen by vendor policy — shown explicitly, never faked)."""
+    out = []
+    for row in doc["rows"]:
+        for _col, entries in row["cells"].items():
+            for e in entries:
+                cid = e.get("connection_id", "")
+                if not cid.startswith("zen/"):
+                    continue
+                if e.get("l2") == "pass":
+                    out.append((cid, e.get("model", "?"), "CLI",
+                                e.get("checked_at", "")))
+                if e.get("state") == "ok":
+                    out.append((cid, e.get("model", "?"), "direct-HTTP",
+                                e.get("checked_at", "")))
+    return sorted(set(out))
+
+
+def _zen_perkey(doc, keymap):
+    """Group zen entries by Bao key name -> {tag: [entries]}."""
+    groups = {}
+    for row in doc["rows"]:
+        for _col, entries in row["cells"].items():
+            for e in entries:
+                cid = e.get("connection_id", "")
+                if not cid.startswith("zen/"):
+                    continue
+                tag = keymap.get(cid, cid)
+                groups.setdefault(tag, []).append(
+                    (row.get("email", "?"), e))
+    return groups
+
+
+def _zen_verdict(tag, pairs):
+    """Alive/quota/no-path verdict for one key's entries + evidence."""
+    entries = [e for _, e in pairs]
+    passed = [e for e in entries if e.get("l2") == "pass"]
+    oks = [e for e in entries if e.get("state") == "ok"]
+    latest = max([e.get("checked_at", "") for e in entries] or [""])
+    if passed:
+        v = ("alive — CLI serves %d/%d models (checked %s); %s"
+             % (len(passed), len(entries), latest, ZEN_KEY_NOTE))
+    elif oks:
+        v = ("alive — direct HTTP ok on %d models (checked %s); %s"
+             % (len(oks), latest, ZEN_KEY_NOTE))
+    else:
+        v = ("no working path right now (checked %s); key present in "
+             "Bao; %s" % (latest, ZEN_KEY_NOTE))
+    if tag in ZEN_QUOTA_KEYS:
+        v += "; " + ZEN_QUOTA_NOTE
+    return v
 
 
 def _cell_html(entry):

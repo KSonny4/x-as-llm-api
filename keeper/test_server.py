@@ -797,5 +797,116 @@ class ModelColumnsPageTest(RouteCase):
             self.assertIn(needle, body)
 
 
+
+class TupleMatrixTest(RouteCase):
+    """Per-key zen matrix: tuple list on top, per-key sections with
+    validity verdicts; matrix JSON shape frozen (no new fields)."""
+
+    T1 = "2026-09-19T10:00:00+00:00"
+    T2 = "2026-09-19T11:00:00+00:00"
+
+    def zen_state(self):
+        routes = [
+            {"provider": "opencode-zen", "model": "m1",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "ZEN_K1",
+             "owner": "a@example.com", "name": "M1 one",
+             "connection_id": "zen/m1-k1", "active": True},
+            {"provider": "opencode-zen", "model": "m2",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "ZEN_K1",
+             "owner": "a@example.com", "name": "M2 one",
+             "connection_id": "zen/m2-k1", "active": True},
+            {"provider": "opencode-zen", "model": "m1",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "ZEN_K2",
+             "owner": "b@example.com", "name": "M1 two",
+             "connection_id": "zen/m1-k2", "active": True},
+            {"provider": "opencode-zen", "model": "m-ok",
+             "base_url": "https://x.example", "api_key": "k",
+             "wire": "openai", "env_var": "ZEN_K2",
+             "owner": "b@example.com", "name": "MOk two",
+             "connection_id": "zen/ok-k2", "active": True},
+        ]
+        self.state["routes"] = routes
+        self.state["aa_scores"] = {}
+        server.enumerate_inventory = lambda routes, refresh=False: \
+            {"opencode-zen": ["m1", "m2", "m-ok"]}
+        self.state["probe"] = {"zen/m1-k1": "degraded",
+                             "zen/m2-k1": "down",
+                             "zen/m1-k2": "down",
+                             "zen/ok-k2": "ok"}
+        self.state["probe_detail"] = {
+            "zen/m1-k1": {"provider": "opencode-zen", "model": "m1",
+                          "state": "degraded",
+                          "detail": {"l1": "suspect"},
+                          "checked_at": self.T1},
+            "zen/m2-k1": {"provider": "opencode-zen", "model": "m2",
+                          "state": "down",
+                          "detail": {"l1": "suspect"},
+                          "checked_at": self.T1},
+            "zen/m1-k2": {"provider": "opencode-zen", "model": "m1",
+                          "state": "down",
+                          "detail": {"l1": "suspect"},
+                          "checked_at": self.T2},
+            "zen/ok-k2": {"provider": "opencode-zen", "model": "m-ok",
+                          "state": "ok",
+                          "detail": {"l1": "ok"},
+                          "checked_at": self.T2},
+        }
+        self.state["matrix_cache"] = None
+
+    def tuple_conns(self, html):
+        import re
+        return re.findall(r'<li data-t="([^"]+)\|[^"]*">', html)
+
+    def test_tuples_match_l2_pass_pairs(self):
+        self.zen_state()
+        code, raw, _ = self.call("GET", "/")
+        self.assertEqual(code, 200)
+        conns = self.tuple_conns(raw.decode())
+        self.assertIn("zen/m1-k1", conns)
+        self.assertIn("zen/ok-k2", conns)
+        self.assertNotIn("zen/m2-k1", conns)
+        self.assertNotIn("zen/m1-k2", conns)
+        self.assertIn(self.T1, raw.decode())
+        self.assertIn("quota-aware", raw.decode())
+
+    def test_perkey_sections_with_verdicts(self):
+        self.zen_state()
+        _, raw, _ = self.call("GET", "/")
+        html = raw.decode()
+        self.assertIn('<h3 data-k="ZEN_K1">', html)
+        self.assertIn('<h3 data-k="ZEN_K2">', html)
+        self.assertIn("CLI serves 1/2", html)
+        self.assertIn("direct HTTP ok", html)
+        self.assertIn('id="perkey"', html)
+        self.assertIn("var KEYMAP=", html)
+        self.assertIn("rebuildTuples", html)
+        self.assertIn("rebuildPerKey", html)
+
+    def test_verdict_branches_unit(self):
+        fail = {"state": "down", "l1": "suspect", "l2": "fail",
+                "checked_at": self.T1}
+        v = server._zen_verdict("ZEN_K9", [("a@example.com", fail)])
+        self.assertIn("no working path", v)
+        self.assertIn("masked by cluster wall", v)
+        vq = server._zen_verdict(
+            "OPENCODE_ZEN_API_KEY", [("a@example.com", dict(fail))])
+        self.assertIn("quota spent", vq)
+
+    def test_matrix_json_shape_frozen(self):
+        self.zen_state()
+        _, raw, _ = self.call("GET", "/api/v1/matrix")
+        allowed = {"connection_id", "name", "model", "state", "l1",
+                   "l2", "divergent", "checked_at", "aa_score"}
+        doc = json.loads(raw)
+        for row in doc["rows"]:
+            for entries in row["cells"].values():
+                for e in entries:
+                    self.assertLessEqual(set(e.keys()), allowed)
+
+
+
 if __name__ == "__main__":
     unittest.main()
