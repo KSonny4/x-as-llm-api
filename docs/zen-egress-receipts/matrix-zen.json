@@ -1,0 +1,317 @@
+{
+ "fetched_at": null,
+ "zen_rows": [
+  {
+   "email": "friedmanbob2@gmail.com",
+   "cells": {
+    "inactive foreign key (placeholder)": [
+     {
+      "connection_id": "antigravity/inactive-friedmanbob2",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "big-pickle": [
+     {
+      "connection_id": "zen/retired-3",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:46:03.414920+00:00",
+      "divergent": true
+     }
+    ]
+   }
+  },
+  {
+   "email": "jannovak12390@gmail.com",
+   "cells": {
+    "inactive foreign key (placeholder)": [
+     {
+      "connection_id": "antigravity/inactive-jannovak12390",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "big-pickle": [
+     {
+      "connection_id": "zen/retired-1",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:45:46.227742+00:00",
+      "divergent": true
+     }
+    ]
+   }
+  },
+  {
+   "email": "ksonny4@gmail.com",
+   "cells": {
+    "openai/gpt-4o-mini": [
+     {
+      "connection_id": "openrouter/gpt-4o-mini",
+      "state": "ok",
+      "l1": "ok",
+      "l2": "not-run",
+      "checked_at": "2026-09-19T06:45:08.030134+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "openrouter/gpt-4o-mini-key1",
+      "state": "ok",
+      "l1": "ok",
+      "l2": "not-run",
+      "checked_at": "2026-09-19T06:45:08.892570+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "openrouter/gpt-4o-mini-key3",
+      "state": "ok",
+      "l1": "ok",
+      "l2": "not-run",
+      "checked_at": "2026-09-19T06:45:10.560003+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "openrouter/gpt-4o-mini-key4",
+      "state": "ok",
+      "l1": "ok",
+      "l2": "not-run",
+      "checked_at": "2026-09-19T06:45:11.359819+00:00",
+      "divergent": false
+     }
+    ],
+    "big-pickle": [
+     {
+      "connection_id": "zen/big-pickle-spare",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:45:25.982168+00:00",
+      "divergent": true
+     },
+     {
+      "connection_id": "zen/retired-5",
+      "state": "down",
+      "l1": "suspect",
+      "l2": "fail",
+      "checked_at": "2026-09-19T06:48:11.101481+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "zen/retired-6",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:48:36.670028+00:00",
+      "divergent": true
+     },
+     {
+      "connection_id": "zen/retired-7",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:48:43.935759+00:00",
+      "divergent": true
+     },
+     {
+      "connection_id": "zen/retired-8",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:48:51.365163+00:00",
+      "divergent": true
+     }
+    ],
+    "gemini-3.6-flash": [
+     {
+      "connection_id": "gemini/gemini-3.6-flash",
+      "state": "down",
+      "l1": "suspect",
+      "l2": "fail",
+      "checked_at": "2026-09-19T06:45:29.395185+00:00",
+      "divergent": false
+     }
+    ],
+    "kimi-k2.7-code": [
+     {
+      "connection_id": "moonshot/kimi-k2.7-code",
+      "state": "limited",
+      "l1": "limited",
+      "l2": "not-run",
+      "checked_at": "2026-09-19T06:45:30.069534+00:00",
+      "divergent": false
+     }
+    ],
+    "claude-sonnet-4-6": [
+     {
+      "connection_id": "claude/claude-sonnet-4-6",
+      "state": "down",
+      "l1": "suspect",
+      "l2": "fail",
+      "checked_at": "2026-09-19T06:45:33.751203+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "claude/claude-sonnet-4-6-oauth2",
+      "state": "down",
+      "l1": "suspect",
+      "l2": "fail",
+      "checked_at": "2026-09-19T06:45:37.429883+00:00",
+      "divergent": false
+     },
+     {
+      "connection_id": "claude/claude-sonnet-4-6-oauth3",
+      "state": "down",
+      "l1": "suspect",
+      "l2": "fail",
+      "checked_at": "2026-09-19T06:45:40.869648+00:00",
+      "divergent": false
+     }
+    ],
+    "kilocode-key (endpoint TBD)": [
+     {
+      "connection_id": "kilocode/placeholder",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "workers-ai key 1 (no wire yet)": [
+     {
+      "connection_id": "cloudflare/key-1",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "devin sessions (no wire yet)": [
+     {
+      "connection_id": "devin/placeholder",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "codex (no verified wire)": [
+     {
+      "connection_id": "codex/placeholder",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "antigravity 1 (CLI-only)": [
+     {
+      "connection_id": "antigravity/key-1",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "banned key (placeholder)": [
+     {
+      "connection_id": "github/banned-noemail",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "cursor (unavailable)": [
+     {
+      "connection_id": "cursor/placeholder",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ],
+    "opencode-go (unavailable)": [
+     {
+      "connection_id": "opencode-go/placeholder",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ]
+   }
+  },
+  {
+   "email": "petaazdenicka@gmail.com",
+   "cells": {
+    "big-pickle": [
+     {
+      "connection_id": "zen/retired-2",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:45:53.931232+00:00",
+      "divergent": true
+     }
+    ]
+   }
+  },
+  {
+   "email": "petr1kubelka@gmail.com",
+   "cells": {
+    "big-pickle": [
+     {
+      "connection_id": "zen/big-pickle",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:45:19.565785+00:00",
+      "divergent": true
+     }
+    ],
+    "antigravity 2 (CLI-only)": [
+     {
+      "connection_id": "antigravity/key-2",
+      "state": "unknown",
+      "l1": "unknown",
+      "l2": "not-run",
+      "checked_at": "",
+      "divergent": false
+     }
+    ]
+   }
+  },
+  {
+   "email": "zdenickaapeta@gmail.com",
+   "cells": {
+    "big-pickle": [
+     {
+      "connection_id": "zen/retired-4",
+      "state": "degraded",
+      "l1": "suspect",
+      "l2": "pass",
+      "checked_at": "2026-09-19T06:46:10.101397+00:00",
+      "divergent": true
+     }
+    ]
+   }
+  }
+ ]
+}

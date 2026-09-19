@@ -1,0 +1,3 @@
+cmd: curl -s -m 15 -H "Authorization: Bearer <Bao:pi-infinity-llm/OPENCODE_ZEN_API_KEY>" https://opencode.ai/zen/v1/models
+status: 200
+body-head: {"object":"list","data":[{"id":"big-pickle","object":"model","created":1789800815,"owned_by":"opencode"},{"id":"ling-3.0-flash-fin-free","object":"model","created":1789800815,"owned_by":"opencode"},{"id":"mimo-v2.5-free"

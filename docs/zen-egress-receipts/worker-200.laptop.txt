@@ -1,0 +1,3 @@
+
+cmd: curl -s -m 20 -H "Authorization: Bearer <Bao:...>" https://keeper-zen-egress.kubelkatropkova.workers.dev/zen/v1/models
+status: 200

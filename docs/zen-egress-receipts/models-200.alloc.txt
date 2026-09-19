@@ -1,0 +1,3 @@
+cmd: in keeper alloc a0a09a7d: python3 urllib GET /zen/v1/models with keyed Authorization + UA keeper-probe/1.0 (key from Bao, never logged)
+status: 200
+body-head: {"object":"list","data":[{"id":"big-pickle","object":"model","created":1789800827,"owned_by":"opencode"},{"id":"ling-3.0-flash-fin-free","object":"model","created":1789800827,"owned_by":"opencode"},{"

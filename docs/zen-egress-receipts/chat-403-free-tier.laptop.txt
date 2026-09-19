@@ -1,0 +1,4 @@
+
+cmd: curl -s -m 20 -H "Authorization: Bearer <Bao:...>" -H Content-Type:application/json -d <ping-payload> https://opencode.ai/zen/v1/chat/completions
+status: 403
+body: {"type":"error","error":{"type":"FreeTierError","message":"OpenCode's free tier can only be used from within OpenCode"}}

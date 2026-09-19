@@ -1,0 +1,3 @@
+version: 4
+fields: ['addresses', 'private_key']
+keylen: 44 valid-wg-b64: True
