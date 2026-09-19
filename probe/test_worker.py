@@ -293,33 +293,5 @@ class FleetUATest(unittest.TestCase):
         self.assertTrue(worker.FLEET_UA.startswith("keeper-probe/"))
 
 
-class IPv4PinTest(unittest.TestCase):
-    def test_opener_only_for_zen(self):
-        import worker
-        self.assertIsNone(worker._opener_for({"provider": "openai"}))
-        op = worker._opener_for({"provider": "opencode-zen"})
-        self.assertTrue(any(isinstance(h, worker.IPv4HTTPSHandler)
-                            for h in op.handlers))
-
-    def test_connect_forces_af_inet(self):
-        import worker
-        import socket as _socket
-        seen = {}
-        real_create = _socket.create_connection
-
-        def fake(addr, timeout=None, **kw):
-            seen.update(kw)
-            seen["addr"] = addr
-            raise OSError("stop here")
-
-        _socket.create_connection = fake
-        try:
-            conn = worker.IPv4HTTPSConnection("example.com")
-            self.assertRaises(OSError, conn.connect)
-        finally:
-            _socket.create_connection = real_create
-        self.assertEqual(seen.get("family"), _socket.AF_INET)
-
-
 if __name__ == "__main__":
     unittest.main()

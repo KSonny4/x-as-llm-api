@@ -37,6 +37,23 @@ keyless alike). Full proof: `docs/zen-diagnosis.md` addendum.
   header in transit; nothing is stored at CF. The worker is public but
   useless without the caller's own key.
 
+## Final: free-tier key policy, not the network (2026-09-19)
+
+Quoted from Zen itself (identical on laptop, keeper alloc, probe image):
+`403 {"type":"error","error":{"type":"FreeTierError","message":
+"OpenCode's free tier can only be used from within OpenCode"}}` — on
+`POST /zen/v1/chat/completions` with a free-tier key over direct HTTP.
+`GET /zen/v1/models` returns 200+models with the fleet UA; only the
+chat leg is tier-denied. The opencode CLI (L2) passes because it IS
+"within OpenCode". Verdict `degraded` is therefore the CORRECT honest
+state for these keys — reachable, key valid, direct chat refused by
+key-tier policy. No egress change can fix policy; the Mullvad sidecar
+(key conflict, parked), the CF worker (adopted then parked — it only
+moves the same denied request), and the IPv4 pin (removed again —
+address family was never the factor) are all recorded above as
+eliminated hypotheses with their evidence. What ships: fleet UA
+(`FLEET_UA`, models leg 200) + this documentation.
+
 ## Key handling
 
 Mullvad private key + addresses: Bao
