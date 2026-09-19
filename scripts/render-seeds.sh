@@ -66,14 +66,14 @@ emit ANTIGRAVITY_OAUTH antigravity "antigravity 1 (CLI-only)" "" none "antigravi
 emit ANTIGRAVITY_OAUTH_2 antigravity "antigravity 2 (CLI-only)" "" none "antigravity/key-2" "Antigravity OAuth 2 (CLI-only, no API)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-friedmanbob2" "Inactive Antigravity key (foreign account)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-jannovak12390" "Inactive Antigravity key (foreign account)" 0
-emit OPENCODE_ZEN_RETIRED_1 opencode-zen "retired zen 1 (placeholder)" "" none "zen/retired-1" "Retired Zen key 1 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_2 opencode-zen "retired zen 2 (placeholder)" "" none "zen/retired-2" "Retired Zen key 2 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_3 opencode-zen "retired zen 3 (placeholder)" "" none "zen/retired-3" "Retired Zen key 3 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_4 opencode-zen "retired zen 4 (placeholder)" "" none "zen/retired-4" "Retired Zen key 4 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_5 opencode-zen "retired zen 5 (placeholder)" "" none "zen/retired-5" "Retired Zen key 5 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_6 opencode-zen "retired zen 6 (placeholder)" "" none "zen/retired-6" "Retired Zen key 6 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_7 opencode-zen "retired zen 7 (placeholder)" "" none "zen/retired-7" "Retired Zen key 7 (expired-gateway)" 0
-emit OPENCODE_ZEN_RETIRED_8 opencode-zen "retired zen 8 (placeholder)" "" none "zen/retired-8" "Retired Zen key 8 (expired-gateway)" 0
+emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-1" "Big Pickle (retired key 1, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_2 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-2" "Big Pickle (retired key 2, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_3 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-3" "Big Pickle (retired key 3, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_4 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-4" "Big Pickle (retired key 4, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_5 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-5" "Big Pickle (retired key 5, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_6 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-6" "Big Pickle (retired key 6, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_7 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-7" "Big Pickle (retired key 7, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_8 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-8" "Big Pickle (retired key 8, owner-promoted)" 1
 emit GITHUB_BANNED_KSONNY github "banned key (placeholder)" "" none "github/banned-ksonny" "Banned GitHub key (placeholder)" 0
 emit GITHUB_BANNED_NOEMAIL github "banned key (placeholder)" "" none "github/banned-noemail" "Banned GitHub key (placeholder)" 0
 emit CURSOR_UNAVAILABLE cursor "cursor (unavailable)" "" none "cursor/placeholder" "Cursor (marked unavailable in Bao)" 0
