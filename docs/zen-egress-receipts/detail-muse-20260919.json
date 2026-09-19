@@ -1,0 +1,16 @@
+{
+ "ok": true,
+ "record": {
+  "provider": "opencode-zen",
+  "model": "muse-spark-1.3-contributor-free",
+  "state": "down",
+  "detail": {
+   "l1": "suspect",
+   "reason": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"OpenCode's free tier can only be used from within OpenCode\"}}",
+   "l2": "exec-fail: Command '['opencode', 'run', '--pure', '-m', 'opencode/muse-spark-1.3-contributor-free', 'ping']' timed out after 120 seconds"
+  },
+  "checked_at": "2026-09-19T13:49:57.618484+00:00"
+ },
+ "fetched_at": "2026-09-19T13:50:50.374800+00:00",
+ "endpoint": "GET /api/v1/detail?connection=zen/spark13-petr"
+}

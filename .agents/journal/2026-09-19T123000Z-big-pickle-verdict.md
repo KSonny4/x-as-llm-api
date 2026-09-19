@@ -99,3 +99,14 @@ withdraw it. What actually happened:
 - If the bar is literal non-empty CLI stderr text, the unblock is the
   owner re-register (1024MB) + one dispatch — recorded as deferred with
   follow-up, not silently treated as done.
+
+## Activation 15:50 CEST: memory fix proven, muse down by timeout
+- Re-registered probe job (1024MB, image main-act1, fresh laptop auth),
+  dispatched, stopped at first muse post. No rc=-9 anywhere: CLIs now
+  execute (memory fix WORKS).
+- petr-muse: `down`, L2 `exec-fail: ... timed out after 120 seconds`
+  (detail-muse-20260919.json). Run totals: 40 limited (L1 429, L2 never
+  ran) + 40 down (L2 timeouts), 0 passes.
+- Reading: quota drained across the board by today's runs (L1 429s are
+  new — morning was policy-403). Muse cannot be shown active until
+  buckets refill (~00:30Z). No infra left to fix on this path.
