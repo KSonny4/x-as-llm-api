@@ -14,6 +14,9 @@ from datetime import datetime, timedelta, timezone
 
 BACKOFF_MIN = 5
 ANTHROPIC_VERSION = "2023-06-01"
+# Fleet identity: Zen's edge (and who knows who next) blocks the
+# Python-urllib default UA with 403. Honest, documented, tested.
+FLEET_UA = "keeper-probe/1.0"
 
 
 def _now():
@@ -23,7 +26,8 @@ def _now():
 def _get(route, path):
     req = urllib.request.Request(
         route["base_url"].rstrip("/") + path,
-        headers={"Authorization": "Bearer " + route.get("api_key", "")},
+        headers={"Authorization": "Bearer " + route.get("api_key", ""),
+                 "User-Agent": FLEET_UA},
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
@@ -41,7 +45,8 @@ def _get(route, path):
 def _post(route, path, payload, extra_headers=None):
     raw = json.dumps(payload).encode()
     headers = {"Content-Type": "application/json",
-               "Authorization": "Bearer " + route.get("api_key", "")}
+               "Authorization": "Bearer " + route.get("api_key", ""),
+               "User-Agent": FLEET_UA}
     headers.update(extra_headers or {})
     req = urllib.request.Request(route["base_url"].rstrip("/") + path,
                                  data=raw, headers=headers)

@@ -257,5 +257,41 @@ class DispatchTest(unittest.TestCase):
             os.environ.update(old)
 
 
+class FleetUATest(unittest.TestCase):
+    def test_get_and_post_send_fleet_ua(self):
+        import worker
+        seen = {}
+
+        class Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b'{}'
+
+        import urllib.request as urlreq
+        real = urlreq.urlopen
+
+        def fake(req, timeout=10):
+            seen[req.full_url] = req.get_header('User-agent')
+            return Resp()
+
+        urlreq.urlopen = fake
+        try:
+            route = {"base_url": "http://127.0.0.1:9", "api_key": "k"}
+            worker._get(route, "/models")
+            worker._post(route, "/chat", {})
+        finally:
+            urlreq.urlopen = real
+        self.assertEqual(seen["http://127.0.0.1:9/models"], worker.FLEET_UA)
+        self.assertEqual(seen["http://127.0.0.1:9/chat"], worker.FLEET_UA)
+        self.assertTrue(worker.FLEET_UA.startswith("keeper-probe/"))
+
+
 if __name__ == "__main__":
     unittest.main()
