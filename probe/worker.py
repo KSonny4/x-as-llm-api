@@ -7,6 +7,8 @@ auth-shaped denial => suspect + feedback; wrong wire => misconfigured.
 """
 import json
 import os
+import http.client
+import socket
 import subprocess
 import urllib.error
 import urllib.request
@@ -17,6 +19,35 @@ ANTHROPIC_VERSION = "2023-06-01"
 # Fleet identity: Zen's edge (and who knows who next) blocks the
 # Python-urllib default UA with 403. Honest, documented, tested.
 FLEET_UA = "keeper-probe/1.0"
+
+
+class IPv4HTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS connection pinned to IPv4 (Zen-scoped, see below)."""
+
+    def connect(self):
+        self.sock = socket.create_connection(
+            (self.host, self.port), self.timeout, family=socket.AF_INET)
+        if self._tunnel_host:
+            self._tunnel()
+        self.sock = self._context.wrap_socket(
+            self.sock, server_hostname=self.server_hostname)
+
+
+class IPv4HTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(IPv4HTTPSConnection, req)
+
+
+def _opener_for(route):
+    """Opener pinning IPv4 for Zen only; None elsewhere.
+
+    Why: host-network containers resolve IPv6-first while bridge ones
+    get IPv4-first (measured via getent on both), and Zen's IPv6 edge
+    403s requests its IPv4 edge answers 200 to (same key/UA/URL).
+    Other providers keep their exact current paths."""
+    if route.get("provider") == "opencode-zen":
+        return urllib.request.build_opener(IPv4HTTPSHandler)
+    return None
 
 
 def _now():
@@ -30,7 +61,9 @@ def _get(route, path):
                  "User-Agent": FLEET_UA},
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as res:
+        opener = _opener_for(route)
+        open_fn = opener.open if opener else urllib.request.urlopen
+        with open_fn(req, timeout=10) as res:
             return res.status, res.read().decode()
     except urllib.error.HTTPError as e:
         try:
