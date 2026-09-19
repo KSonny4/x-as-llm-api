@@ -22,3 +22,12 @@ Owner states more live Zen keys exist but has not named them. To seed:
 reply with Bao key names (or where they live). Until then the confirmed
 set is exactly the 2 live keys above; no reseed will be run (a no-change
 redeploy would wipe in-memory probe states for nothing).
+
+## Addendum — owner overrode: all 10 keys seeded live (2026-09-19)
+
+Owner directed: use any names, assume every token works, let probes
+decide. All 8 retired keys promoted to live `big-pickle` routes (same
+connection ids, values from Bao). Result: all 10 read `degraded`
+(L1 `suspect` + L2 pass) with fresh `checked_at` — the matrix now shows
+the owner-confirmed set. Per-key L1 truth remains masked by the
+cluster wall (see diagnosis addendum); placeholders retired.

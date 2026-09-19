@@ -41,3 +41,26 @@ or dispatches were run; matrix JSON hash identical before/after
 Refresh the node's opencode login from current laptop auth, re-dispatch,
 capture resulting states. That is an auth write + state rewrite —
 outside the read-only mandate; do it as its own step with receipts.
+
+## Addendum — active discovery: same key, same URL, 200 vs 403 (2026-09-19)
+
+Owner asked why local curl + opencode work but keeper does not. Tested
+with the SAME two live keys against the SAME `/zen/v1/models` URL:
+
+- laptop keyed curl → `200` for BOTH keys (keys are alive; laptop
+  `opencode run -m opencode/big-pickle ping` also executes fine).
+- keeper-alloc keyed curl → `HTTP 403` for BOTH keys — identical to the
+  no-credential result from the cluster, while the laptop gets `200`
+  with no credential at all.
+
+Verdict: **IP/policy denial of the cluster egress, not key death and
+not node-auth staleness** — the earlier L2-stale hypothesis is WITHDRAWN
+(all 10 routes' L2 legs pass consistently, 19/19 reported). Rapid
+sequential probes from the cluster IP stall after 1–2 requests
+(tarpit); Zen throttles this egress aggressively (cf. `dead:429`).
+
+Honesty correction: L2 uses the CLI's own login, never the route's
+`api_key` — so L2-pass proves the CLI path, NOT each retired key. The
+8 promoted keys remain individually unproven (cluster wall masks auth
+outcomes; Bao metadata still says expired). Their `degraded` cells are
+honest about what was measured and no more.
