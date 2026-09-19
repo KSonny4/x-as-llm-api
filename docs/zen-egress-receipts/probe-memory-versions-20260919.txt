@@ -1,0 +1,16 @@
+# Probe memory versions (read-only `nomad job inspect`, 2026-09-19)
+# No secrets: resource numbers + submit dates + local binary size only.
+
+v18 memory: [1024]   Submit Date = 2026-09-19T10:22:24+02:00
+v19 memory: [256]    Submit Date = 2026-09-19T13:36:38+02:00  (current)
+
+opencode binary bytes: 144470498
+
+Reading: the ONLY job-spec change at v19 correlating with the L2
+morning-pass → afternoon-fail flip is task memory 1024→256. The CLI
+child (144MB binary + runtime) does not fit a 256MB cgroup next to
+python; every L2 since v19 dies SIGKILL (rc=-9, empty output) —
+see detail-bigpickle-20260919.json:10.
+Source commands: `nomad job inspect [-version=18] keeper-probe`
+(memory per task), `nomad job history keeper-probe` (submit dates),
+`ls -la ~/.opencode/bin/opencode` (size).
