@@ -77,7 +77,7 @@ job "keeper-probe-1route" {
 
       resources {
         cpu    = 500
-        memory = 1024
+        memory = 896
       }
     }
   }
