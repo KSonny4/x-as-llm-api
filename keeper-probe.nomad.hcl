@@ -76,6 +76,13 @@ job "keeper-probe" {
         change_mode = "restart"
       }
 
+      # REVERTED 2026-09-19: 256MB SIGKILLs the opencode CLI child
+      # (rc=-9, empty stdout+stderr on every L2 since v19 13:36 CEST;
+      # 144MB binary + runtime does not fit 256MB next to python).
+      # 1024 is the proven-good value (v18 morning: 69 L2 passes).
+      # If cognee placement needs room back, try 512 as an experiment
+      # (owner call) — never below what fits the CLI. See journal
+      # 2026-09-19T123000Z-big-pickle-verdict.md.
       resources {
         cpu    = 500
         memory = 1024
