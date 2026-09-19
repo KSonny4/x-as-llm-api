@@ -19,3 +19,9 @@ Only two transient deltas exist, both documented, neither structural:
 
 Conclusion: "CLI works here ergo must work in cloud" is CONFIRMED.
 Same key + same request → same verdict, everywhere, every time.
+
+## Addendum 2026-09-19 afternoon (user-measured)
+- Laptop behind Mullvad VPN (different egress IP) + probe image in
+  local docker: `opencode run "hello"` → big-pickle answers.
+- Egress IP is now disproven in BOTH directions (OVH passed 69 morning
+  pairs; Mullvad passes now). IP was never the differentiator.
