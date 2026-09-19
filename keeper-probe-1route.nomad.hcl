@@ -38,6 +38,16 @@ variable "proxy" {
   default = ""
 }
 
+variable "sleep_between_secs" {
+  type    = string
+  default = "0"
+}
+
+variable "route_substr" {
+  type    = string
+  default = ""
+}
+
 job "keeper-probe-1route" {
   datacenters = ["ovh-vps"]
   type        = "batch"
@@ -52,7 +62,7 @@ job "keeper-probe-1route" {
     task "probe" {
       driver = "docker"
       config {
-        image        = "registry.pkubelka.cz/keeper-probe:main-act1"
+        image        = "registry.pkubelka.cz/keeper-probe:main-act2"
         force_pull   = true
         network_mode = "host"
       }
@@ -67,6 +77,8 @@ job "keeper-probe-1route" {
         HTTPS_PROXY         = var.proxy
         NO_PROXY            = "127.0.0.1,localhost"
         no_proxy            = "127.0.0.1,localhost"
+        SLEEP_BETWEEN_SECS  = var.sleep_between_secs
+        ROUTE_SUBSTR        = var.route_substr
       }
 
       template {

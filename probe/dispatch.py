@@ -18,6 +18,7 @@ never abort the run; values are never printed.
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -63,6 +64,23 @@ def post_result(base, token, result):
         return "ERR:%s" % e
 
 
+def trickle_opts(env=None):
+    """(sleep_secs, substr) pacing controls from env. Pure/testable."""
+    env = env if env is not None else os.environ
+    try:
+        sleep_s = float(env.get("SLEEP_BETWEEN_SECS", "0") or 0)
+    except ValueError:
+        sleep_s = 0
+    return sleep_s, env.get("ROUTE_SUBSTR", "") or ""
+
+
+def filter_routes(routes, substr):
+    """Keep routes whose connection_id contains substr (all if empty)."""
+    if not substr:
+        return list(routes)
+    return [r for r in routes if substr in (r.get("connection_id") or "")]
+
+
 def main():
     base = os.environ.get("KEEPER_URL", "http://127.0.0.1:8102")
     token = os.environ.get("KEEPER_TOKEN", "")
@@ -73,6 +91,14 @@ def main():
     if not routes:
         print("dispatch: no routes — nothing to probe", flush=True)
         return 1
+    # Trickle controls (env): pace the sweep, optionally subset it.
+    # SLEEP_BETWEEN_SECS: pause after each probed route (default 0).
+    # ROUTE_SUBSTR: only routes whose connection_id contains it.
+    sleep_s, substr = trickle_opts()
+    routes = filter_routes(routes, substr)
+    if substr:
+        print("dispatch: filter %r matches %d routes"
+              % (substr, len(routes)), flush=True)
     reported, failed = 0, 0
     for route in routes:
         label = "%s/%s" % (route.get("provider", "?"),
@@ -99,6 +125,8 @@ def main():
             reported += 1
         else:
             failed += 1
+        if sleep_s > 0:
+            time.sleep(sleep_s)
     print("dispatch: %d reported, %d failed" % (reported, failed),
           flush=True)
     return 0 if reported else 1

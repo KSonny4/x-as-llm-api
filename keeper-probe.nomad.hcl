@@ -44,6 +44,16 @@ variable "opencode_auth_json" {
   default = "{}"
 }
 
+variable "sleep_between_secs" {
+  type    = string
+  default = "90"
+}
+
+variable "route_substr" {
+  type    = string
+  default = ""
+}
+
 job "keeper-probe" {
   datacenters = ["ovh-vps"]
   type        = "batch"
@@ -58,7 +68,7 @@ job "keeper-probe" {
     task "probe" {
       driver = "docker"
       config {
-        image        = "registry.pkubelka.cz/keeper-probe:main-act1"
+        image        = "registry.pkubelka.cz/keeper-probe:main-act2"
         force_pull   = true
         network_mode = "host"
       }
@@ -68,6 +78,8 @@ job "keeper-probe" {
         KEEPER_TOKEN        = var.keeper_token
         SEEDS_JSON          = var.seeds_json
         OPENCODE_AUTH_FILE  = "${NOMAD_SECRETS_DIR}/opencode-auth.json"
+        SLEEP_BETWEEN_SECS  = var.sleep_between_secs
+        ROUTE_SUBSTR        = var.route_substr
       }
 
       template {

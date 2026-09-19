@@ -18,6 +18,21 @@ class PlaceholderSkipTest(unittest.TestCase):
         self.assertFalse(is_placeholder(
             {"provider": "openrouter", "model": "m", "api_key": "k"}))
 
+    def test_trickle_opts_and_filter(self):
+        from dispatch import trickle_opts, filter_routes  # noqa
+        self.assertEqual(trickle_opts({}), (0, ""))
+        self.assertEqual(
+            trickle_opts({"SLEEP_BETWEEN_SECS": "45",
+                          "ROUTE_SUBSTR": "zen/"}), (45.0, "zen/"))
+        self.assertEqual(trickle_opts({"SLEEP_BETWEEN_SECS": "junk"}),
+                         (0, ""))
+        routes = [{"connection_id": "zen/a"},
+                  {"connection_id": "other/b"},
+                  {"connection_id": ""}]
+        self.assertEqual(len(filter_routes(routes, "")), 3)
+        self.assertEqual(filter_routes(routes, "zen/"),
+                         [{"connection_id": "zen/a"}])
+
 
 if __name__ == "__main__":
     unittest.main()
