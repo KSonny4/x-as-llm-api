@@ -1,0 +1,9 @@
+test_buzz (test_fizzbuzz.TestFizzBuzz) ... ok
+test_fizz (test_fizzbuzz.TestFizzBuzz) ... ok
+test_fizzbuzz (test_fizzbuzz.TestFizzBuzz) ... ok
+test_number (test_fizzbuzz.TestFizzBuzz) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
