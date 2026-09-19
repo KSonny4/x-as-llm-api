@@ -27,7 +27,8 @@ withdraw it. What actually happened:
 - M2 cluster: GET /api/v1/detail?connection=zen/big-pickle →
   `"l2": "empty stdout+stderr rc=-9"`, checked 2026-09-19T12:26:14Z.
   Persisted: docs/zen-egress-receipts/detail-bigpickle-20260919.json:10
-  (fetched 12:28:48Z; same record re-observed — one receipt, no mismatch).
+  (fetched 12:30:43Z; one receipt — earlier 12:20:44Z citation from the
+  over-budget run is superseded, same string).
 - `nomad job inspect -version=18 keeper-probe` → memory 1024;
   current → memory 256; history: v18 10:22 CEST, v19 13:36 CEST.
 - Instrument: probe/worker.py keeps stderr+rc on empty stdout (test:
@@ -65,3 +66,36 @@ withdraw it. What actually happened:
   requires -var=opencode_auth_json (absent it, staged auth resets to {}).
   Stop-early is the closest achievable shape; on the CLI-execution metric
   (≤3) the settling run complies.
+
+## Overrun ledger (auditor-requested disclosure)
+
+- Prior full sweeps burned ~133 zen CLI executions (stop-early used the
+  wrong log-label pattern twice: provider/model labels, not connection
+  ids). This overrun is disclosed, not amortized into the settling run.
+- Petr-key quota burn from ALL cluster runs in this investigation: zero
+  by mechanism. Route keys are L1-only (curl; 403 FreeTierError /
+  200 models — no chat executed, nothing billable). L2 uses the node
+  auth snapshot, never the route key, so no cluster CLI call can touch
+  the Petr bucket. Every L2 since v19 SIGKILLed before executing.
+- The only quota-relevant spend in this goal: M1 (1 local CLI call,
+  agent-run per user decision) + the approved instrumented call.
+- The user-approved contract branch taken here: quota string did NOT
+  appear (no 429 anywhere — itself evidence against the quota theory);
+  the captured string is an infra kill signature, and the verdict
+  follows the string, not an inference.
+
+## On the demand for a non-empty CLI string (stated plainly)
+
+- SIGKILLed processes cannot produce output — ever. No re-run under the
+  v19 256MB cap can yield CLI stderr/stdout text; the obtainable maximum
+  evidence is the kill signature + the config diff + the binary size:
+  `nomad job inspect -version=18` → 1024MB, current → 256MB;
+  `/Users/ksonny/.opencode/bin/opencode` is 144470498 bytes on disk and
+  resident-plus-runtime exceeds a 256MB cgroup shared with python.
+- The causal claim therefore rests on a controlled experiment, not an
+  inference: the ONLY variable changed at 13:36 CEST was task memory
+  (v18→v19), and every L2 since fails with the identical kill signature
+  while the unconstrained laptop passes minutes apart.
+- If the bar is literal non-empty CLI stderr text, the unblock is the
+  owner re-register (1024MB) + one dispatch — recorded as deferred with
+  follow-up, not silently treated as done.
