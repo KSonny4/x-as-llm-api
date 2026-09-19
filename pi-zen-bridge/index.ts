@@ -25,8 +25,7 @@ import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export const PROVIDER_ID = "zen-cli";
-const CLI_BIN = process.env.OPENCODE_BIN ?? "opencode";
-const CLI_TIMEOUT_MS = Number(process.env.ZEN_CLI_TIMEOUT_MS ?? 180000);
+const DEFAULT_CLI_TIMEOUT_MS = 180000;
 
 function flattenPrompt(context: Context): string {
 	// The CLI model may prefer tool calls over text; pi's provider
@@ -56,11 +55,13 @@ function flattenPrompt(context: Context): string {
 	return parts.join("\n\n");
 }
 
-function runCli(cliModel: string, prompt: string, signal?: AbortSignal): Promise<string> {
+export function runCli(cliModel: string, prompt: string, signal?: AbortSignal): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const t0 = Date.now();
-		const child = spawn(CLI_BIN, ["run", "--pure", "-m", cliModel, prompt], {
-			timeout: CLI_TIMEOUT_MS,
+		const bin = process.env.OPENCODE_BIN ?? "opencode";
+		const timeoutMs = Number(process.env.ZEN_CLI_TIMEOUT_MS ?? DEFAULT_CLI_TIMEOUT_MS);
+		const child = spawn(bin, ["run", "--pure", "-m", cliModel, prompt], {
+			timeout: timeoutMs,
 			stdio: ["ignore", "pipe", "pipe"],
 			env: { ...process.env },
 		});

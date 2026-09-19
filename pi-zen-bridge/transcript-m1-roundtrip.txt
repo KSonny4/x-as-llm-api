@@ -1,0 +1,6 @@
+=== cmd: OPENCODE_BIN=/Users/ksonny/.opencode/bin/opencode pi -p -e /Users/ksonny/git_projects/x-as-llm-api/pi-zen-bridge --model zen-cli/mimo-v2.5-free "Reply with exactly: CLI-BRIDGE-ALIVE"
+=== started: 2026-09-19T09:27:08Z
+=== exit: 0 elapsed: 11s
+--- stdout:
+CLI-BRIDGE-ALIVE
+--- stderr:
