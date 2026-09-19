@@ -7,3 +7,9 @@ dispatch: openrouter/openai/gpt-4o-mini -> ok (l1=ok) posted 202
 dispatch: opencode-zen/big-pickle -> down (l1=suspect) posted 202
 dispatch: opencode-zen/big-pickle -> down (l1=suspect) posted 202
 dispatch: gemini/gemini-3.6-flash -> down (l1=suspect) posted 202
+# --- operator annex (not dispatch output) ---
+# CLI-execution accounting: L2 runs only on L1 non-ok. The 4 openrouter
+# lines are `l1=ok` (L1-only curls, no CLI). CLI executions: 2 (Petr +
+# spare big-pickle, same label, stop latency) + 1 gemini = 3 total.
+# L2 evidence for zen/big-pickle (Petr): "empty stdout+stderr rc=-9",
+# persisted in detail-bigpickle-20260919.json:10, checked 12:26:14Z.

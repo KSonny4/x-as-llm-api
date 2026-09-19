@@ -1,0 +1,16 @@
+{
+ "ok": true,
+ "record": {
+  "provider": "opencode-zen",
+  "model": "big-pickle",
+  "state": "down",
+  "detail": {
+   "l1": "suspect",
+   "reason": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"OpenCode's free tier can only be used from within OpenCode\"}}",
+   "l2": "empty stdout+stderr rc=-9"
+  },
+  "checked_at": "2026-09-19T12:26:14.484459+00:00"
+ },
+ "fetched_at": "2026-09-19T12:28:48.340773+00:00",
+ "endpoint": "GET /api/v1/detail?connection=zen/big-pickle"
+}

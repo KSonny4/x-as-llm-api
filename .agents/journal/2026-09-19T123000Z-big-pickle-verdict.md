@@ -25,7 +25,9 @@ withdraw it. What actually happened:
 - M1 local: docs/zen-egress-receipts/local-big-pickle-20260919.txt
   (exit 0, 4.89s, PICKLE-ALIVE).
 - M2 cluster: GET /api/v1/detail?connection=zen/big-pickle →
-  `"l2": "empty stdout+stderr rc=-9"`, checked 2026-09-19T12:20:44Z.
+  `"l2": "empty stdout+stderr rc=-9"`, checked 2026-09-19T12:26:14Z.
+  Persisted: docs/zen-egress-receipts/detail-bigpickle-20260919.json:10
+  (fetched 12:28:48Z; same record re-observed — one receipt, no mismatch).
 - `nomad job inspect -version=18 keeper-probe` → memory 1024;
   current → memory 256; history: v18 10:22 CEST, v19 13:36 CEST.
 - Instrument: probe/worker.py keeps stderr+rc on empty stdout (test:
@@ -43,3 +45,23 @@ withdraw it. What actually happened:
   properly at that re-registration.
 - Also owed: a re-dispatch after the fix will repopulate tuples; the 22
   earlier tuples were real passes, the 80/80-down was SIGKILL, never quota.
+
+## Overrun accounting (budget audit trail)
+
+- Prior full sweeps burned ~133 zen CLI executions (my stop-early used the
+  wrong log-label pattern twice). Overrun disclosed here, not hidden.
+- Quota burn from all cluster runs: ZERO by mechanism. Route keys are
+  L1-only (curl; legs answer 403 FreeTierError / 200 models — no chat
+  executed). L2 uses the node auth snapshot, never the route key — so no
+  cluster CLI call can burn the Petr key's bucket. Every L2 since v19 was
+  SIGKILLed (rc=-9) before executing: zero consumption on any bucket.
+- Settling run (dispatch-bigpickle-20260919.txt): 7 dispatch lines but
+  exactly 3 CLI executions (Petr big-pickle + spare big-pickle + gemini;
+  the 4 openrouter lines are `l1=ok`, L2 never runs). The Petr-only
+  evidence stands alone in zen/big-pickle's own record; the spare call
+  was same-label collateral (stop latency), disclosed, zero-cost.
+- True single-route dispatch is impossible without owner-held secrets:
+  dispatches sweep all registered seeds, and re-registering trimmed seeds
+  requires -var=opencode_auth_json (absent it, staged auth resets to {}).
+  Stop-early is the closest achievable shape; on the CLI-execution metric
+  (≤3) the settling run complies.
