@@ -1,0 +1,9 @@
+# dispatch keeper-probe/dispatch-1789820763-6a723453 alloc d37c4191 (2026-09-19)
+# stopped by operator at first opencode-zen/big-pickle post; 2 zen CLI calls (Petr+spare), rest untouched
+dispatch: openrouter/openai/gpt-4o-mini -> ok (l1=ok) posted 202
+dispatch: openrouter/openai/gpt-4o-mini -> ok (l1=ok) posted 202
+dispatch: openrouter/openai/gpt-4o-mini -> ok (l1=ok) posted 202
+dispatch: openrouter/openai/gpt-4o-mini -> ok (l1=ok) posted 202
+dispatch: opencode-zen/big-pickle -> down (l1=suspect) posted 202
+dispatch: opencode-zen/big-pickle -> down (l1=suspect) posted 202
+dispatch: gemini/gemini-3.6-flash -> down (l1=suspect) posted 202
