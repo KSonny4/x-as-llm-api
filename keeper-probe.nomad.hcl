@@ -76,19 +76,17 @@ job "keeper-probe" {
         change_mode = "restart"
       }
 
-      # Memory sizing (2026-09-19, MEASURED — see journal
-      # 2026-09-19T123000Z-big-pickle-verdict.md): one `opencode run`
-      # peaks at ~744MB RSS (`time -l`, 780238848 bytes max). The 256MB
-      # cap SIGKILLed every CLI child (rc=-9, empty output) from v19 on.
-      # worker.py `_cli_slot` bounds concurrent CLI children to 2 per
-      # container, so: 2 x 780MB + ~100MB python + margin = 2048MB.
-      # TRADE-OFF: 2GB reservation vs cognee placement (the reason for
-      # the 256MB cut that broke L2). Batch job, short-lived; owner
-      # decides at re-register. Re-register needs -var=opencode_auth_json
-      # (owner-held) — spec change alone does nothing until then.
+      # Memory sizing (2026-09-19, MEASURED): one `opencode run` peaks
+      # at ~744MB RSS. 2048MB (2 slots) DOES NOT PLACE on this node
+      # (memory exhausted, dispatch-1789823033) — node fits 1024MB max.
+      # 1024 is proven-good for the sequential loop (1 concurrent CLI:
+      # v18 morning, 69 L2 passes). The `_cli_slot` bound of 2 stays as
+      # the guard; effective concurrency today is 1 by loop shape. Two
+      # concurrent CLIs need node headroom (cognee trade-off, owner call).
+      # Re-register needs -var=opencode_auth_json (owner-held).
       resources {
         cpu    = 500
-        memory = 2048
+        memory = 1024
       }
     }
   }
