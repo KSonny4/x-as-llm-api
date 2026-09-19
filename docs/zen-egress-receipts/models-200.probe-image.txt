@@ -1,0 +1,5 @@
+cmd: batch alloc 19bfc4b6 (image keeper-probe:main-529dd3e, host net): worker._get keyed GET /zen/v1/models (key via -var, never logged)
+alloc: 19bfc4b6-8ba3-d026-ea00-485120593f32
+status: 200
+body-head: {"object":"list","data":[{"id":"big-pickle","object":"model","created":1789800931,"owned_by":"opencode"},{"id":"ling-3.0-flash-fin-free","object":"mod
+ua: keeper-probe/1.0

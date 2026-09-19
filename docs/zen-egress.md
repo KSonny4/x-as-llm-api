@@ -7,6 +7,16 @@ keyless alike). Full proof: `docs/zen-diagnosis.md` addendum.
 
 ## M1: userspace Mullvad sidecar (parked, not deleted)
 
+Pin (public relay facts): `de-fra-wg-004`, endpoint
+`185.209.196.74:51820`, pubkey
+`tzYLWgBdwrbbBCXYHRSoYIho4dHtrm+8bdONU1I8xzc=` — the SAME relay
+Pi gluetun currently exits (`185.209.196.155`, Frankfurt), through
+which Zen returned `200 OK` no-creds. Receipts:
+`docs/zen-egress-receipts/sidecar-routing.txt`,
+`docs/zen-egress-receipts/escrow-validation.txt`, image
+`registry.pkubelka.cz/keeper-egress:main-dfbc2f1`
+(`sha256:57e73f2cb77eb1376259d6c8f2d4739f30f7773bc68f62b84b1e406b61abfac1`).
+
 - `probe/egress/`: sing-box (WireGuard endpoint + HTTP CONNECT
   `127.0.0.1:8888`), zero privileges (Nomad denies `net_admin`, so no
   kernel TUN — measured). Route rules sent only `opencode.ai` into the
