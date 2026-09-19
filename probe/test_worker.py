@@ -167,6 +167,14 @@ class ProbeTest(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn("ref=opencode/big-pickle", text)
 
+    def test_l2_fail_keeps_stderr_evidence(self):
+        self.set_cli("#!/bin/sh\necho boom >&2\nexit 1\n")
+        ok, text = self.probe_l2(self.route("http://x", model="p/m"),
+                                 env=self.env)
+        self.assertFalse(ok)
+        self.assertIn("boom", text)
+        self.assertIn("rc=1", text)
+
     def test_l2_fail_means_down(self):
         self.set_cli("#!/bin/sh\necho boom >&2\nexit 1\n")
         state = self.probe_route(self.route("http://127.0.0.1:1", model="p/m"),

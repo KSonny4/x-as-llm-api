@@ -174,8 +174,15 @@ def probe_l2(route, env=None):
                            env=env or os.environ)
     except Exception as e:
         return False, f"exec-fail: {e}"
-    text = (p.stdout or "").strip()
-    return (p.returncode == 0 and _non_empty_text(text)), text[:500]
+    out = (p.stdout or "").strip()
+    err = (p.stderr or "").strip()
+    if not out:
+        # Empty stdout is the common failure shape (auth/quota errors
+        # go to stderr); keep the evidence instead of an empty string.
+        out = ("stderr: %s rc=%d" % (err[:400], p.returncode) if err
+               else "empty stdout+stderr rc=%d" % p.returncode)
+    return (p.returncode == 0 and _non_empty_text(
+        (p.stdout or "").strip())), out[:500]
 
 
 def probe_route(route, report=None, l2env=None):
