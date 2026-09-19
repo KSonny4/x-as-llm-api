@@ -110,7 +110,7 @@ job "keeper-probe" {
     task "egress" {
       driver = "docker"
       config {
-        image        = "registry.pkubelka.cz/keeper-egress:main-af9cd22"
+        image        = "registry.pkubelka.cz/keeper-egress:main-dfbc2f1"
         force_pull   = true
         network_mode = "host"
       }
