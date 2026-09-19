@@ -32,9 +32,15 @@ function flattenPrompt(context: Context): string {
 	// The CLI model may prefer tool calls over text; pi's provider
 	// contract needs text. This instruction is load-bearing (measured:
 	// bare prompts get `date` executions, instructed ones answer).
-	const parts: string[] = [
-		"Answer in plain text only. Do not run any commands, tools, or shell invocations; the caller cannot execute them.",
-	];
+	// ZEN_CLI_ALLOW_TOOLS=1 drops it for action runs where the CLI's
+	// own tools should do the work (pi cannot issue tool calls through
+	// this text-only provider — measured contract limit, see M3).
+	const parts: string[] =
+		process.env.ZEN_CLI_ALLOW_TOOLS === "1"
+			? []
+			: [
+					"Answer in plain text only. Do not run any commands, tools, or shell invocations; the caller cannot execute them.",
+				];
 	if (context.systemPrompt) parts.push(`[system]\n${context.systemPrompt}`);
 	for (const m of context.messages) {
 		if (m.role === "user") {
