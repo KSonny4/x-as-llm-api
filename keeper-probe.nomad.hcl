@@ -58,7 +58,7 @@ job "keeper-probe" {
     task "probe" {
       driver = "docker"
       config {
-        image        = "registry.pkubelka.cz/keeper-probe:main-529dd3e"
+        image        = "registry.pkubelka.cz/keeper-probe:main-act1"
         force_pull   = true
         network_mode = "host"
       }
