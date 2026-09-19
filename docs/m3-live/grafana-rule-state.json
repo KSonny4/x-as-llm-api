@@ -1,25 +1,25 @@
 {
- "fetched_at": "2026-09-18T23:57:57Z",
+ "fetched_at": "2026-09-19T00:01:20Z",
  "rules": [
   {
    "uid": "keeper-route-divergent",
    "state": "inactive",
    "health": "ok",
-   "lastEvaluation": "2026-09-18T23:57:30Z",
+   "lastEvaluation": "2026-09-19T00:00:30Z",
    "lastError": null
   },
   {
    "uid": "keeper-route-down",
    "state": "firing",
    "health": "ok",
-   "lastEvaluation": "2026-09-18T23:57:10Z",
+   "lastEvaluation": "2026-09-19T00:01:10Z",
    "lastError": null
   },
   {
    "uid": "keeper-probe-stale",
-   "state": "inactive",
-   "health": "nodata",
-   "lastEvaluation": "2026-09-18T23:57:10Z",
+   "state": "firing",
+   "health": "ok",
+   "lastEvaluation": "2026-09-19T00:01:10Z",
    "lastError": null
   }
  ]

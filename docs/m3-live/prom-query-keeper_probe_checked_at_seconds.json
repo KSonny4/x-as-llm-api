@@ -1,5 +1,5 @@
 {
- "fetched_at": "2026-09-18T23:57:50Z",
+ "fetched_at": "2026-09-19T00:01:08Z",
  "query": "count(keeper_probe_checked_at_seconds)",
  "via": "grafanacloud-prom datasource proxy",
  "series_count": 11,
@@ -11,7 +11,7 @@
     {
      "metric": {},
      "value": [
-      1789775871.005,
+      1789776068.598,
       "11"
      ]
     }
