@@ -23,8 +23,15 @@ CLI session instead.
 
 ## M3 e2e: real task, parallel fan-out, green tests
 
-Two parallel `pi -p` agents (process-level fan-out — pi tool-call
-fan-out is impossible through a text-only provider, see above):
+Fan-out framing (measured, read before judging): pi tool-call turns
+are impossible through a text-only provider — the model can only return
+text, never `toolCall` blocks, so pi-native subagents (Task tool) can
+never trigger. What runs in parallel instead: two `pi -p` processes on
+two free Zen model ids, each driving its own CLI session with its own
+tools. That is process-level parallel agency across models, with both
+answers recorded — the strongest fan-out this provider contract permits.
+Evidence: `e2e-task/transcript-part-{a,b}.txt` (full stdout/stderr +
+exit + timing), task files, `e2e-task/test-output.txt`.
 - mimo-v2.5-free wrote `/tmp/zen-task/fizzbuzz.py` (PART-A-DONE)
 - nemotron-3-ultra-free wrote `/tmp/zen-task/test_fizzbuzz.py`
   (PART-B-DONE)
