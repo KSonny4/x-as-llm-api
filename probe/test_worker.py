@@ -175,6 +175,33 @@ class ProbeTest(unittest.TestCase):
         self.assertIn("boom", text)
         self.assertIn("rc=1", text)
 
+    def test_cli_slot_acquire_release(self):
+        from worker import _cli_slot
+        d = os.path.join(self.tmp, "slots")
+        with _cli_slot(limit=2, timeout=5, slot_dir=d):
+            self.assertEqual(os.listdir(d), [str(os.getpid())])
+        self.assertEqual(os.listdir(d), [])
+
+    def test_cli_slot_reaps_dead_holders(self):
+        from worker import _cli_slot
+        d = os.path.join(self.tmp, "slots")
+        os.makedirs(d)
+        open(os.path.join(d, "999999999"), "w").close()
+        with _cli_slot(limit=1, timeout=5, slot_dir=d):
+            self.assertIn(str(os.getpid()), os.listdir(d))
+            self.assertNotIn("999999999", os.listdir(d))
+
+    def test_cli_slot_limit_blocks(self):
+        from worker import _cli_slot
+        d = os.path.join(self.tmp, "slots")
+        os.makedirs(d)
+        open(os.path.join(d, str(os.getppid())), "w").close()
+        live = [f for f in os.listdir(d) if f.isdigit()]
+        self.assertEqual(len(live), 1)  # parent pid holds the only slot
+        with self.assertRaises(TimeoutError):
+            with _cli_slot(limit=1, timeout=1, slot_dir=d):
+                pass
+
     def test_l2_fail_means_down(self):
         self.set_cli("#!/bin/sh\necho boom >&2\nexit 1\n")
         state = self.probe_route(self.route("http://127.0.0.1:1", model="p/m"),

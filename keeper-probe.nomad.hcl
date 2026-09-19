@@ -76,16 +76,19 @@ job "keeper-probe" {
         change_mode = "restart"
       }
 
-      # REVERTED 2026-09-19: 256MB SIGKILLs the opencode CLI child
-      # (rc=-9, empty stdout+stderr on every L2 since v19 13:36 CEST;
-      # 144MB binary + runtime does not fit 256MB next to python).
-      # 1024 is the proven-good value (v18 morning: 69 L2 passes).
-      # If cognee placement needs room back, try 512 as an experiment
-      # (owner call) — never below what fits the CLI. See journal
-      # 2026-09-19T123000Z-big-pickle-verdict.md.
+      # Memory sizing (2026-09-19, MEASURED — see journal
+      # 2026-09-19T123000Z-big-pickle-verdict.md): one `opencode run`
+      # peaks at ~744MB RSS (`time -l`, 780238848 bytes max). The 256MB
+      # cap SIGKILLed every CLI child (rc=-9, empty output) from v19 on.
+      # worker.py `_cli_slot` bounds concurrent CLI children to 2 per
+      # container, so: 2 x 780MB + ~100MB python + margin = 2048MB.
+      # TRADE-OFF: 2GB reservation vs cognee placement (the reason for
+      # the 256MB cut that broke L2). Batch job, short-lived; owner
+      # decides at re-register. Re-register needs -var=opencode_auth_json
+      # (owner-held) — spec change alone does nothing until then.
       resources {
         cpu    = 500
-        memory = 1024
+        memory = 2048
       }
     }
   }

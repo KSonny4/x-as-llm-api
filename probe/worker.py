@@ -8,8 +8,10 @@ auth-shaped denial => suspect + feedback; wrong wire => misconfigured.
 import json
 import os
 import subprocess
+import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 BACKOFF_MIN = 5
@@ -17,6 +19,61 @@ ANTHROPIC_VERSION = "2023-06-01"
 # Fleet identity: Zen's edge (and who knows who next) blocks the
 # Python-urllib default UA with 403. Honest, documented, tested.
 FLEET_UA = "keeper-probe/1.0"
+
+# Max concurrent opencode CLI children per container. Measured peak RSS
+# of one `opencode run` is ~744MB (2026-09-19, macOS time -l); the
+# container is sized for CLI_SLOTS x peak + python headroom (see
+# keeper-probe.nomad.hcl). The dispatch loop is sequential today; this
+# lock binds any future parallelization and any overlapping runs.
+# Process-level bound (PID files): threads of one process share a slot.
+CLI_SLOTS = 2
+CLI_SLOT_TIMEOUT = 600
+
+
+def _slot_dir():
+    d = os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                     "opencode-cli-slots")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _reap_slots(d):
+    for name in os.listdir(d):
+        if not name.isdigit():
+            continue
+        try:
+            os.kill(int(name), 0)
+        except OSError:
+            try:
+                os.remove(os.path.join(d, name))
+            except OSError:
+                pass
+
+
+@contextmanager
+def _cli_slot(limit=CLI_SLOTS, timeout=CLI_SLOT_TIMEOUT, slot_dir=None):
+    """Counting semaphore (PID files) for opencode CLI children."""
+    d = slot_dir or _slot_dir()
+    os.makedirs(d, exist_ok=True)
+    me = str(os.getpid())
+    mine = os.path.join(d, me)
+    deadline = time.time() + timeout
+    while True:
+        _reap_slots(d)
+        holders = [f for f in os.listdir(d) if f.isdigit()]
+        if me in holders or len(holders) < limit:
+            open(mine, "a").close()
+            break
+        if time.time() > deadline:
+            raise TimeoutError("no opencode CLI slot within %ss" % timeout)
+        time.sleep(0.2)
+    try:
+        yield
+    finally:
+        try:
+            os.remove(mine)
+        except OSError:
+            pass
 
 
 def _now():
@@ -169,9 +226,10 @@ def probe_l2(route, env=None):
     provider = route.get("provider", "")
     ref = route.get("l2_ref") or (model if "/" in model else f"{provider}/{model}")
     try:
-        p = subprocess.run(["opencode", "run", "--pure", "-m", ref, "ping"],
-                           capture_output=True, text=True, timeout=120,
-                           env=env or os.environ)
+        with _cli_slot():
+            p = subprocess.run(["opencode", "run", "--pure", "-m", ref, "ping"],
+                               capture_output=True, text=True, timeout=120,
+                               env=env or os.environ)
     except Exception as e:
         return False, f"exec-fail: {e}"
     out = (p.stdout or "").strip()
