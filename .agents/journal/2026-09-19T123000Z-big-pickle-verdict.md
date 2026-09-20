@@ -110,3 +110,15 @@ withdraw it. What actually happened:
 - Reading: quota drained across the board by today's runs (L1 429s are
   new — morning was policy-403). Muse cannot be shown active until
   buckets refill (~00:30Z). No infra left to fix on this path.
+
+## Redeploy: keeper live on new VPS (2026-09-19 ~23:50Z)
+- New box ovh-nomad-fresh (148.113.245.89): Ubuntu 26.04, 22GB RAM, own
+  single-node Nomad (ovh-vps DC name) + registry + edge-proxy/caddy.
+- KEEPER_TOKEN rotated to v2 (prior value touched transcript via od —
+  burned, replaced). Rotation by agent under explicit user order.
+- Keeper main-12a1d66 deployed: 103 routes, loopback :8102 200, matrix
+  103 rows, aa_stale false. Registry auth via job vars (node docker
+  config proved unreliable — files vanish).
+- Cutover: keeper.pkubelka.cz DNS → new tunnel f0c0c4f8 + ingress rule
+  keeper→localhost:8102. Public 200 verified. Old nomad-admin tunnel
+  left alone (not destroyed).
