@@ -18,7 +18,18 @@ $ pi --provider keeper-muse-spark-1-3-contributor-free --model muse-spark-1.3-co
 exit=1
 ```
 
-## M3 leg classification (evidence-backed)
+## M3 CORRECTION 2026-09-20 ~13:30Z (supersedes "vendor blocked")
+
+The quota/capacity classification was WRONG. Local CLI returns live 200s
+same hour, same account, hash-proven same key (RETIRED_1). A same-machine
+replay matrix (real SDK, title-first, warmup, tools+stream, h1/h2, v4/v6,
+full headers) all 403s while the binary 200s — the gate binds a signal
+outside HTTP semantics. Keeper as a Python HTTP relay is STRUCTURALLY
+incapable of passing it. Blessed Nomad path: run the BINARY on Nomad
+(pi-zen-bridge CLI-subprocess pattern, >=1024MB floor; 69 passes proven).
+Full evidence: .agents/journal/2026-09-20T133000Z-big-pickle-verdict-v2.md.
+
+## Original (withdrawn) classification
 
 | Leg | Verdict | Evidence |
 |-----|---------|----------|

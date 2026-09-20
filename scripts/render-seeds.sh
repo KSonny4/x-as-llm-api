@@ -51,6 +51,13 @@ emit OPENROUTER_API_KEY_2 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "ope
 emit OPENROUTER_API_KEY openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key1" "GPT-4o mini via OpenRouter (key 1)" 1
 emit OPENROUTER_API_KEY_3 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key3" "GPT-4o mini via OpenRouter (key 3)" 1
 emit OPENROUTER_API_KEY_4 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key4" "GPT-4o mini via OpenRouter (key 4)" 1
+# Route order = resolution preference: find_route serves the FIRST
+# route matching a model. 2026-09-20 proof: local `opencode run -m
+# opencode/big-pickle` succeeds on OPENCODE_ZEN_RETIRED_1 while the
+# Petr-key route 429s (drained bucket) — so the proven-working key
+# MUST come first for every zen model. Never put an unproven/drained
+# key ahead of RETIRED_1 without a same-day working-key proof.
+emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-1" "Big Pickle (retired key 1, owner-promoted)" 1
 emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle" "Big Pickle (Petr key)" 1
 emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle-spare" "Big Pickle (spare key)" 1
 emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
@@ -69,7 +76,6 @@ emit ANTIGRAVITY_OAUTH antigravity "antigravity 1 (CLI-only)" "" none "antigravi
 emit ANTIGRAVITY_OAUTH_2 antigravity "antigravity 2 (CLI-only)" "" none "antigravity/key-2" "Antigravity OAuth 2 (CLI-only, no API)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-friedmanbob2" "Inactive Antigravity key (foreign account)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-jannovak12390" "Inactive Antigravity key (foreign account)" 0
-emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-1" "Big Pickle (retired key 1, owner-promoted)" 1
 emit OPENCODE_ZEN_RETIRED_2 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-2" "Big Pickle (retired key 2, owner-promoted)" 1
 emit OPENCODE_ZEN_RETIRED_3 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-3" "Big Pickle (retired key 3, owner-promoted)" 1
 emit OPENCODE_ZEN_RETIRED_4 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-4" "Big Pickle (retired key 4, owner-promoted)" 1
@@ -87,9 +93,11 @@ for spec in \
   "nemotron-3.5-lightning-free:nemotron-lightning:Nemotron Lightning (free)" \
   "jev-1.13-free:jev113:Jev 1.13 (free)"; do
   model="${spec%%:*}"; rest="${spec#*:}"; tag="${rest%%:*}"; label="${rest#*:}"
+  # RETIRED_1 first: proven-working key (see note above). Order matters.
+  emit OPENCODE_ZEN_RETIRED_1 opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-retired-1" "$label (retired key 1)" 1
   emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-petr" "$label (Petr key)" 1
   emit OPENCODE_ZEN_API_KEY opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-spare" "$label (spare key)" 1
-  n=1; while [ $n -le 8 ]; do
+  n=2; while [ $n -le 8 ]; do
     emit "OPENCODE_ZEN_RETIRED_$n" opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-retired-$n" "$label (retired key $n)" 1
     n=$((n+1))
 done
