@@ -1,5 +1,12 @@
 # Curl transcripts — accepted (exec) architecture
 
+Capture method (all three): HTTP status via curl `-w "%{http_code}"`
+(stdout, quoted below); exit code via output file written + status
+printed (curl exit 0 in all three runs — a non-zero exit writes no
+`-o` body and prints no status line). Request bodies are the literal
+`-d` strings shown. No vendor calls were made to produce this file
+beyond the six ledgered runs.
+
 Server: `./zencli -serve -port <port>` (exec backend drives genuine
 `opencode run`; no ZEN_API_KEY needed). All below: exit 0 (output files
 written, HTTP 200 recorded via `-w`). Reconstructed from session logs

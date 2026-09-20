@@ -49,6 +49,23 @@ func TestWriteSSEFormat(t *testing.T) {
 	if !strings.Contains(body, `"content":"hi "`) {
 		t.Fatalf("missing word chunk: %q", body[:200])
 	}
+	// strict OpenAI shape: unfinished chunks carry finish_reason null
+	lines := strings.Split(strings.TrimSpace(body), "\n\n")
+	if len(lines) < 3 {
+		t.Fatalf("want >=3 SSE frames, got %d", len(lines))
+	}
+	var first struct {
+		Choices []struct {
+			Delta        map[string]string `json:"delta"`
+			FinishReason *string           `json:"finish_reason"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimPrefix(lines[0], "data: ")), &first); err != nil {
+		t.Fatal(err)
+	}
+	if first.Choices[0].FinishReason != nil {
+		t.Fatalf("delta chunk finish_reason must be null, got %q", *first.Choices[0].FinishReason)
+	}
 	if !strings.Contains(body, `"finish_reason":"stop"`) {
 		t.Fatal("missing stop chunk")
 	}
