@@ -67,20 +67,59 @@ the gate today and is kept as: (a) the proof instrument behind verdict
 v3/v4, (b) a ready client if the gate ever changes, (c) a template for
 non-gated endpoints.
 
-## How it works with pi
+## Interaction map (who talks to whom)
+
+```text
+pi harness
+ ├── opencode-zen-free provider ──HTTPS (Bun, CLI identity)──▶ zen ✅ 200 (blessed)
+ │     key: pi stored credential (RETIRED_1, hash-verified)
+ ├── keeper-big-pickle provider ──▶ keeper ──HTTPS (urllib, bare)──▶ zen ❌ 429
+ │     key: keeper route (RETIRED_1 post-reorder; was PETR)
+ └── (zencli: NOT in pi's path — see below)
+
+zencli ──HTTPS (uTLS mimic + hand framing)──▶ zen ❌ 403 (gate)
+       └── built to prove the above table, not to serve traffic
+```
+
+## Does pi have everything it needs? YES
+
+Nothing is missing for the pi harness: the `opencode-zen-free`
+provider is configured, keyed (stored credential, RETIRED_1), and
+proven end to end (`PI-ZEN-DIRECT`, exit 0, 2026-09-20). No keeper hop
+needed, no new piece required. Remaining chores are hygiene, not
+capability: rotate the Petr key (transcript exposure), and optionally
+fix keeper's upstream identity headers if the relay path is ever
+wanted back (keeper serving change — separate scope).
+
+## Could we add an OpenAI API in front and provide that?
+
+Meaning: an HTTP server accepting OpenAI `POST /chat/completions`
+that pi (or any OpenAI client) points at, with zencli's wire control
+behind it. Technically straightforward — a `-serve` mode on this
+binary: stdlib `net/http` listener + the existing uTLS dial + header
+framing, ~60 extra lines. Two honest caveats:
+
+1. **It would 403 today.** A server wrapper doesn't change what the
+gate sees: zencli's requests are rejected at the vendor regardless of
+who asked for them. Serve-mode only becomes useful IF the gate ever
+changes (or for non-gated endpoints — the code is endpoint-agnostic
+via `-host`/`-path`).
+2. **pi doesn't need it.** The direct provider already gives pi a
+working OpenAI-shaped path to zen. Adding a local server in between
+would add a hop, a secret-handling surface, and a process to babysit
+for zero capability gain.
+
+Verdict: build `-serve` only on a future receipt showing raw-wire
+control passing where stock stacks fail. Until then it stays a design
+note, not code.
 
 It doesn't — deliberately. pi talks to zen through its own provider, not
 through zencli:
 
-- **Blessed path**: pi's `opencode-zen-free` provider
-  (`pi-opencode-direct@0.1.6`) speaks HTTPS directly to zen with full
-  CLI identity headers over the Bun stack — and passes the gate
-  (`PI-ZEN-DIRECT`, exit 0, 2026-09-20). No keeper hop, no subprocess,
-  no zencli involved. Same backing key (RETIRED_1) as the CLI.
 - **zencli's relationship to pi** is evidentiary, not operational: it
   established *why* the keeper relay fails (identity stripped upstream)
-  and *that* a reconstructed request cannot pass, which is what pointed
-  back to verifying the direct provider.
+  and bounded what reconstruction can pass, which is what pointed back
+  to verifying the direct provider.
 - **If you ever need pi to drive zencli** (e.g. gate changes and only
   raw-wire control passes): wrap it as a local subprocess bridge
   (`ZEN_API_KEY` from the same stored credential pi uses), same pattern
