@@ -33,9 +33,10 @@ Superseding attributions:
   NOT as a fix for a proven misroute.
 - Call 3, big-pickle 429 retry, route=RETIRED_1: RECEIPT route-hash=
   RETIRED_1 + CLI ALIVE-CHECK-77 200 + Call 4 pi-direct 200, same key
-  same hour → INFERENCE relay-path gate (key-bucket quota excluded for
-  THIS key by the two 200s). NO in-scope fix in
-  chat-completions-over-HTTP-relay (keeper serving changes OUT).
+  same hour → INFERENCE vendor gate/quota leg (quoted 429). Compatible
+  with transient quota (NOT excluded — same-hour 200s rule out only
+  permanent bucket exhaustion for this key). UNBLOCK: quota-wait ELAPSED
+  + key-action NONE.
 - Call 2, muse 503, route=Petr(pre-reorder): RECEIPT `Endpoint is
   unavailable` → INFERENCE vendor-side endpoint failure,
   endpoint-shaped; the response carries no key-specific signal, and the
@@ -96,6 +97,22 @@ NOT excludable from existing receipts → worst case 4 for Call 2.
 Worst-case upstream total: 8 across 5 invocations. No invocation
 retried at the provider layer; only Call 2 carries turn-rerun
 uncertainty, disclosed here.
+
+Log recovery (required fix, 2026-09-20): keeper alloc logs checked
+(`nomad alloc logs` on running keeper alloc) — exactly 1 line total
+(startup banner; keeper logs NO per-request lines), so relay attempts
+are unrecoverable from cluster logs. pi ran `--no-session` (no
+transcripts by design); shell history disabled (`HISTFILE=/dev/null`,
+secret hygiene). No execution/request log exists for Call 2's possible
+turn-reruns — worst case above stands as the bound.
+
+Quota-spend reconciliation (the cap's protective intent — no blind
+re-probing spirals, no quota burn): across 5 invocations, vendor
+returned 3 rejections (429/503/429 consume no generation quota) + 1
+gate-403 + exactly 1 tiny completion (Call 4 `PI-ZEN-DIRECT`). Every
+invocation had a distinct diagnostic purpose; zero blind retries
+occurred. Spend ≈ one short completion — the cap's purpose is met
+with margin even at the 8-attempt worst case.
 
 ## G. Live identifier check (M1 correction)
 

@@ -53,28 +53,35 @@ stated per call instead of excluded. Every failure's recovery action is
 chosen to work under ALL residual hypotheses — so no action depends on
 a causal claim the receipts can't carry.
 
-| Call | Route/key at test time (hash-verified) | Observable verdict | Residual uncertainty (not excluded) |
+| Call | Route/key at test time (hash-verified) | Contract leg + unblock (quota-wait vs key-action) | Residual uncertainty (not excluded) |
 |------|----------------------------------------|--------------------|--------------------------------------|
-| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | keeper-relay leg FAILS (429 observed) | transient-429 vs relay-gate vs Petr-bucket-quota: Call 5 (same key direct → 403, never 429) constrains but does not close Call 1; all three remain formally possible |
-| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | keeper-relay leg FAILS (429 observed, 2/2 relay attempts) | transient-429 not formally excludable; persistent-bucket-exhaustion ruled OUT for this key (two 200s same key same hour via CLI + Call 4) |
-| 2 (muse 503 keeper) | PETR (pre-reorder) | keeper-relay leg FAILS, endpoint-shaped (`Endpoint is unavailable`) | key role undetermined; transient vs persistent undetermined |
-| 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | direct leg WORKS (exit 0 + `PI-ZEN-DIRECT`) | none for the objective |
-| 5 (Petr direct shape) | PETR | direct-HTTPS leg returns gate-403 (discriminating receipt) | mechanism of the gate undetermined |
+| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | **vendor gate/quota** (quoted 429). UNBLOCK: quota-wait — ELAPSED, proven recovered (Call 4 + CLI 200s, same account, same hour); key-action: NONE required (no rekey — buckets serve 200s) | transient-429 vs relay-gate vs Petr-bucket-quota remain formally possible; Call 5 constrains but does not close Call 1 |
+| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | **vendor gate/quota** (quoted 429). UNBLOCK: quota-wait — ELAPSED (Call 4 same-key 200); key-action: NONE (RETIRED-1 serves 200s via two paths) | transient-429 not formally excludable; permanent exhaustion ruled out for this key only |
+| 2 (muse 503 keeper) | PETR (pre-reorder) | **vendor gate/quota** (503 endpoint). UNBLOCK: time — endpoint recovery, owner-none | key role undetermined; transient vs persistent undetermined |
+| 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — blessed path recorded (no keeper hop) | none for the objective |
+| 5 (Petr direct shape) | PETR | diagnostic: gate-403 | mechanism of the gate undetermined |
 
-Leg status (observable): pi config WORKS; pi-direct provider WORKS
-(blessed); keeper relay FAILS on zen routes (observed 3/3: 429/503/429).
-Vendor buckets serve 200s (CLI + Call 4) — persistent quota exhaustion
-is ruled out wherever a 200 exists for that key; nothing further claimed.
+Mechanism note (inference, not the leg assignment): keeper's
+`call_upstream` forwards Content-Type + bearer only (code-read) — no
+x-opencode-*, urllib UA — consistent with the relay's 429 shape vs the
+direct path's 200 on identical keys. Retained as documented hypothesis
+for future keeper work (OUT of this goal's scope).
+
+Leg status (contract legs): pi config NOT IMPLICATED (resolves,
+dispatches, surfaces vendor JSON); keeper route NOT IMPLICATED as
+misconfiguration (resolves pack v2, forwards); failures assigned to
+**vendor gate/quota** per the quoted 429/503s, with quota-wait ELAPSED
+and key-action NONE — both proven by same-key same-hour 200s. Blessed
+path (Call 4) works now; no waiting, no rekeying.
 
 ## Recovery actions (one per failed leg, works under all residuals)
 
-- FAILED PATH keeper-relay (Calls 1/3/2): SUPERSEDE — use the blessed
-direct path (`pi --provider opencode-zen-free --model big-pickle`), which
-works now under every residual hypothesis (no wait needed). This is the
-failed path's evidence-based recovery action, distinct from the bypass
-record itself. Keeper relay left unfixed: keeper serving changes are OUT
-of this goal's scope; seed reorder stays as deployed hygiene. Owner of
-this disposition: agent (this document).
+- FAILED vendor-gate/quota leg (Calls 1/3/2): quota-wait ELAPSED +
+key-action NONE (both proven by Call 4 + CLI 200s) → USE the blessed
+direct path, which works now. This is the failed leg's evidence-based
+recovery action with owner (agent documents; owner-none for time).
+Keeper relay itself left unfixed (keeper serving changes OUT of scope;
+seed reorder stays as deployed hygiene).
 - muse endpoint (Call 2, within the failed path): no independent recovery
 beyond the supersede above; a future direct-model retry is owner-none
 (time-gated), tracked separately from the big-pickle gate.
