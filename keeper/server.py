@@ -674,7 +674,12 @@ def overlay_keyqueue_live(doc, probe_detail):
         if live_ts <= (entry.get("checked_at") or ""):
             continue
         down = rec.get("state") == "down"
-        dead = (entry.get("consecutive_dead", 0) + 1) if down else 0
+        live_streak = (rec.get("detail") or {}).get("dead_streak")
+        try:
+            dead = int(live_streak)
+        except (ValueError, TypeError):
+            # No live streak (boot seed): extend the baked one once.
+            dead = (entry.get("consecutive_dead", 0) + 1) if down else 0
         try:
             base = datetime.strptime(live_ts, "%Y-%m-%dT%H:%M:%SZ")
             base = base.replace(tzinfo=timezone.utc)
@@ -1271,8 +1276,26 @@ def ingest_probe(state, doc):
               "checked_at": doc.get("checked_at", "")}
     # Every targeted route keeps its own verdict: same-model keys are each
     # probed separately, so each connection id records its own result.
+    import copy as _copy
+    template = record
     for route in targets:
         each = connection_id(route)
+        record = _copy.deepcopy(template)
+        # Consecutive-failure streak travels inside the record (auditor
+        # 17:34): previous streak +1 on down, reset on ok — persisted by
+        # probe_db_save, so backoff accumulates across ingests and
+        # survives task restarts (fresh allocs fall back to the baked
+        # ledger baseline via overlay_keyqueue_live).
+        if (record.get("detail") or {}).get("source") == "keyround":
+            prev = (state["probe_detail"].get(each) or {}).get(
+                "detail") or {}
+            try:
+                prev_streak = int(prev.get("dead_streak", 0))
+            except (ValueError, TypeError):
+                prev_streak = 0
+            record["detail"]["dead_streak"] = (
+                prev_streak + 1 if record.get("state") == "down"
+                else 0)
         state["probe_detail"][each] = record
         state["probe"][each] = doc["state"]
         probe_db_save(each, record)

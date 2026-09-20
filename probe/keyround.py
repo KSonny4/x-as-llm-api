@@ -53,8 +53,12 @@ def key_value():
 
 
 def eligible_names():
-    """Keys due for testing per the live keeper queue (None = queue
-    unreachable: fall back to the full pool, never to nothing)."""
+    """Keys due for testing per the live keeper queue.
+    Returns None (dev mode: full pool) only when NO keeper token is
+    configured. When a token IS configured but the queue cannot be
+    obtained, returns [] — fail closed to idle, never unrestricted
+    selection (auditor 17:34). A missed round is visible via the
+    heartbeat-stalled alert; a wrong-key round is not."""
     token = (os.environ.get("KEYROUND_KEEPER_TOKEN") or "").strip()
     if not token:
         return None
@@ -69,7 +73,8 @@ def eligible_names():
             doc = json.loads(res.read().decode("utf-8", "replace"))
     except Exception as e:
         sys.stderr.write("keyround eligibility fetch failed: %s\n" % e)
-        return None
+        sys.stderr.write("keyround: fail closed, pool idle\n")
+        return []
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     out = []
     for k in doc.get("keys", []):
@@ -268,6 +273,10 @@ def run_round(key_name, value, home, server_cmd, cli_bin,
         if proc is not None:
             proc.terminate()
     working = any(m["zencli"]["ok"] for m in per_model.values())
+    # Mismatch aggregates across EVERY tested model: a disagreement on
+    # any free model (not just the primary) must reach the alert metric
+    # (field miss 2026-09-20: non-primary mismatch never published).
+    anymismatch = any(m.get("mismatch") for m in per_model.values())
     hint = None
     for m in per_model.values():
         hint = hint or retry_hint(
@@ -283,7 +292,7 @@ def run_round(key_name, value, home, server_cmd, cli_bin,
             "models_total": len(per_model),
             "zencli": first.get("zencli", {"ok": False, "text": ""}),
             "opencode": first.get("opencode"),
-            "mismatch": first.get("mismatch", False),
+            "mismatch": anymismatch,
             "working": working,
             "retry_hint_secs": hint,
             "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ",
@@ -301,6 +310,9 @@ token; never fails the round (stdout verdict is the record)."""
                             "https://keeper.pkubelka.cz")).rstrip("/")
     op = verdict.get("opencode") or {}
     l2 = (("pass" if op.get("ok") else "fail") if op else "not-run")
+    models = verdict.get("models") or {}
+    anymismatch = bool(verdict.get("mismatch")) or any(
+        (m or {}).get("mismatch") for m in models.values())
     body = json.dumps({
         "provider": "opencode-zen", "model": verdict.get("model"),
         "state": "ok" if verdict.get("working") else "down",
@@ -309,7 +321,7 @@ token; never fails the round (stdout verdict is the record)."""
                      else "heartbeat-fail"),
             "l2": l2, "source": "keyround",
             "key_name": verdict.get("key_name"),
-            "mismatch": bool(verdict.get("mismatch")),
+            "mismatch": anymismatch,
             "retry_hint_secs": verdict.get("retry_hint_secs"),
             "models_ok": verdict.get("models_ok"),
             "models_total": verdict.get("models_total"),

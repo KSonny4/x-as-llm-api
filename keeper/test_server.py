@@ -1097,5 +1097,79 @@ class FindRouteHealthTest(unittest.TestCase):
         self.assertIsNone(server.find_route(st, "other"))
 
 
+
+class StreakTest(unittest.TestCase):
+    def state(self):
+        st = server.make_state("tok", {"routes": [
+            {"provider": "opencode-zen", "model": "big-pickle",
+             "connection_id": "zen/pool-1"}]})
+        return st
+
+    def post(self, st, state, ts):
+        ok, err = server.ingest_probe(st, {
+            "provider": "opencode-zen", "model": "big-pickle",
+            "state": state,
+            "detail": {"l1": "heartbeat", "l2": "not-run",
+                       "source": "keyround", "key_name": "K1"},
+            "connection_id": "zen/pool-1", "checked_at": ts})
+        self.assertTrue(ok, err)
+
+    def test_streak_accumulates_across_ingests(self):
+        st = self.state()
+        self.post(st, "down", "2026-09-20T01:00:00Z")
+        self.post(st, "down", "2026-09-20T04:00:00Z")
+        self.post(st, "down", "2026-09-20T09:00:00Z")
+        det = st["probe_detail"]["zen/pool-1"]["detail"]
+        self.assertEqual(det["dead_streak"], 3)
+
+    def test_recovery_resets_streak(self):
+        st = self.state()
+        self.post(st, "down", "2026-09-20T01:00:00Z")
+        self.post(st, "ok", "2026-09-20T02:00:00Z")
+        det = st["probe_detail"]["zen/pool-1"]["detail"]
+        self.assertEqual(det["dead_streak"], 0)
+
+    def test_streak_survives_db_roundtrip(self):
+        import tempfile
+        tmp = os.path.join(tempfile.mkdtemp(), "p.db")
+        old = os.environ.get("PROBE_DB")
+        os.environ["PROBE_DB"] = tmp
+        try:
+            st = self.state()
+            self.post(st, "down", "2026-09-20T01:00:00Z")
+            self.post(st, "down", "2026-09-20T04:00:00Z")
+            loaded = server.probe_db_load()
+            self.assertEqual(
+                loaded["zen/pool-1"]["detail"]["dead_streak"], 2)
+            st2 = self.state()
+            st2["probe_detail"].update(loaded)
+            self.post(st2, "down", "2026-09-20T09:00:00Z")
+            self.assertEqual(
+                st2["probe_detail"]["zen/pool-1"]["detail"][
+                    "dead_streak"], 3)
+        finally:
+            if old is None:
+                del os.environ["PROBE_DB"]
+            else:
+                os.environ["PROBE_DB"] = old
+
+    def test_overlay_prefers_live_streak(self):
+        baked = {"generated_at": "x", "keys": [
+            {"name": "K1", "state": "dead", "zencli": None,
+             "opencode": None, "mismatch": False,
+             "retry_hint_secs": None, "checked_at": "2026-09-20T01:00:00Z",
+             "consecutive_dead": 1, "next_test": "2026-09-20T03:00:00Z"}]}
+        rec = {"provider": "opencode-zen", "model": "big-pickle",
+               "state": "down",
+               "detail": {"source": "keyround", "key_name": "K1",
+                          "dead_streak": 5},
+               "checked_at": "2026-09-20T09:00:00Z"}
+        out = server.overlay_keyqueue_live(baked, {"zen/pool-1": rec})
+        k1 = [k for k in out["keys"] if k["name"] == "K1"][0]
+        self.assertEqual(k1["consecutive_dead"], 5)
+        # 2^5 backoff capped: 09:00 + 24h
+        self.assertEqual(k1["next_test"], "2026-09-21T09:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()

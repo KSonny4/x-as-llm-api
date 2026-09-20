@@ -324,6 +324,46 @@ class PublishTest(unittest.TestCase):
         finally:
             self._restore(old)
 
+    def test_non_primary_mismatch_reaches_metric(self):
+        # Regression (auditor 17:34): a disagreement on a NON-primary
+        # model must publish mismatch=true (it drives the alert metric).
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        seen = {}
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_POST(self):
+                ln = int(self.headers.get("Content-Length", 0))
+                seen["doc"] = json.loads(self.rfile.read(ln))
+                raw = b'{"ok": true}'
+                self.send_response(202)
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+        srv = HTTPServer(("127.0.0.1", 0), H)
+        port = srv.server_address[1]
+        th = threading.Thread(target=srv.serve_forever, daemon=True)
+        th.start()
+        v = self.verdict(working=True)
+        v["mismatch"] = False
+        v["models"] = {
+            "big-pickle": {"zencli": {"ok": True, "text": "t"},
+                           "opencode": None, "mismatch": False},
+            "mimo-v2.5-free": {"zencli": {"ok": False, "text": "x"},
+                               "opencode": {"ok": True, "text": "y"},
+                               "mismatch": True}}
+        old = self._env(KEYROUND_KEEPER_TOKEN="t",
+                        KEYROUND_KEEPER_URL="http://127.0.0.1:%d" % port)
+        try:
+            self.assertEqual(
+                keyround.publish_verdict(v, "zen/a"), "posted:202")
+        finally:
+            self._restore(old)
+            srv.shutdown()
+        self.assertTrue(seen["doc"]["detail"]["mismatch"])
+
     def test_posts_probe_shape(self):
         import threading
         from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -418,9 +458,18 @@ class EligibilityTest(unittest.TestCase):
             self._restore(old)
             srv.shutdown()
 
-    def test_fallback_on_unreachable(self):
+    def test_fail_closed_on_unreachable(self):
+        # Auditor 17:34: configured token + dead queue = idle, never
+        # unrestricted pool.
         old = self._env(KEYROUND_KEEPER_TOKEN="t",
                         KEYROUND_KEEPER_URL="http://127.0.0.1:1")
+        try:
+            self.assertEqual(keyround.eligible_names(), [])
+        finally:
+            self._restore(old)
+
+    def test_no_token_dev_pool(self):
+        old = self._env()
         try:
             self.assertIsNone(keyround.eligible_names())
         finally:
