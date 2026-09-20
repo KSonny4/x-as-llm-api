@@ -19,6 +19,17 @@ import time
 import urllib.request
 
 ECHO_MODEL = os.environ.get("KEYROUND_MODEL", "big-pickle")
+# All free models on one key per round: the key is working if AT LEAST
+# ONE model answers (per-model quota buckets differ). Override with a
+# comma list for tests/single-model pins.
+DEFAULT_MODELS = ("big-pickle,ling-3.0-flash-fin-free,mimo-v2.5-free,"
+                  "muse-spark-1.2-contributor-free,"
+                  "muse-spark-1.3-contributor-free,"
+                  "nemotron-3-ultra-free,nemotron-3.5-lightning-free,"
+                  "jev-1.13-free")
+MODELS = [m.strip() for m in
+          os.environ.get("KEYROUND_MODELS", DEFAULT_MODELS).split(",")
+          if m.strip()]
 ECHO_PROMPT = os.environ.get("KEYROUND_PROMPT",
                              "Reply with exactly: KEYROUND-ALIVE")
 ECHO_EXPECTED = os.environ.get("KEYROUND_EXPECTED", "KEYROUND-ALIVE")
@@ -161,9 +172,8 @@ def wait_port(port, tries=30):
     return False
 
 
-def zencli_echo(server_cmd, port, model, prompt, home,
-                start_timeout=30):
-    """Start zencli server, POST echo, stop it. Returns (ok, text).
+def zencli_start(server_cmd, port, home, start_timeout=30):
+    """Start the server (one per round, shared by all model POSTs).
     HOME is forced to the staged dir: without it the server's opencode
     child runs keyless and the vendor 200s anonymously, proving nothing
     about the key (field incident 2026-09-20: bogus key verified ok)."""
@@ -173,25 +183,40 @@ def zencli_echo(server_cmd, port, model, prompt, home,
         server_cmd + ["-port", str(port)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         env=env)
+    if not wait_port(port, start_timeout):
+        proc.terminate()
+        return None
+    return proc
+
+
+def zencli_post(port, model, prompt):
+    """One echo POST against a running server. Returns (ok, text)."""
+    payload = json.dumps(
+        {"model": model,
+         "messages": [{"role": "user", "content": prompt}],
+         "stream": False}).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:%d/v1/chat/completions" % port, data=payload,
+        headers={"Content-Type": "application/json"}, method="POST")
     try:
-        if not wait_port(port, start_timeout):
-            return False, "zencli server never listened"
-        payload = json.dumps(
-            {"model": model,
-             "messages": [{"role": "user", "content": prompt}],
-             "stream": False}).encode()
-        req = urllib.request.Request(
-            "http://127.0.0.1:%d/v1/chat/completions" % port, data=payload,
-            headers={"Content-Type": "application/json"}, method="POST")
-        try:
-            with urllib.request.urlopen(req, timeout=CLI_TIMEOUT) as res:
-                doc = json.loads(res.read().decode("utf-8", "replace"))
-            text = (doc.get("choices", [{}])[0].get("message", {})
-                    .get("content", ""))
-            ok = res.status == 200 and ECHO_EXPECTED in (text or "")
-            return ok, (text or "")[:500]
-        except Exception as e:
-            return False, "zencli upstream: %s" % e
+        with urllib.request.urlopen(req, timeout=CLI_TIMEOUT) as res:
+            doc = json.loads(res.read().decode("utf-8", "replace"))
+        text = (doc.get("choices", [{}])[0].get("message", {})
+                .get("content", ""))
+        ok = res.status == 200 and ECHO_EXPECTED in (text or "")
+        return ok, (text or "")[:500]
+    except Exception as e:
+        return False, "zencli upstream: %s" % e
+
+
+def zencli_echo(server_cmd, port, model, prompt, home,
+                start_timeout=30):
+    """Single-model round (legacy path): start, POST, stop."""
+    proc = zencli_start(server_cmd, port, home, start_timeout)
+    if proc is None:
+        return False, "zencli server never listened"
+    try:
+        return zencli_post(port, model, prompt)
     finally:
         proc.terminate()
 
@@ -215,25 +240,51 @@ def opencode_echo(cli_bin, model, prompt, home):
     return ok, out[:500]
 
 
-def run_round(key_name, value, home, server_cmd, cli_bin):
-    """One full round. Returns the verdict dict (no secret values)."""
+def run_round(key_name, value, home, server_cmd, cli_bin,
+            models=None):
+    """One full round over every free model. Returns the verdict dict
+    (no secret values). Key is working if AT LEAST ONE model answers."""
     stage_key(value, home)
-    z_ok, z_text = zencli_echo(server_cmd, SERVER_PORT, ECHO_MODEL,
-                               ECHO_PROMPT, home)
-    o_ok, o_text = None, None
-    if not z_ok:
-        o_ok, o_text = opencode_echo(cli_bin, ECHO_MODEL, ECHO_PROMPT,
-                                     home)
-    hint = retry_hint(z_text if not z_ok else None)
-    if hint is None and o_text:
-        hint = retry_hint(o_text)
+    models = models if models is not None else MODELS
+    proc = zencli_start(server_cmd, SERVER_PORT, home)
+    per_model = {}
+    try:
+        for model in models:
+            if proc is None:
+                z_ok, z_text = False, "zencli server never listened"
+            else:
+                z_ok, z_text = zencli_post(SERVER_PORT, model,
+                                           ECHO_PROMPT)
+            o_ok, o_text = None, None
+            if not z_ok:
+                o_ok, o_text = opencode_echo(cli_bin, model,
+                                             ECHO_PROMPT, home)
+            per_model[model] = {
+                "zencli": {"ok": z_ok, "text": z_text},
+                "opencode": ({"ok": o_ok, "text": o_text}
+                             if o_ok is not None else None),
+                "mismatch": (o_ok is not None and z_ok != o_ok)}
+    finally:
+        if proc is not None:
+            proc.terminate()
+    working = any(m["zencli"]["ok"] for m in per_model.values())
+    hint = None
+    for m in per_model.values():
+        hint = hint or retry_hint(
+            None if m["zencli"]["ok"] else m["zencli"]["text"])
+        if m["opencode"]:
+            hint = hint or retry_hint(m["opencode"]["text"])
+    first = per_model.get(ECHO_MODEL, {})
     return {"key_name": key_name,
             "model": ECHO_MODEL,
-            "zencli": {"ok": z_ok, "text": z_text},
-            "opencode": ({"ok": o_ok, "text": o_text}
-                         if o_ok is not None else None),
-            "mismatch": (o_ok is not None and z_ok != o_ok),
-            "working": z_ok,
+            "models": per_model,
+            "models_ok": sum(1 for m in per_model.values()
+                              if m["zencli"]["ok"]),
+            "models_total": len(per_model),
+            "zencli": first.get("zencli", {"ok": False, "text": ""}),
+            "opencode": first.get("opencode"),
+            "mismatch": first.get("mismatch", False),
+            "working": working,
             "retry_hint_secs": hint,
             "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                         time.gmtime())}
@@ -260,6 +311,9 @@ token; never fails the round (stdout verdict is the record)."""
             "key_name": verdict.get("key_name"),
             "mismatch": bool(verdict.get("mismatch")),
             "retry_hint_secs": verdict.get("retry_hint_secs"),
+            "models_ok": verdict.get("models_ok"),
+            "models_total": verdict.get("models_total"),
+            "models": verdict.get("models"),
             "zencli": verdict.get("zencli"),
             "opencode": verdict.get("opencode")},
         "connection_id": conn,

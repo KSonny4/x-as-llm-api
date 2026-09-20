@@ -9,9 +9,9 @@ first=1
 echo -n "["
 conn_for() {
   case "$1" in
-    OPENCODE_ZEN_API_KEY) echo "zen/big-pickle-spare" ;;
-    OPENCODE_ZEN_API_KEY_PETR) echo "zen/big-pickle" ;;
-    OPENCODE_ZEN_RETIRED_*) echo "zen/retired-${1##*_RETIRED_}" ;;
+    OPENCODE_ZEN_API_KEY) echo "zen/pool-spare" ;;
+    OPENCODE_ZEN_API_KEY_PETR) echo "zen/pool-petr" ;;
+    OPENCODE_ZEN_RETIRED_*) echo "zen/pool-${1##*_RETIRED_}" ;;
   esac
 }
 for k in OPENCODE_ZEN_API_KEY OPENCODE_ZEN_API_KEY_PETR \

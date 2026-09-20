@@ -39,7 +39,8 @@ OK = (sys.argv[1] == "ok")
 MARKER = sys.argv[2]
 PORT = int(sys.argv[sys.argv.index("-port") + 1])
 # Deployment-faithful: the stub consults the staged key like the real
-# opencode child would (proves HOME plumbing delivers it).
+# opencode child would (proves HOME plumbing delivers it), and answers
+# per model (FAKE_OK_MODELS comma list; unset = all models ok).
 try:
     staged = json.load(open(os.environ["HOME"] +
         "/.local/share/opencode/auth.json"))["opencode"]["key"]
@@ -47,14 +48,19 @@ except Exception:
     staged = None
 KEY_OK = (staged is not None
           and staged == os.environ.get("FAKE_EXPECTED_KEY"))
+OK_MODELS = os.environ.get("FAKE_OK_MODELS")
+OK_MODELS = (set(OK_MODELS.split(","))
+             if OK_MODELS is not None else None)
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_POST(self):
         ln = int(self.headers.get("Content-Length", 0))
-        self.rfile.read(ln)
+        body = json.loads(self.rfile.read(ln) or b"{}")
+        model = body.get("model", "")
         open(MARKER, "w").write("zencli-ran HOME=" +
                                   os.environ.get("HOME", ""))
-        good = OK and KEY_OK
+        good = OK and KEY_OK and (OK_MODELS is None
+                                  or model in OK_MODELS)
         raw = (json.dumps({"choices": [{"message": {
             "content": "KEYROUND-ALIVE"}}]}).encode() if good
                else b\'{"error": "Invalid API key."}\')
@@ -69,7 +75,8 @@ HTTPServer(("127.0.0.1", PORT), H).serve_forever()
 
 class RoundTest(unittest.TestCase):
     def run_round_e2e(self, tmp, zen_ok, value="sekret",
-                      expected="sekret"):
+                      expected="sekret", models=None,
+                      ok_models=None):
         stub = os.path.join(tmp, "stub_zencli.py")
         with open(stub, "w") as fh:
             fh.write(STUB_SERVER)
@@ -78,19 +85,30 @@ class RoundTest(unittest.TestCase):
         import sys as _sys
         port = 18000 + (abs(hash(tmp)) % 2000)
         keyround.SERVER_PORT = port
+        oldecho = keyround.ECHO_MODEL
+        keyround.ECHO_MODEL = "m1"
         old = os.environ.get("FAKE_EXPECTED_KEY")
         os.environ["FAKE_EXPECTED_KEY"] = expected
+        oldm = os.environ.get("FAKE_OK_MODELS")
+        if ok_models is not None:
+            os.environ["FAKE_OK_MODELS"] = ",".join(ok_models)
         try:
             v = keyround.run_round(
                 "K1", value, tmp,
                 [_sys.executable, stub, "ok" if zen_ok else "no",
                  zmark],
-                fake_opencode(tmp, "KEYROUND-ALIVE", omark))
+                fake_opencode(tmp, "KEYROUND-ALIVE", omark),
+                models=models or ["m1", "m2", "m3"])
         finally:
+            keyround.ECHO_MODEL = oldecho
             if old is None:
                 del os.environ["FAKE_EXPECTED_KEY"]
             else:
                 os.environ["FAKE_EXPECTED_KEY"] = old
+            if oldm is None:
+                os.environ.pop("FAKE_OK_MODELS", None)
+            else:
+                os.environ["FAKE_OK_MODELS"] = oldm
         return v, port, zmark
 
     def test_working_no_fallback(self):
@@ -103,6 +121,24 @@ class RoundTest(unittest.TestCase):
         self.assertNotIn("sekret", json.dumps(v))
         with open(zmark) as fh:
             self.assertIn("HOME=" + tmp, fh.read())
+
+    def test_multi_model_any_ok_working(self):
+        tmp = tempfile.mkdtemp()
+        v, _, _ = self.run_round_e2e(tmp, True, ok_models=["m2"])
+        self.assertTrue(v["working"])
+        self.assertEqual(v["models_ok"], 1)
+        self.assertEqual(v["models_total"], 3)
+        self.assertTrue(v["models"]["m2"]["zencli"]["ok"])
+        self.assertFalse(v["models"]["m1"]["zencli"]["ok"])
+        # fallback ran only for the failed models
+        self.assertIsNone(v["models"]["m2"]["opencode"])
+        self.assertIsNotNone(v["models"]["m1"]["opencode"])
+
+    def test_multi_model_all_fail_dead(self):
+        tmp = tempfile.mkdtemp()
+        v, _, _ = self.run_round_e2e(tmp, True, ok_models=[])
+        self.assertFalse(v["working"])
+        self.assertEqual(v["models_ok"], 0)
 
     def test_bogus_key_fails_both_legs(self):
         # Regression: 2026-09-20 keyless server 200'd a bogus key.

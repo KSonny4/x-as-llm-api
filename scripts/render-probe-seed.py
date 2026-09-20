@@ -18,9 +18,9 @@ import sys
 RECEIPT_GLOB = "docs/zen-egress-receipts/keyround-*.txt"
 
 KEY_TO_CONN = {
-    "OPENCODE_ZEN_API_KEY": "zen/big-pickle-spare",
-    "OPENCODE_ZEN_API_KEY_PETR": "zen/big-pickle",
-    **{"OPENCODE_ZEN_RETIRED_%d" % n: "zen/retired-%d" % n
+    "OPENCODE_ZEN_API_KEY": "zen/pool-spare",
+    "OPENCODE_ZEN_API_KEY_PETR": "zen/pool-petr",
+    **{"OPENCODE_ZEN_RETIRED_%d" % n: "zen/pool-%d" % n
        for n in range(1, 9)},
 }
 

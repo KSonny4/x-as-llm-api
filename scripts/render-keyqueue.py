@@ -88,6 +88,9 @@ def build_ledger(verdicts, testing=(), now=None):
             "opencode": (last or {}).get("opencode"),
             "mismatch": (last or {}).get("mismatch"),
             "retry_hint_secs": (last or {}).get("retry_hint_secs"),
+            "models_ok": (last or {}).get("models_ok"),
+            "models_total": (last or {}).get("models_total"),
+            "models": (last or {}).get("models"),
             "checked_at": checked, "consecutive_dead": dead,
             "next_test": nxt})
     return {"generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),

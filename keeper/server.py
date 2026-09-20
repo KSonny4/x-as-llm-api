@@ -689,6 +689,9 @@ def overlay_keyqueue_live(doc, probe_detail):
             "opencode": det.get("opencode"),
             "mismatch": bool(det.get("mismatch")),
             "retry_hint_secs": det.get("retry_hint_secs"),
+            "models_ok": det.get("models_ok"),
+            "models_total": det.get("models_total"),
+            "models": det.get("models"),
             "checked_at": live_ts, "consecutive_dead": dead,
             "next_test": nxt})
     return doc
@@ -710,6 +713,10 @@ both verdicts + next test (auditor fix: no verdict-less rows)."""
             ("fail" if op else "—")) if op is not None else " opencode=—"
         if k.get("mismatch"):
             bits += " MISMATCH"
+        if k.get("models_total"):
+            bits += " models %s/%s" % (html.escape(str(k.get(
+                "models_ok", "?"))), html.escape(str(
+                    k["models_total"])))
         if k.get("retry_hint_secs") is not None:
             bits += " retry~%ss" % html.escape(
                 str(k["retry_hint_secs"]))

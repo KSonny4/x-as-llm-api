@@ -57,9 +57,9 @@ emit OPENROUTER_API_KEY_4 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "ope
 # Petr-key route 429s (drained bucket) — so the proven-working key
 # MUST come first for every zen model. Never put an unproven/drained
 # key ahead of RETIRED_1 without a same-day working-key proof.
-emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-1" "Big Pickle (retired key 1, owner-promoted)" 1
-emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle-spare" "Big Pickle (spare key)" 1
-emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle" "Big Pickle (Petr key)" 1
+emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-1" "Big Pickle (pool key 1)" 1
+emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-spare" "Big Pickle (pool spare key)" 1
+emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-petr" "Big Pickle (pool Petr key)" 1
 emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
 emit MOONSHOT_API_KEY moonshot "kimi-k2.7-code" "https://api.moonshot.ai/v1" openai "moonshot/kimi-k2.7-code" "Kimi K2.7 Code" 1
 emit MUSE_CODE_OAUTH claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6" "Claude Sonnet 4.6 (oauth 1)" 1
@@ -76,13 +76,13 @@ emit ANTIGRAVITY_OAUTH antigravity "antigravity 1 (CLI-only)" "" none "antigravi
 emit ANTIGRAVITY_OAUTH_2 antigravity "antigravity 2 (CLI-only)" "" none "antigravity/key-2" "Antigravity OAuth 2 (CLI-only, no API)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_FRIEDMANBOB2 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-friedmanbob2" "Inactive Antigravity key (foreign account)" 0
 emit ANTIGRAVITY_OAUTH_INACTIVE_JANNOVAK12390 antigravity "inactive foreign key (placeholder)" "" none "antigravity/inactive-jannovak12390" "Inactive Antigravity key (foreign account)" 0
-emit OPENCODE_ZEN_RETIRED_2 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-2" "Big Pickle (retired key 2, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_3 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-3" "Big Pickle (retired key 3, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_4 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-4" "Big Pickle (retired key 4, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_5 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-5" "Big Pickle (retired key 5, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_6 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-6" "Big Pickle (retired key 6, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_7 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-7" "Big Pickle (retired key 7, owner-promoted)" 1
-emit OPENCODE_ZEN_RETIRED_8 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-8" "Big Pickle (retired key 8, owner-promoted)" 1
+emit OPENCODE_ZEN_RETIRED_2 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-2" "Big Pickle (pool key 2)" 1
+emit OPENCODE_ZEN_RETIRED_3 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-3" "Big Pickle (pool key 3)" 1
+emit OPENCODE_ZEN_RETIRED_4 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-4" "Big Pickle (pool key 4)" 1
+emit OPENCODE_ZEN_RETIRED_5 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-5" "Big Pickle (pool key 5)" 1
+emit OPENCODE_ZEN_RETIRED_6 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-6" "Big Pickle (pool key 6)" 1
+emit OPENCODE_ZEN_RETIRED_7 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-7" "Big Pickle (pool key 7)" 1
+emit OPENCODE_ZEN_RETIRED_8 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-8" "Big Pickle (pool key 8)" 1
 # --- zen free-model sweep (e2e: every key x every free model) ---
 for spec in \
   "ling-3.0-flash-fin-free:ling-flash:Ling Flash (free)" \
@@ -94,11 +94,11 @@ for spec in \
   "jev-1.13-free:jev113:Jev 1.13 (free)"; do
   model="${spec%%:*}"; rest="${spec#*:}"; tag="${rest%%:*}"; label="${rest#*:}"
   # RETIRED_1 first: proven-working key (see note above). Order matters.
-  emit OPENCODE_ZEN_RETIRED_1 opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-retired-1" "$label (retired key 1)" 1
-  emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-petr" "$label (Petr key)" 1
-  emit OPENCODE_ZEN_API_KEY opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-spare" "$label (spare key)" 1
+  emit OPENCODE_ZEN_RETIRED_1 opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-1" "$label (pool key 1)" 1
+  emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-petr" "$label (pool Petr key)" 1
+  emit OPENCODE_ZEN_API_KEY opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-spare" "$label (pool spare key)" 1
   n=2; while [ $n -le 8 ]; do
-    emit "OPENCODE_ZEN_RETIRED_$n" opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-retired-$n" "$label (retired key $n)" 1
+    emit "OPENCODE_ZEN_RETIRED_$n" opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-$n" "$label (pool key $n)" 1
     n=$((n+1))
 done
 done

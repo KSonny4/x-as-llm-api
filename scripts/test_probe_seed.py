@@ -24,8 +24,8 @@ class SeedTest(unittest.TestCase):
             [v("OPENCODE_ZEN_RETIRED_1", True, "2026-09-20T15:23:20Z"),
              v("OPENCODE_ZEN_API_KEY", True, "2026-09-20T15:28:28Z")])
         self.assertEqual(set(seed),
-                         {"zen/retired-1", "zen/big-pickle-spare"})
-        r = seed["zen/retired-1"]
+                         {"zen/pool-1", "zen/pool-spare"})
+        r = seed["zen/pool-1"]
         self.assertEqual(r["state"], "ok")
         self.assertEqual(r["provider"], "opencode-zen")
         self.assertEqual(r["detail"]["l1"], "heartbeat")
@@ -34,13 +34,13 @@ class SeedTest(unittest.TestCase):
     def test_dead_maps_down(self):
         seed = _mod.build_seed(
             [v("OPENCODE_ZEN_RETIRED_2", False, "2026-09-20T12:00:00Z")])
-        self.assertEqual(seed["zen/retired-2"]["state"], "down")
+        self.assertEqual(seed["zen/pool-2"]["state"], "down")
 
     def test_last_verdict_wins(self):
         seed = _mod.build_seed(
             [v("OPENCODE_ZEN_RETIRED_3", False, "2026-09-20T12:00:00Z"),
              v("OPENCODE_ZEN_RETIRED_3", True, "2026-09-20T15:00:00Z")])
-        self.assertEqual(seed["zen/retired-3"]["state"], "ok")
+        self.assertEqual(seed["zen/pool-3"]["state"], "ok")
 
     def test_unknown_key_skipped(self):
         self.assertEqual(_mod.build_seed(
