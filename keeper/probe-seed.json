@@ -1,5 +1,5 @@
 {
- "zen/retired-1": {
+ "zen/pool-1": {
   "provider": "opencode-zen",
   "model": "big-pickle",
   "state": "ok",
@@ -15,9 +15,9 @@
    },
    "opencode": null
   },
-  "checked_at": "2026-09-20T16:11:20Z"
+  "checked_at": "2026-09-20T17:21:47Z"
  },
- "zen/big-pickle-spare": {
+ "zen/pool-spare": {
   "provider": "opencode-zen",
   "model": "big-pickle",
   "state": "down",
