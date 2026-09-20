@@ -61,6 +61,10 @@ a causal claim the receipts can't carry.
 | 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — blessed path recorded (no keeper hop) | none for the objective |
 | 5 (Petr direct shape) | PETR | diagnostic: gate-403 | mechanism of the gate undetermined |
 
+Call 5 disposition (explicit): supporting diagnostic only — its result
+constrains Call 1's attribution and requires no recovery action.
+Owner: agent (documentation only). No quota-wait, no key-action.
+
 Mechanism note (inference, not the leg assignment): keeper's
 `call_upstream` forwards Content-Type + bearer only (code-read) — no
 x-opencode-*, urllib UA — consistent with the relay's 429 shape vs the
