@@ -113,6 +113,30 @@ Verdict: build `-serve` only on a future receipt showing raw-wire
 control passing where stock stacks fail. Until then it stays a design
 note, not code.
 
+## -serve mode (OpenAI-compatible HTTP in front of zen)
+
+```bash
+ZEN_API_KEY=... ./zencli -serve -port 8099
+curl -X POST http://127.0.0.1:8099/v1/chat/completions \
+  -H "Content-Type: application/json" -d '{"model":"...",...}'
+```
+
+- One endpoint: `POST /v1/chat/completions`. Client JSON passes
+  through verbatim; the server stamps the pi-exact upstream identity
+  (Stainless suite + CLI headers + per-request ses_/msg_ ids, undici
+  order/casing) and relays status + body back (chunked SSE de-chunked
+  into a plain stream).
+- Key from `ZEN_API_KEY` env only; refuses to start without it
+  (exit 2). Binds 127.0.0.1 only. Bodies capped at 4MB.
+- Status 2026-09-20: locally verified (refusal, 404, relay correctness
+  via 401 shapes, hang fixed); vendor proof FAILED (403) with
+  pi-exact headers + pi-exact body — same undetermined gate remainder
+  as the one-shot path. Post-cap code review found a self-inflicted
+  protocol anomaly in the proof build (contradictory
+  `connection: keep-alive` + `Connection: close`); fixed, UNPROVEN —
+  needs exactly 1 confirmation call (over the 3-call budget: requires
+  owner authorization).
+
 It doesn't — deliberately. pi talks to zen through its own provider, not
 through zencli:
 
