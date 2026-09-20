@@ -11,14 +11,18 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/rand"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
+	"time"
 
 	utls "github.com/refraction-networking/utls"
 )
@@ -156,6 +160,104 @@ func serveChat(key, host string) http.HandlerFunc {
 	}
 }
 
+// serveExec implements POST /v1/chat/completions by driving the genuine
+// opencode CLI subprocess (the only client proven to pass the gate).
+// No ZEN_API_KEY needed: the CLI uses its own auth. Minimal mapping:
+// last user message -> prompt, model "X" -> "opencode/X" (unless already
+// prefixed); CLI stdout -> chat.completion JSON. Per-request temp cwd.
+func serveExec(bin string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		if err != nil || len(body) == 0 {
+			http.Error(w, "bad body", http.StatusBadRequest)
+			return
+		}
+		var req struct {
+			Model    string `json:"model"`
+			Messages []struct {
+				Role    string `json:"role"`
+				Content any    `json:"content"`
+			} `json:"messages"`
+		}
+		if err := json.Unmarshal(body, &req); err != nil || req.Model == "" {
+			http.Error(w, "bad chat body", http.StatusBadRequest)
+			return
+		}
+		prompt, ok := lastUserText(req.Messages)
+		if !ok {
+			http.Error(w, "no user message", http.StatusBadRequest)
+			return
+		}
+		model := req.Model
+		if !strings.Contains(model, "/") {
+			model = "opencode/" + model
+		}
+		dir, err := os.MkdirTemp("", "zencli-exec-")
+		if err != nil {
+			http.Error(w, "tmpdir", http.StatusInternalServerError)
+			return
+		}
+		defer os.RemoveAll(dir)
+		ctx, cancel := context.WithTimeout(r.Context(), 110*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, bin, "run", "--model", model, "--pure", prompt)
+		cmd.Dir = dir
+		out, err := cmd.Output()
+		if err != nil {
+			http.Error(w, "opencode: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		text := strings.TrimSpace(string(out))
+		resp := map[string]any{
+			"id":      "chatcmpl-" + rid("", 12),
+			"object":  "chat.completion",
+			"created": time.Now().Unix(),
+			"model":   req.Model,
+			"choices": []any{map[string]any{
+				"index": 0,
+				"message": map[string]string{
+					"role":    "assistant",
+					"content": text,
+				},
+				"finish_reason": "stop",
+			}},
+			"usage": map[string]int{},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func lastUserText(msgs []struct {
+	Role    string `json:"role"`
+	Content any    `json:"content"`
+}) (string, bool) {
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role != "user" {
+			continue
+		}
+		switch c := msgs[i].Content.(type) {
+		case string:
+			return c, true
+		case []any:
+			var sb strings.Builder
+			for _, p := range c {
+				if m, ok := p.(map[string]any); ok {
+					if t, ok := m["text"].(string); ok {
+						sb.WriteString(t)
+					}
+				}
+			}
+			return sb.String(), sb.Len() > 0
+		}
+	}
+	return "", false
+}
+
 func rid(prefix string, n int) string {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
@@ -248,17 +350,24 @@ func main() {
 	serve := flag.Bool("serve", false, "run OpenAI-compatible HTTP server instead of one-shot")
 	port := flag.String("port", "8099", "serve listen port (127.0.0.1 only)")
 	zenHost := flag.String("zenhost", "opencode.ai", "upstream zen host for serve mode")
+	execBackend := flag.Bool("exec", false, "serve backend: drive the genuine opencode CLI subprocess (passes the gate) instead of raw HTTPS")
+	execBin := flag.String("opencode-bin", "opencode", "opencode binary for exec backend")
 	flag.Parse()
 
 	if *serve {
 		key := os.Getenv("ZEN_API_KEY")
-		if key == "" {
-			fmt.Fprintln(os.Stderr, "refusing to start: ZEN_API_KEY env required")
+		if key == "" && !*execBackend {
+			fmt.Fprintln(os.Stderr, "refusing to start: ZEN_API_KEY env required (http backend)")
 			os.Exit(2)
 		}
 		mux := http.NewServeMux()
-		mux.HandleFunc("/v1/chat/completions", serveChat(key, *zenHost))
-		fmt.Fprintf(os.Stderr, "zencli serve on 127.0.0.1:%s\n", *port)
+		if *execBackend {
+			mux.HandleFunc("/v1/chat/completions", serveExec(*execBin))
+			fmt.Fprintf(os.Stderr, "zencli serve-exec on 127.0.0.1:%s backend=%s\n", *port, *execBin)
+		} else {
+			mux.HandleFunc("/v1/chat/completions", serveChat(key, *zenHost))
+			fmt.Fprintf(os.Stderr, "zencli serve on 127.0.0.1:%s\n", *port)
+		}
 		if err := http.ListenAndServe("127.0.0.1:"+*port, mux); err != nil {
 			fmt.Fprintln(os.Stderr, "serve:", err)
 			os.Exit(1)
