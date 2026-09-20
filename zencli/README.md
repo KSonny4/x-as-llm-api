@@ -34,30 +34,37 @@ silently ignored. Historical word-chunked SSE is **not** used in this build.
 - Fresh per-request 0700 HOME/XDG dirs; auth file 0600 with selected key only.
 - Scrubbed environment: no inherited provider/default credentials, Keeper
   bearers, proxy settings, project plugins or shell startup.
-- Dedicated `keeper-api` agent: global and agent `permission: {"*":"deny"}`,
-  all tools disabled, one step, no project config/external plugins, no MCP.
+- Native built-in build agent and genuine tool definitions, no forced step limit.
+  Global `permission: {"*":"ask"}` uses pinned noninteractive run auto-rejection;
+  no approval flags, project config/external plugins or MCP. Tools cannot execute.
 - Exact `opencode/<model>` plus provider model whitelist. `small_model` is the
   same free model, preventing an auxiliary paid-model choice.
-- `run --agent keeper-api --format json --pure -- <prompt>`; the separator stops
+- `run --format json --pure -- <prompt>`; the separator stops
   a prompt from becoming flags. `--pure` alone only disables external plugins.
 - 110-second wall timeout, bounded output, process-group kill, temp cleanup.
-  Accept only usable raw text events with stop/length finish; errors, tool use,
-  malformed/empty output and credential reflection are failures.
+  Accept only usable raw text events with stop/length finish; errors, completed tools,
+  malformed/empty output and credential reflection are failures. Native rejected
+  tool events are not assistant text. A tool-only rejected run has no final
+  answer and returns 502; the bridge never fabricates continuation.
 - Non-root read-only sidecar, no host data/secret mounts, all Linux capabilities
   dropped and no-new-privileges. Shared host network only for private loopback;
   authenticated requests remain mandatory even from the same node.
 
-Source checked at tag `v1.18.31`: `agent/agent.ts` merges dedicated agent
-permissions after defaults; `permission/index.ts` uses last matching rule and
-hides denied tools; `cli/cmd/run.ts` emits raw text and step-finish events.
-A genuine isolated `opencode debug agent keeper-api --pure` run confirmed every
-builtin tool false and steps=1 (configuration-only, no provider inference).
+Source checked at tag `v1.18.31`: `agent/agent.ts` merges user ask permissions
+after native build defaults; `cli/cmd/run.ts` rejects permission requests unless
+explicitly auto-approved. JSON changes event rendering, not the agent. The
+native truncation-directory traversal exception does not permit read execution.
+`native_cli_test.go` runs the real pinned binary against a synthetic loopback
+upstream: plain answer succeeds; exact auth-file read, environment/auth bash,
+subagent task and webfetch are rejected, with genuine definitions visible to
+the model. Title generation remains confined to the same exact free model/key.
+This is local safety evidence, not a live provider or Nomad receipt.
 
 ## Build / tests
 
 ```sh
 (cd zencli && go test -race ./...)
-# Optional config-only proof with an explicitly selected genuine binary:
+# Required predeploy native execution proof with the pinned genuine binary:
 (cd zencli && KEEPER_TEST_OPENCODE_BIN=/absolute/path/opencode go test -race ./...)
 docker build --platform linux/amd64 -f zencli/Dockerfile -t keeper-zencli:check .
 ```

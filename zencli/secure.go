@@ -98,13 +98,12 @@ func (b *Bridge) list(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"object": "list", "data": data})
 }
 
-// apiConfig is validated against OpenCode v1.18.31 effective debug-agent output.
-// Agent permission overrides defaults; tools are absent from the model request.
+// Preserve the native build agent and genuine tool definitions. Pinned run's
+// noninteractive permission handler rejects ask requests (never pass --auto).
 // Whitelisting + explicit small_model prevents paid auxiliary model selection.
 func apiConfig(model string) map[string]any {
 	return map[string]any{
-		"permission": map[string]string{"*": "deny"}, "default_agent": "keeper-api",
-		"agent":             map[string]any{"keeper-api": map[string]any{"mode": "primary", "description": "Text-only Keeper API", "permission": map[string]string{"*": "deny"}, "tools": map[string]bool{"*": false}, "steps": 1}},
+		"permission":        map[string]string{"*": "ask"},
 		"enabled_providers": []string{"opencode"}, "provider": map[string]any{"opencode": map[string]any{"whitelist": []string{model}}},
 		"model": "opencode/" + model, "small_model": "opencode/" + model,
 		"autoupdate": false, "share": "disabled", "snapshot": false, "plugin": []string{}, "mcp": map[string]any{},
@@ -148,17 +147,32 @@ func parseText(raw []byte, key string) (string, string, error) {
 			Part struct {
 				Text   string `json:"text"`
 				Reason string `json:"reason"`
+				State  struct {
+					Status string `json:"status"`
+					Error  string `json:"error"`
+				} `json:"state"`
 			} `json:"part"`
 		}
 		if json.Unmarshal(scanner.Bytes(), &event) != nil {
 			return "", "", errors.New("invalid event")
 		}
 		switch event.Type {
-		case "error", "tool_use":
-			return "", "", errors.New("unsafe or failed generation")
+		case "error":
+			return "", "", errors.New("failed generation")
+		case "tool_use":
+			// Only the pinned CLI's native permission rejection may continue.
+			// Completed tools and unrelated execution errors are never accepted.
+			if event.Part.State.Status != "error" || event.Part.State.Error != "The user rejected permission to use this specific tool call." {
+				return "", "", errors.New("unsafe tool execution")
+			}
+			finish = ""
 		case "text":
 			text.WriteString(event.Part.Text)
 		case "step_finish":
+			if event.Part.Reason == "tool-calls" {
+				finish = ""
+				continue
+			}
 			if event.Part.Reason != "stop" && event.Part.Reason != "length" {
 				return "", "", errors.New("incomplete generation")
 			}
@@ -260,7 +274,7 @@ func (b *Bridge) chat(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), b.timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, b.bin, "run", "--model", "opencode/"+req.Model, "--agent", "keeper-api", "--format", "json", "--pure", "--", prompt)
+	cmd := exec.CommandContext(ctx, b.bin, "run", "--model", "opencode/"+req.Model, "--format", "json", "--pure", "--", prompt)
 	cmd.Dir = dir
 	cmd.Env = env
 	cmd.Stderr = io.Discard

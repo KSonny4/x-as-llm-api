@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 go build -trimpath -o /out/zencli .
 FROM debian:bookworm-slim
 ARG TARGETARCH
 ARG BUILD_ID=development
-# Pin the genuine CLI version whose effective deny-all configuration was tested.
+# Pin the genuine CLI version whose native permission auto-rejection was tested.
 ARG OPENCODE_VERSION=1.18.31
 RUN test "$TARGETARCH" = amd64 \
     && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \

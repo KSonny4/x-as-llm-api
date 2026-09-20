@@ -36,7 +36,7 @@ func invoke(b *Bridge, body, key string) *httptest.ResponseRecorder {
 const plain = `{"model":"dynamic-free-model","messages":[{"role":"user","content":"hello"}]}`
 const goodOutput = "printf '%s\\n' '{\"type\":\"text\",\"part\":{\"text\":\"hello from fixture\"}}' '{\"type\":\"step_finish\",\"part\":{\"reason\":\"stop\"}}'\n"
 
-func TestExactIsolatedKeyAndDenyAllConfiguration(t *testing.T) {
+func TestExactIsolatedKeyAndNativeConfiguration(t *testing.T) {
 	t.Setenv("KEEPER_TOKEN", "must-not-inherit")
 	t.Setenv("OPENCODE_API_KEY", "wrong-default-key")
 	out := filepath.Join(t.TempDir(), "capture")
@@ -61,10 +61,10 @@ func TestExactIsolatedKeyAndDenyAllConfiguration(t *testing.T) {
 	if !strings.Contains(string(raw), `"key":"synthetic-selected"`) {
 		t.Fatal("wrong auth identity")
 	}
-	if !strings.Contains(string(raw), `"permission":{"*":"deny"}`) || !strings.Contains(string(raw), `"steps":1`) {
-		t.Fatal("deny-all absent")
+	if !strings.Contains(string(raw), `"permission":{"*":"ask"}`) || strings.Contains(string(raw), `"steps"`) || strings.Contains(string(raw), `"agent"`) || strings.Contains(string(raw), `"tools"`) {
+		t.Fatal("native approval policy changed")
 	}
-	if !strings.Contains(string(raw), "--model\nopencode/dynamic-free-model\n--agent\nkeeper-api\n--format\njson\n--pure\n--\n--help") {
+	if !strings.Contains(string(raw), "--model\nopencode/dynamic-free-model\n--format\njson\n--pure\n--\n--help") {
 		t.Fatal("unsafe argv")
 	}
 	if strings.Contains(w.Body.String(), "synthetic-selected") {
@@ -170,7 +170,7 @@ func TestDynamicCatalogNoSevenModelCapAndExpiry(t *testing.T) {
 
 // Optional local validation against the pinned genuine binary. This inspects
 // effective configuration only: no provider prompt or inference is issued.
-func TestPinnedGenuineCLIHasNoEnabledTools(t *testing.T) {
+func TestPinnedGenuineCLIRequiresApproval(t *testing.T) {
 	bin := os.Getenv("KEEPER_TEST_OPENCODE_BIN")
 	if bin == "" {
 		t.Skip("set explicit genuine CLI path for config-only validation")
@@ -180,7 +180,8 @@ func TestPinnedGenuineCLIHasNoEnabledTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command(bin, "debug", "agent", "keeper-api", "--pure")
+	env = append(env, "OPENCODE_DISABLE_MODELS_FETCH=true", "OPENCODE_DISABLE_LSP_DOWNLOAD=true", "OPENCODE_DISABLE_EXTERNAL_SKILLS=true", "OPENCODE_DISABLE_CLAUDE_CODE=true")
+	cmd := exec.Command(bin, "debug", "agent", "build", "--pure")
 	cmd.Env = env
 	cmd.Dir = dir
 	raw, err := cmd.Output()
@@ -196,23 +197,23 @@ func TestPinnedGenuineCLIHasNoEnabledTools(t *testing.T) {
 			Action     string `json:"action"`
 		} `json:"permission"`
 	}
-	if json.Unmarshal(raw, &info) != nil || info.Steps != 1 || len(info.Tools) == 0 {
+	if json.Unmarshal(raw, &info) != nil || info.Steps != 0 {
 		t.Fatal("unexpected agent configuration")
 	}
-	for name, enabled := range info.Tools {
-		if enabled {
-			t.Fatalf("tool enabled: %s", name)
-		}
-	}
-	for _, tool := range []string{"read", "edit", "bash", "task", "webfetch", "websearch", "skill"} {
+	for _, tool := range []string{"read", "edit", "bash", "task", "webfetch", "websearch", "skill", "external_directory", "glob", "grep", "list", "todowrite", "question", "plan_enter", "plan_exit", "lsp"} {
 		action := ""
 		for _, rule := range info.Permission {
 			if rule.Permission == "*" || rule.Permission == tool {
+				// Native truncation-directory traversal is allowed, but read
+				// itself must still ask. No other post-policy allow is safe.
+				if tool == "external_directory" && rule.Action == "allow" && strings.HasSuffix(rule.Pattern, "/data/opencode/tool-output/*") {
+					continue
+				}
 				action = rule.Action
 			}
 		}
-		if action != "deny" {
-			t.Fatalf("effective %s permission not denied", tool)
+		if action != "ask" {
+			t.Fatalf("effective %s permission not ask: %+v", tool, info.Permission)
 		}
 	}
 }
