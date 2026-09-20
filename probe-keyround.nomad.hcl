@@ -54,7 +54,7 @@ job "keyround-periodic" {
     task "keyround" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/zencli:main-7"
+        image      = "registry.pkubelka.cz/zencli:main-8"
         force_pull = true
         auth {
           username = var.dr_user
