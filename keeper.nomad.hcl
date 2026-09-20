@@ -94,7 +94,7 @@ job "keeper" {
     task "server" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/keeper:main-keyqueue4"
+        image      = "registry.pkubelka.cz/keeper:main-keyqueue5"
         ports      = ["http"]
         force_pull = true
         auth {
