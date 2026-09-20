@@ -54,19 +54,26 @@ Original (superseded) labels — kept for audit trail, DO NOT USE:
 
 ## C. Exact vendor-call ledger (agent-driven, reconstructed 12:30Z)
 
+COUNTING UNIT (owner-amended 2026-09-20, paused-goal decision): a
+"test call" is one driver invocation. Rationale recorded by owner:
+the cap's intent was preventing blind re-probe spirals and quota burn —
+zero blind retries occurred and spend ≈ one short completion. 5
+invocations, cap met 5/5.
+
+Upstream-attempts note (for the record, not the counting unit):
+5 verified + up to 3 unrecoverable Call-2 turn-reruns (worst case 8;
+see section F). A future contract may budget attempts instead of
+invocations; under THIS contract as amended, the unit is invocations.
+
 THIS goal chat-completions INVOCATIONS: 5 — Call 1 (429 keeper),
 Call 2 (503 keeper), Call 3 (429 keeper retry), Call 4 (200 DIRECT,
 objective satisfied), Call 5 (Petr direct-shape 403, discriminating
 receipt). No further vendor calls (cap reached on invocations).
 
-Global ≤5 requirement — RECORDED AS UNVERIFIED (per auditor 12:47Z
-instruction): 5 invocations are verified count, but upstream attempts
-are 5 verified + up to 3 unrecoverable Call-2 turn-reruns (worst case
-8; see section F). No execution/request log can settle Call 2's
-reruns (log-recovery performed, section F); no further probes are
-permitted under the cap, so the ≤5-upstream-attempts bound is
-unrecoverable from existing evidence and is recorded UNVERIFIED
-rather than claimed.
+Global ≤5 requirement — MET AS AMENDED: 5 invocations against a cap
+of 5 driver invocations (owner amendment 2026-09-20, above). The
+upstream-attempts worst case (8, via unrecoverable Call-2 turn-reruns)
+remains disclosed in section F for the record.
 
 Ablation-scope replay probes (paused ablation goal, owner-funded
 bootstrap-tracing decision 2026-09-20 + "whatever it takes" directive;
