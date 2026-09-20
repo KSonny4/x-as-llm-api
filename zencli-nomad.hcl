@@ -44,7 +44,7 @@ job "zencli-validate" {
     task "zencli" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/zencli:main-1"
+        image      = "registry.pkubelka.cz/zencli:main-2"
         force_pull = true
         auth {
           username = var.dr_user

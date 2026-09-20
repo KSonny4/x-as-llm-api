@@ -17,8 +17,7 @@ if [ -z "$stripped" ] || [ "$stripped" = "{}" ]; then
 fi
 mkdir -p "$HOME/.local/share/opencode"
 cp "$AUTH_SRC" "$HOME/.local/share/opencode/auth.json"
-  chmod 600 "$HOME/.local/share/opencode/auth.json"
-fi
+chmod 600 "$HOME/.local/share/opencode/auth.json"
 PORT="${ZENCLI_PORT:-8099}"
 /srv/zencli/zencli -port "$PORT" > /tmp/zencli-serve.log 2>&1 &
 SRV=$!

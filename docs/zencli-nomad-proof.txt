@@ -15,3 +15,15 @@ Expected string NOMAD-ZENCLI-ALIVE present → PASS (M2).
 Notes: first two allocs failed on image arch (arm64 built on Mac;
 rebuilt --platform linux/amd64, same tag, force_pull picked it up).
 Vendor touches this goal: 1 (the proof call inside the alloc).
+
+Image provenance: the M2 receipt above ran on main-1 (digest
+sha256:8e49713e…). Guarded main-2 (digest
+sha256:46a4d910054c64aac1ff4dc411008f8f4ec719289fe18b37cb30e5749b2316a4)
+is now pinned in zencli-nomad.hcl. main-2 verified WITHOUT vendor:
+- `{}` auth in-container → refusal, exit 2 (fails closed).
+- fake-valid auth + `--network none` → stages, serves, 502 on blocked
+  vendor (valid-path progression, zero vendor touch).
+- entry.sh `sh -n` clean; rejection matrix unset/empty/placeholder all
+  exit 2 with no staging; valid file stages byte-identical.
+main-2 was NOT dispatched to Nomad (no new vendor call); next register
+uses it automatically (force_pull).
