@@ -1,13 +1,23 @@
 # Curl transcripts — accepted (exec) architecture
 
-Capture method (all three): HTTP status via curl `-w "%{http_code}"`
-(stdout, quoted below); exit code via output file written + status
-printed (curl exit 0 in all three runs — a non-zero exit writes no
-`-o` body and prints no status line). Request bodies are the literal
-`-d` strings shown. No vendor calls were made to produce this file
-beyond the six ledgered runs.
+Capture method (proofs 1–3, vendor runs): HTTP status via curl
+`-w "%{http_code}"` (stdout, quoted below); the `-o` bodies committed
+below are complete and parseable (valid JSON / SSE ending in
+`[DONE]`) — a truncated transfer (e.g. curl exit 18) cannot produce
+them. Exit codes were not captured with `$?` at the time; they are
+stated as recorded in session logs, with the completeness of the
+committed bodies as the checkable remainder. Request bodies are the
+literal `-d` strings shown. No vendor calls were made to produce this
+file beyond the six ledgered runs.
 
-Server: `./zencli -serve -port <port>` (exec backend drives genuine
+Framing proof (LOCAL, fake backend, zero vendor): `proof-sse-framing.txt`
+shows the CURRENT code's SSE shape with explicit `finish_reason: null`
+on unfinished chunks — captured live against a stub `opencode`
+binary with `curl-exit=0` recorded. The committed vendor STREAM-PROOF
+predates the null fix and is marked HISTORICAL for framing purposes;
+its vendor 200 + content remain valid.
+
+Server: `./zencli -port <port>` (exec backend drives genuine
 `opencode run`; no ZEN_API_KEY needed). All below: exit 0 (output files
 written, HTTP 200 recorded via `-w`). Reconstructed from session logs
 2026-09-20; bodies committed alongside.
