@@ -171,3 +171,17 @@ def test_same_strongest_model_alternative_precedes_weaker(tmp_path):
     state['inference_transport']=http
     code,raw,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]})
     assert code==200 and [x[0] for x in seen]==['b','b'] and seen[0][1]!=seen[1][1]
+
+
+def test_admin_exact_gateway_uses_verified_free_route_without_cli_spoof(tmp_path):
+    state=ready(tmp_path);seen=[]
+    def http(method,url,headers,payload):
+        seen.append((headers,payload))
+        return HttpResponse(200,{},json.dumps({'model':payload['model'],'choices':[{'message':{'content':'Hello'}}]}).encode())
+    state['inference_transport']=http
+    code,body,_=call(state,'POST','/v1/chat/completions',{'model':'a','messages':[{'role':'user','content':'hello'}]})
+    assert code==200 and seen[0][1]['model']=='a'
+    assert all(not k.lower().startswith('x-opencode') for k in seen[0][0])
+    state['availability'].update_catalog('p',[free('b')])
+    assert call(state,'POST','/v1/chat/completions',{'model':'a','messages':[{'role':'user','content':'hello'}]})[0]==503
+    assert len(seen)==1

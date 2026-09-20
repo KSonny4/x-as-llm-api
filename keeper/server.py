@@ -259,12 +259,22 @@ def validate_feedback(doc):
     missing = [f for f in FEEDBACK_REQUIRED if doc.get(f) in (None, "")]
     if missing:
         return missing, None
-    if doc.get("errorClass") not in FEEDBACK_ERROR_CLASSES:
+    if not isinstance(doc.get("errorClass"), str) or doc["errorClass"] not in FEEDBACK_ERROR_CLASSES:
         return [], doc.get("errorClass")
     return [], None
 
 
 def spool_feedback(state, doc):
+    # Legacy diagnostics are not exact v2 feedback. Persist only trusted route
+    # identity and bounded classifications, never arbitrary client messages.
+    known = next((r for r in state["routes"] if r.get("provider") == doc.get("provider")
+                  and r.get("model") == doc.get("model")), None)
+    if not known:
+        return
+    doc = {"provider": known["provider"], "model": known["model"],
+           "errorClass": doc.get("errorClass") if doc.get("errorClass") in FEEDBACK_ERROR_CLASSES else "unknown",
+           "httpStatus": doc.get("httpStatus") if isinstance(doc.get("httpStatus"), int) and 100 <= doc["httpStatus"] <= 599 else 0,
+           "keeperPackVersion": KEEPER_PACK_VERSION}
     line = json.dumps(doc, sort_keys=True) + "\n"
     with open(state["feedback_log"], "a", encoding="utf-8") as fh:
         fh.write(line)
@@ -557,6 +567,10 @@ def metrics_view(state):
 
 
 def health_view(state):
+    if "availability" in state:
+        return {"ok": not bool(state.get("worker_error")), "keeperPackVersion": KEEPER_PACK_VERSION,
+                "routes": {c["id"]: c["state"] for c in state["availability"].connections()},
+                "evidence": "exact_direct_api"}
     return {"ok": True, "keeperPackVersion": KEEPER_PACK_VERSION,
             "routes": dict(state["probe"])}
 
@@ -648,6 +662,13 @@ def keyqueue_view(state=None):
     Baked keyqueue.json overlaid with live ingested rounds (detail.source
     == keyround): POSTing a round immediately moves the queue AND the
     mismatch metric (both read this view, never the file directly)."""
+    if state is not None and "availability" in state:
+        return {"generated_at": datetime.now(timezone.utc).isoformat(),
+                "evidence": "exact_direct_api", "keys": [
+                    {"name": k["reference"], "provider": k["provider"], "owner": k["owner"],
+                     "state": "ok" if k["state"] == "working" else k["state"],
+                     "working_models": k["working"], "total_models": k["total"],
+                     "active": bool(k["active"])} for k in state["availability"].accounts()["keys"]]}
     try:
         with open(keyqueue_path(), encoding="utf-8") as fh:
             doc = json.load(fh)
@@ -1264,6 +1285,14 @@ PROBE_STATES = ("ok", "limited", "misconfigured", "suspect",
                 "degraded", "down", "unknown")
 
 
+def safe_probe_detail(detail):
+    """Legacy classifications only; provider/CLI bodies never enter status/DB."""
+    fields = {"l1": PROBE_STATES, "l2": {"pass", "fail", "not-run"},
+              "source": {"keyround", "probe", "probe_route"}}
+    return {key: value for key, value in detail.items()
+            if key in fields and isinstance(value, str) and value in fields[key]}
+
+
 def ingest_probe(state, doc):
     """Store one probe_route result (POST /api/v1/probe body).
     Returns (ok, error): validates shape, records probe_detail + probe
@@ -1274,28 +1303,27 @@ def ingest_probe(state, doc):
                if not doc.get(k)]
     if missing:
         return False, "missing: " + ",".join(missing)
-    if doc["state"] not in PROBE_STATES:
-        return False, "bad state: %s" % doc["state"]
+    if not isinstance(doc["state"], str) or doc["state"] not in PROBE_STATES:
+        return False, "bad state"
     routes = [r for r in state["routes"]
               if r.get("provider") == doc["provider"]
               and r.get("model") == doc["model"]]
     if not routes:
-        return False, "unknown route: %s/%s" % (doc["provider"],
-                                                 doc["model"])
+        return False, "unknown route"
     if not isinstance(doc.get("detail"), dict):
         return False, "detail must be an object"
     claim = doc.get("connection_id") or ""
     if claim:
         targets = [r for r in routes if connection_id(r) == claim]
         if not targets:
-            return False, "unknown connection: %s" % claim
+            return False, "unknown connection"
     else:
-        # Legacy bodies without a connection id fan out to every seeded
-        # route with this provider/model (rotation spares share models).
+        if len(routes) != 1:
+            return False, "connection_id required for ambiguous route"
         targets = routes
     record = {"provider": doc["provider"], "model": doc["model"],
-              "state": doc["state"], "detail": doc["detail"],
-              "checked_at": doc.get("checked_at", "")}
+              "state": doc["state"], "detail": safe_probe_detail(doc["detail"]),
+              "checked_at": doc.get("checked_at", "") if probe_epoch(doc.get("checked_at")) is not None else ""}
     # Every targeted route keeps its own verdict: same-model keys are each
     # probed separately, so each connection id records its own result.
     import copy as _copy
@@ -1330,7 +1358,7 @@ def accepted(auth, token):
     Rotation: pass (KEEPER_TOKEN, KEEPER_TOKEN_NEXT); empty entries never
     match, so an unset NEXT changes nothing."""
     toks = token if isinstance(token, (tuple, list)) else (token,)
-    return any(t and auth == "Bearer " + t for t in toks)
+    return any(t and secrets.compare_digest(auth.encode(), ("Bearer " + t).encode()) for t in toks)
 
 
 def route(method, path, headers, token, body=None, query="", state=None):
@@ -1356,9 +1384,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
         if method == "POST" and clean_path == "/v1/chat/completions":
             return service_api.chat(state, body)
         return service_api.error(403, "inference_only_token")
-    # Cookie sessions are GET-only, except logout (destroying your own
-    # session is safe; SameSite=Lax already blocks cross-site POST). Browsers
-    # read pages, never mutate state.
+    # Sessions may read private non-value views. Only the enumerated v2
+    # mutations accept cookies, and require same-origin + session-bound CSRF.
     cookie_ok = (state is not None
                  and _valid_session(state, _session_raw(headers)))
     bearer_ok = accepted(auth, token)
@@ -1413,7 +1440,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
         if missing:
             return json_resp(422, {"missing": missing})
         if bad is not None:
-            return json_resp(422, {"bad_errorClass": bad})
+            return json_resp(422, {"error": "invalid_error_class"})
         spool_feedback(state, doc)
         return json_resp(202, {"ok": True})
 
@@ -1448,8 +1475,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return json_resp(400, {"error": {"message": "bad JSON",
                                              "type": "invalid_request",
                                              "code": "invalid_request"}})
-        if req.get("model") == service_api.ALIAS:
-            return service_api.chat(state, body)
+        if "availability" in state or req.get("model") == service_api.ALIAS:
+            return service_api.chat(state, body, allow_exact=True)
         code, doc, sse = chat_completions(state, req, dict(headers))
         if sse is not None:
             return code, sse, [("Content-Type", "text/event-stream")]
@@ -1487,6 +1514,10 @@ def route(method, path, headers, token, body=None, query="", state=None):
         if det is None:
             return json_resp(404, {"ok": False,
                                    "error": "no probe record"})
+        if "availability" in state:
+            det = {"provider": det.get("provider"), "model": det.get("model"),
+                   "state": "legacy_unverified", "detail": safe_probe_detail(det.get("detail") or {}),
+                   "checked_at": det.get("checked_at") if probe_epoch(det.get("checked_at")) is not None else ""}
         return json_resp(200, {"ok": True, "record": det})
 
     if method == "GET" and clean_path == "/metrics":
@@ -1531,6 +1562,11 @@ class H(BaseHTTPRequestHandler):
         self.send_response(code)
         for key, value in headers:
             self.send_header(key, value)
+        names = {key.lower() for key, value in headers}
+        for key, value in [("Cache-Control", "no-store, private"), ("Referrer-Policy", "no-referrer"),
+                           ("X-Content-Type-Options", "nosniff"), ("X-Frame-Options", "DENY")]:
+            if key.lower() not in names:
+                self.send_header(key, value)
         streaming = not isinstance(body, bytes)
         if not streaming:
             self.send_header("Content-Length", str(len(body)))

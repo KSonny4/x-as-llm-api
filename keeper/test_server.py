@@ -483,7 +483,7 @@ class ProbeIngestTest(RouteCase):
         code, _, _ = self.post_probe(body)
         self.assertEqual(code, 422)
 
-    def test_ingest_legacy_fans_out_to_spares(self):
+    def test_ingest_legacy_ambiguous_route_requires_exact_id(self):
         self.state["routes"] = list(self.state["routes"]) + [
             {"provider": "acme-openai", "model": "acme-chat",
              "base_url": "https://acme.example/v1", "api_key": "k9",
@@ -491,9 +491,9 @@ class ProbeIngestTest(RouteCase):
              "owner": "owner@example.com", "name": "Acme Chat spare",
              "connection_id": "c9", "active": True}]
         code, _, _ = self.post_probe(self.SPLIT)
-        self.assertEqual(code, 202)
-        self.assertEqual(self.state["probe"]["c1"], "degraded")
-        self.assertEqual(self.state["probe"]["c9"], "degraded")
+        self.assertEqual(code, 422)
+        self.assertNotIn("c1", self.state["probe"])
+        self.assertNotIn("c9", self.state["probe"])
 
 
 class SessionCase(RouteCase):

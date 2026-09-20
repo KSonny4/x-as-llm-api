@@ -50,3 +50,24 @@ def test_legacy_matrix_uses_exact_authoritative_proof_without_network(tmp_path):
         code,raw,_=call(state,'GET','/api/v1/matrix')
     assert code==200
     assert all(cell['state']!='ok' for row in json.loads(raw)['rows'] for cells in row['cells'].values() for cell in cells)
+
+
+def test_legacy_ingest_does_not_fan_out_or_persist_arbitrary_secret_text(tmp_path):
+    from test_availability import seed
+    state=server.make_state('admin',{'routes':[seed(connection_id='one'),seed(key='KEY2',connection_id='two')]},feedback_log=str(tmp_path/'feedback'))
+    doc={'provider':'p','model':'a','state':'ok','detail':{'l1':'ok','l2':'synthetic-secret-KEY1'},'checked_at':'2026-09-20T00:00:00Z'}
+    assert not server.ingest_probe(state,doc)[0]
+    assert not state['probe']
+    assert server.ingest_probe(state,{**doc,'connection_id':'one'})[0]
+    assert 'synthetic-secret' not in json.dumps(state['probe_detail'])
+    server.spool_feedback(state,{'provider':'p','model':'a','errorClass':'auth','httpStatus':401,'keeperPackVersion':'v2','message':'synthetic-secret-KEY1'})
+    assert 'synthetic-secret' not in (tmp_path/'feedback').read_text()
+
+
+def test_production_legacy_health_and_keyqueue_cannot_show_old_cli_success(tmp_path):
+    from test_api_v2 import call
+    state,_=state_for(tmp_path)
+    state['probe']={'bogus':'ok'}
+    assert 'bogus' not in json.loads(call(state,'GET','/api/v1/health')[1])['routes']
+    queue=json.loads(call(state,'GET','/api/v1/key-queue')[1])
+    assert len(queue['keys'])==2 and all(k['state']=='unknown' for k in queue['keys'])

@@ -151,10 +151,11 @@ def _stream_body(first, chunks, state, config, ticket):
     yield b'data: [DONE]\n\n'
 
 
-def chat(state, body):
+def chat(state, body, allow_exact=False):
     try:
         req = json.loads(body or b'{}')
-        if not isinstance(req, dict) or req.get('model') != ALIAS:
+        if (not isinstance(req, dict) or not isinstance(req.get('model'), str)
+                or (req['model'] != ALIAS and not allow_exact)):
             return error(400, 'use_keeper_coder_model')
         if (not isinstance(req.get('messages'), list) or not req['messages']
                 or any(not isinstance(m, dict) for m in req['messages'])
@@ -170,6 +171,10 @@ def chat(state, body):
     s = state['availability']
     try:
         candidates = aa.rank_models(s.catalog()['models'], state.get('aa_scores', {}))
+        if req['model'] != ALIAS:
+            candidates = [m for m in candidates if req['model'] in (m['id'], m['model'])]
+            if len(candidates) > 1:
+                return error(400, 'ambiguous_model_use_catalog_id')
         candidates = [m for m in candidates if m['working_keys'] and wire.compatible(m['protocol'], req)
                       and any(c['state']=='working' and not c['blocked_reason'] and not c['excluded']
                               and c['retry_at'] <= s.clock() for c in m['connections'])]

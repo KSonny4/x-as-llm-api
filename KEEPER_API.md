@@ -109,3 +109,19 @@ stream_options); these are never silently discarded. Responses cannot map stop
 sequences. A request with no working compatible route gets 503. Returned `model`
 identifies the actual backend, while private `/api/v2/credentials` always stays
 on its requested exact model identity.
+
+### Legacy migration safety
+
+Production `/api/v1/matrix`, `/api/v1/health` and `/api/v1/key-queue` now read
+v2 exact direct evidence, never baked CLI success. Probe ingest without
+`connection_id` is accepted only for a unique route; multi-key fanout is rejected.
+Legacy diagnostic/feedback bodies are reduced to bounded classifications before
+persistence. They never become direct v2 proof; use v2 precise feedback to
+exclude a credential connection.
+
+Administrator `/v1/chat/completions` retains explicit model requests, but in the
+production runtime these also require verified free availability and honest
+Keeper transport identity (no OpenCode CLI impersonation). A unique exact model
+name or catalog `model_id` selects that route only; ambiguous names require the
+catalog ID. Explicit requests can retry keys for that route, never another model.
+An upstream free-tier rule restricting use to its own CLI remains access denied.
