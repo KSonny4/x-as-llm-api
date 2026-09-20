@@ -65,3 +65,20 @@ curl -s -H "Authorization: Bearer $KEEPER_TOKEN" $B/api/v1/matrix -o /dev/null -
 curl -s -D - -H "Authorization: Bearer $KEEPER_TOKEN" -X POST $B/api/v1/session -o /dev/null
 # then: curl -s -H "Cookie: keeper_session=<from Set-Cookie>" $B/ -o /dev/null -w "%{http_code}\n"
 ```
+
+## WARNING: never fetch route views into a recorded transcript (2026-09-20)
+
+`GET /v1/route/:model` returns `auth.value` (the live provider key) to
+bearer callers **by design** (`freeze()` values-for-live-credentials).
+Curling it in an agent turn prints a live key into the session
+transcript — field incident 2026-09-20 exposed `OPENCODE_ZEN_RETIRED_1`
+this way (rotation owed). Verify routing WITHOUT values:
+
+```bash
+B=https://keeper.pkubelka.cz
+curl -s -H "Authorization: Bearer $KEEPER_TOKEN" $B/v1/route/big-pickle \
+ | python3 -c "import json,sys; d=json.load(sys.stdin); print({k: d.get(k) for k in ('provider','model','api')})"
+```
+
+`matrix`, `key-queue`, `metrics`, `detail` endpoints never carry values
+and are transcript-safe.
