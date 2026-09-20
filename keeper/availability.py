@@ -254,7 +254,7 @@ class Availability:
             model['total_keys'] = len(cells)
             model['checked'] = sum(c['checked_at'] is not None for c in cells)
             model['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
-            model['state'] = 'working' if model['working_keys'] else 'unavailable'
+            model['state'] = aggregate_health(c['state'] for c in cells)
         return {'models': models, 'discovery': self.store.rows('SELECT * FROM av_discovery ORDER BY credential_id')}
 
     def accounts(self):

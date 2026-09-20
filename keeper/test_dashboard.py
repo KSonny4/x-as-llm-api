@@ -25,3 +25,14 @@ def test_catalog_all_models_malicious_labels_and_polling(tmp_path):
         models = json.loads(body)['models']
         assert len(models) >= 27 and any(m['model'].startswith('<script>') for m in models)
     assert not calls
+
+
+def test_unchecked_and_stale_models_are_not_failed(tmp_path):
+    from test_availability import succeed
+    state,_=state_for(tmp_path)
+    s=state['availability']
+    assert s.catalog()['models'][0]['state']=='unknown'
+    c=s.connections()[0];succeed(s,c);s.clock.advance(30*3600)
+    assert next(m for m in s.catalog()['models'] if m['id']==c['model_id'])['state']=='stale'
+    code,raw,_=call(state,'GET','/')
+    assert b'https://artificialanalysis.ai/' in raw

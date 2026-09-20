@@ -62,7 +62,7 @@
         detail.append(button('Check key',()=>check({credential_id:k.id})),cellsTable(k.connections));key.append(detail);inner.append(key);});d.append(inner);fragment.append(d);
     });
     else snapshot.models.filter(m=>matches(m.provider,[m.model,m.provider])).forEach(m=>{
-      count++;const title=el('span',undefined,'row');title.append(el('strong',m.model+' / '+m.provider),badge(m.working_keys?'working':(m.eligibility==='free'?'unavailable':m.eligibility)),el('span','Coding '+(m.coding_index??'— unmatched')+' · '+m.working_keys+' / '+m.total_keys+' keys','muted'));
+      count++;const title=el('span',undefined,'row');title.append(el('strong',m.model+' / '+m.provider),badge(m.eligibility==='free'?m.state:m.eligibility),el('span','Coding '+(m.coding_index??'— unmatched')+' · '+m.working_keys+' / '+m.total_keys+' keys','muted'));
       const d=details(m.id,title), inner=el('div',undefined,'detail'), actions=el('div',undefined,'actions');
       actions.append(button('Check model',()=>check({model_id:m.id})),button('Get verified token',()=>getToken(m.id)));
       inner.append(el('p',m.protocol+' · '+m.base_url,'muted'),el('p','Eligibility: '+m.eligibility+' · '+(m.provenance||'No pricing proof')+' · '+stamp(m.checked_at),'muted'),actions,cellsTable(m.connections));d.append(inner);fragment.append(d);

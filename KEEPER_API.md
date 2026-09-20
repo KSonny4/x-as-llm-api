@@ -78,3 +78,34 @@ identities return 404; malformed/unrecognized fields return 422. Responses are
 Coding Index uses exact AA slugs only (no Intelligence Index or guessed suffix
 match). Missing scores remain unmatched. Daily refresh retains the last usable
 snapshot on failure, marked stale; catalog polling never fetches providers/AA.
+
+## Service-to-service inference (latest approved scope amendment)
+
+The separate, manually issued `KEEPER_SERVICE_TOKEN` is **non-expiring** and
+inference-only. Parent provisions it in Bao; never put it in frontend code.
+No Keeper usage quotas, token rate/concurrency caps or automatic expiry apply.
+Upstream quota/cooldowns, pricing freshness and free eligibility still apply.
+Base URL: `https://keeper.pkubelka.cz/v1`; model: `keeper-coder`.
+
+Only `GET /v1/models` and `POST /v1/chat/completions` accept this principal.
+All dashboard, raw packs, admin diagnostics, checks, feedback and actual-provider
+credential endpoints return 403 to it. Administrator credentials remain separate.
+
+`keeper-coder` explicitly opts into highest Coding Index **verified working,
+compatible, free** route across all providers, not a claim of globally strongest.
+If no scored compatible route is working, unscored working routes are eligible.
+Background checks establish availability; the service never spends on unknown
+pricing or paid routes. Actual upstream failure records precise feedback, and
+up to three model routes may be attempted before returning an OpenAI-shaped 503.
+No fallback occurs after any stream output. SSE comes incrementally from the
+upstream, not a buffered nonstream response. Tool calls/history are preserved.
+
+Native OpenAI routes pass request fields through. Anthropic, Gemini and Responses
+routes translate text and function-tool history/calls, max output tokens,
+temperature/top-p and tool choice. Anthropic/Gemini also map stop sequences.
+Translated routes are skipped for unsupported features (e.g. multimodal content,
+strict tool schemas, response_format, parallel_tool_calls, n, or usage-inclusive
+stream_options); these are never silently discarded. Responses cannot map stop
+sequences. A request with no working compatible route gets 503. Returned `model`
+identifies the actual backend, while private `/api/v2/credentials` always stays
+on its requested exact model identity.

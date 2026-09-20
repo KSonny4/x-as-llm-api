@@ -18,11 +18,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import aa
 import api_v2
 import dashboard
+import service_api
 import inventory as inventory_mod
 import matrix as matrix_mod
 import translate as translate_mod
@@ -473,6 +474,9 @@ def ensure_aa(state, refresh=False):
 
 
 def matrix_view(state, refresh=False):
+    if "availability" in state:
+        from legacy_view import matrix
+        return matrix(state)
     ensure_aa(state, refresh)
     if state["matrix_cache"] is not None and not refresh:
         return state["matrix_cache"]
@@ -1345,6 +1349,13 @@ def route(method, path, headers, token, body=None, query="", state=None):
     for key, value in headers.items():
         if key.lower() == "authorization":
             auth = value
+    service_token = state.get("service_token", "") if state else ""
+    if service_token and secrets.compare_digest(auth, "Bearer " + service_token):
+        if method == "GET" and clean_path == "/v1/models":
+            return service_api.models()
+        if method == "POST" and clean_path == "/v1/chat/completions":
+            return service_api.chat(state, body)
+        return service_api.error(403, "inference_only_token")
     # Cookie sessions are GET-only, except logout (destroying your own
     # session is safe; SameSite=Lax already blocks cross-site POST). Browsers
     # read pages, never mutate state.
@@ -1437,6 +1448,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return json_resp(400, {"error": {"message": "bad JSON",
                                              "type": "invalid_request",
                                              "code": "invalid_request"}})
+        if req.get("model") == service_api.ALIAS:
+            return service_api.chat(state, body)
         code, doc, sse = chat_completions(state, req, dict(headers))
         if sse is not None:
             return code, sse, [("Content-Type", "text/event-stream")]
@@ -1498,6 +1511,13 @@ def route(method, path, headers, token, body=None, query="", state=None):
     return 404, b"not found", [("Content-Type", "text/plain")]
 
 
+class KeeperHTTPServer(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        sys.stderr.write("keeper request failed\n")
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "keeper/2"
     token = ""
@@ -1511,9 +1531,23 @@ class H(BaseHTTPRequestHandler):
         self.send_response(code)
         for key, value in headers:
             self.send_header(key, value)
-        self.send_header("Content-Length", str(len(body)))
+        streaming = not isinstance(body, bytes)
+        if not streaming:
+            self.send_header("Content-Length", str(len(body)))
+        else:
+            self.send_header("Connection", "close")
+            self.close_connection = True
         self.end_headers()
-        if body:
+        if streaming:
+            try:
+                for chunk in body:
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            finally:
+                body.close()
+        elif body:
             self.wfile.write(body)
 
     def _read_body(self):
@@ -1623,11 +1657,17 @@ def main():
     token = require_token(os.environ.get("KEEPER_TOKEN", ""))
     H.token = token
     H.token_next = os.environ.get("KEEPER_TOKEN_NEXT", "")
+    os.umask(0o077)
     H.state = make_state(token, load_seed(os.environ.get("SEED_FILE", "")))
+    from runtime import initialize, start_worker
+    initialize(H.state, os.environ.get("AVAILABILITY_DB", ""),
+               os.environ.get("PUBLIC_ORIGIN", ""), os.environ.get("KEEPER_SERVICE_TOKEN", ""),
+               (H.token_next,))
+    start_worker(H.state)
     n = hydrate_probe_state(H.state)
     print("keeper v2 on 0.0.0.0:%d probe_hydrated=%d" % (PORT, n),
           flush=True)
-    HTTPServer(("0.0.0.0", PORT), H).serve_forever()
+    KeeperHTTPServer(("0.0.0.0", PORT), H).serve_forever()
 
 
 if __name__ == "__main__":
