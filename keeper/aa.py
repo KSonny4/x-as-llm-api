@@ -77,6 +77,19 @@ def fetch_snapshot(api_key, cache_path, url=AA_MODELS_URL, timeout=20):
 ALIASES = {
     ('opencode-zen', 'ling-3.0-flash-fin-free'): 'ling-3-0-flash-fin',
     ('opencode-zen', 'nemotron-3.5-lightning-free'): 'nemotron-3-5-lightning',
+    ('openrouter', 'inclusionai/ling-3.0-flash-fin:free'): 'ling-3-0-flash-fin',
+    ('kilocode', 'inclusionai/ling-3.0-flash-fin:free'): 'ling-3-0-flash-fin',
+    ('openrouter', 'nvidia/nemotron-3.5-lightning:free'): 'nemotron-3-5-lightning',
+    ('kilocode', 'nvidia/nemotron-3.5-lightning:free'): 'nemotron-3-5-lightning',
+    ('openrouter', 'inclusionai/ling-3.0-flash-vl:free'): 'ling-3-0-flash-vl',
+    ('openrouter', 'thinkingmachines/inkling-small:free'): 'inkling-small',
+    ('openrouter', 'cohere/north-mini-code:free'): 'north-mini-code',
+    ('openrouter', 'liquid/lfm-2.5-2.6b:free'): 'lfm2-5-2-6b',
+    ('kilocode', 'inclusionai/ling-3.0-flash-vl:free'): 'ling-3-0-flash-vl',
+    ('kilocode', 'thinkingmachines/inkling-small:free'): 'inkling-small',
+    ('kilocode', 'cohere/north-mini-code:free'): 'north-mini-code',
+    ('kilocode', 'liquid/lfm-2.5-2.6b:free'): 'lfm2-5-2-6b',
+    ('kilocode', 'stepfun/step-3.7-flash:free'): 'step-3-7-flash',
 }
 
 

@@ -139,6 +139,21 @@ def test_reviewed_exact_provider_aliases_without_family_or_setting_guesses():
             'muse-spark-1-3':75.8,'muse-spark-1-3-xhigh':76.5,'mimo-v2-5-0424':56.8}
     assert score_for(scores,'opencode-zen','ling-3.0-flash-fin-free')==55.6
     assert score_for(scores,'opencode-zen','nemotron-3.5-lightning-free')==26.8
+    for provider in ('openrouter','kilocode'):
+        assert score_for(scores,provider,'inclusionai/ling-3.0-flash-fin:free')==55.6
+        assert score_for(scores,provider,'nvidia/nemotron-3.5-lightning:free')==26.8
     assert score_for(scores,'other','ling-3.0-flash-fin-free') is None
     assert score_for(scores,'opencode-zen','muse-spark-1.3-contributor-free') is None
     assert score_for(scores,'opencode-zen','mimo-v2.5-free') is None
+
+
+def test_additional_primary_named_aliases_never_guess_reasoning_variants():
+    from aa import score_for
+    scores={'ling-3-0-flash-vl':57,'inkling-small':52.9,'north-mini-code':36.5,'lfm2-5-2-6b':7.7,'step-3-7-flash':39.6,
+            'qwen3-8-27b-xhigh':68.1,'glm-5-2':68.8,'inkling':52.1}
+    for provider in ('openrouter','kilocode'):
+        for model,score in [('inclusionai/ling-3.0-flash-vl:free',57),('thinkingmachines/inkling-small:free',52.9),('cohere/north-mini-code:free',36.5),('liquid/lfm-2.5-2.6b:free',7.7)]:
+            assert score_for(scores,provider,model)==score
+        for model in ('qwen/qwen3.8-27b:free','z-ai/glm-5.2:free','thinkingmachines/inkling:free'):
+            assert score_for(scores,provider,model) is None
+    assert score_for(scores,'kilocode','stepfun/step-3.7-flash:free')==39.6
