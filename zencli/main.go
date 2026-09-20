@@ -48,118 +48,6 @@ func dialZen(host, dialAddr string) (*utls.UConn, error) {
 	return uconn, nil
 }
 
-// serveChat implements POST /v1/chat/completions: body passes through
-// verbatim; only the proven direct-path identity is stamped upstream.
-func serveChat(key, host string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		body, err := io.ReadAll(io.LimitReader(r.Body, 4<<20))
-		if err != nil || len(body) == 0 {
-			http.Error(w, "bad body", http.StatusBadRequest)
-			return
-		}
-		ses, msg := rid("ses_", 24), rid("msg_", 24)
-		uconn, err := dialZen(host, host+":443")
-		if err != nil {
-			http.Error(w, "upstream dial: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		defer uconn.Close()
-		// pi-exact header set+order (captured 200-passing request,
-		// 2026-09-20): undici lowercase, Stainless SDK suite, CLI
-		// identity, per-request ses_/msg_ ids.
-		var head strings.Builder
-		head.WriteString("POST /zen/v1/chat/completions HTTP/1.1\r\n")
-		fmt.Fprintf(&head, "host: %s\r\n", host)
-		head.WriteString("connection: keep-alive\r\n")
-		head.WriteString("Accept: application/json\r\n")
-		head.WriteString("X-Stainless-Retry-Count: 0\r\n")
-		head.WriteString("X-Stainless-Timeout: 300\r\n")
-		head.WriteString("X-Stainless-Lang: js\r\n")
-		head.WriteString("X-Stainless-Package-Version: 6.40.0\r\n")
-		head.WriteString("X-Stainless-OS: MacOS\r\n")
-		head.WriteString("X-Stainless-Arch: arm64\r\n")
-		head.WriteString("X-Stainless-Runtime: node\r\n")
-		head.WriteString("X-Stainless-Runtime-Version: v26.7.0\r\n")
-		fmt.Fprintf(&head, "User-Agent: %s\r\n", DIRECT_UA)
-		head.WriteString("x-opencode-client: cli\r\n")
-		head.WriteString("x-opencode-project: global\r\n")
-		fmt.Fprintf(&head, "Authorization: Bearer %s\r\n", key)
-		fmt.Fprintf(&head, "x-client-request-id: %s\r\n", ses)
-		fmt.Fprintf(&head, "x-opencode-session: %s\r\n", ses)
-		fmt.Fprintf(&head, "x-opencode-request: %s\r\n", msg)
-		head.WriteString("content-type: application/json\r\n")
-		head.WriteString("accept-language: *\r\n")
-		head.WriteString("sec-fetch-mode: cors\r\n")
-		fmt.Fprintf(&head, "Content-Length: %d\r\n\r\n", len(body))
-		if _, err := io.WriteString(uconn, head.String()); err != nil {
-			http.Error(w, "upstream write: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		if _, err := uconn.Write(body); err != nil {
-			http.Error(w, "upstream write: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		br := bufio.NewReader(uconn)
-		status, err := br.ReadString('\n')
-		if err != nil {
-			http.Error(w, "upstream read: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		var code int
-		fmt.Sscanf(status, "HTTP/1.1 %d", &code)
-		if code == 0 {
-			code = http.StatusBadGateway
-		}
-		clen, chunked := -1, false
-		ct := "application/json"
-		for {
-			l, err := br.ReadString('\n')
-			if err != nil || l == "\r\n" || l == "\n" {
-				break
-			}
-			if strings.HasPrefix(strings.ToLower(l), "content-length:") {
-				fmt.Sscanf(l, "%*[^:]%*c%d", &clen)
-			}
-			if strings.HasPrefix(strings.ToLower(l), "transfer-encoding:") &&
-				strings.Contains(strings.ToLower(l), "chunked") {
-				chunked = true
-			}
-			if strings.HasPrefix(strings.ToLower(l), "content-type:") {
-				ct = strings.TrimSpace(l[len("content-type:"):])
-			}
-		}
-		w.Header().Set("Content-Type", ct)
-		w.WriteHeader(code)
-		if chunked {
-			for {
-				ln, err := br.ReadString('\n')
-				if err != nil {
-					break
-				}
-				var sz int
-				fmt.Sscanf(ln, "%x", &sz)
-				if sz == 0 {
-					break
-				}
-				io.CopyN(w, br, int64(sz))
-				br.ReadString('\n')
-			}
-		} else if clen > 0 {
-			io.CopyN(w, br, int64(clen))
-		} else if clen == 0 {
-			// empty body: nothing to relay
-		} else {
-			// no length framing: upstream was asked Connection: close,
-			// so EOF terminates the body
-			io.Copy(w, br)
-		}
-	}
-}
-
 // Msg mirrors one OpenAI chat message (content: string or parts array).
 type Msg struct {
 	Role    string `json:"role"`
@@ -481,28 +369,16 @@ func main() {
 	ua := flag.String("ua", "opencode/1.18.31 ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14", "User-Agent")
 	serve := flag.Bool("serve", false, "run OpenAI-compatible HTTP server instead of one-shot")
 	port := flag.String("port", "8099", "serve listen port (127.0.0.1 only)")
-	zenHost := flag.String("zenhost", "opencode.ai", "upstream zen host for serve mode")
-	execBackend := flag.Bool("exec", false, "serve backend: drive the genuine opencode CLI subprocess (passes the gate) instead of raw HTTPS")
 	execBin := flag.String("opencode-bin", "opencode", "opencode binary for exec backend")
 	bindAddr := flag.String("bind", "127.0.0.1", "serve bind address")
 	authToken := flag.String("auth", "", "optional bearer token clients must present (empty = localhost trust)")
 	flag.Parse()
 
 	if *serve {
-		key := os.Getenv("ZEN_API_KEY")
-		if key == "" && !*execBackend {
-			fmt.Fprintln(os.Stderr, "refusing to start: ZEN_API_KEY env required (http backend)")
-			os.Exit(2)
-		}
 		mux := http.NewServeMux()
-		if *execBackend {
-			mux.HandleFunc("/v1/chat/completions", requireAuth(*authToken, serveExec(*execBin)))
-			mux.HandleFunc("/v1/models", requireAuth(*authToken, serveModels))
-			fmt.Fprintf(os.Stderr, "zencli serve-exec on %s:%s backend=%s\n", *bindAddr, *port, *execBin)
-		} else {
-			mux.HandleFunc("/v1/chat/completions", serveChat(key, *zenHost))
-			fmt.Fprintf(os.Stderr, "zencli serve on %s:%s\n", *bindAddr, *port)
-		}
+		mux.HandleFunc("/v1/chat/completions", requireAuth(*authToken, serveExec(*execBin)))
+		mux.HandleFunc("/v1/models", requireAuth(*authToken, serveModels))
+		fmt.Fprintf(os.Stderr, "zencli serve on %s:%s backend=%s\n", *bindAddr, *port, *execBin)
 		if err := http.ListenAndServe(*bindAddr+":"+*port, mux); err != nil {
 			fmt.Fprintln(os.Stderr, "serve:", err)
 			os.Exit(1)

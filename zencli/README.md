@@ -119,12 +119,11 @@ Endpoints: `GET /v1/models` (7-model catalog, no vendor touch),
 `POST /v1/chat/completions` (non-stream + `stream:true` SSE).
 Flags: `-port` (default 8099), `-bind` (default 127.0.0.1),
 `-auth` (optional client bearer; empty = localhost trust),
-`-exec` (backend select), `-opencode-bin`.
+`-opencode-bin`.
 
-Two backends (flag `-exec` selects):
-
-- **exec (WORKING, proven 200)**: drives the genuine `opencode run`
-  subprocess per request — the only client the gate passes. Request
+Single backend: the genuine `opencode run` subprocess per request —
+the only client the gate passes. (An earlier raw-wire mimicry backend
+proved 403-gated and was deleted to avoid confusion.) Request
   mapping: system + multi-turn messages flattened into one prompt
   (system verbatim first, turns labeled, last user message raw);
   model `"X"` → `opencode/X`; temperature/max_tokens have no CLI
@@ -136,11 +135,9 @@ Two backends (flag `-exec` selects):
   needed (CLI uses its own auth). Proven: non-stream multi-turn
   (`FULL-PROOF`, 200), stream (`STREAM-PROOF`, 200, valid SSE).
   Cost: ~15-40s per request (CLI startup + inference).
-- http (raw-wire mimicry): built, locally verified, vendor-GATED
-  (403) — kept as instrument/fallback, not the path.
 
 ```bash
-./zencli -serve -exec -port 8099
+./zencli -serve -port 8099
 curl -X POST http://127.0.0.1:8099/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"big-pickle","messages":[{"role":"user","content":"hi"}]}'
