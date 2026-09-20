@@ -72,7 +72,12 @@ def fetch_snapshot(api_key, cache_path, url=AA_MODELS_URL, timeout=20):
 
 # No implicit suffix stripping, fuzzy joins, or invented model aliases.
 # An explicit (provider, model) -> AA slug entry requires reviewed provenance.
-ALIASES = {}
+# Primary-name equivalences reviewed 2026-09-20: docs/keeper-aa-aliases.md.
+# Scores still come exclusively from the dated AA cache, never this mapping.
+ALIASES = {
+    ('opencode-zen', 'ling-3.0-flash-fin-free'): 'ling-3-0-flash-fin',
+    ('opencode-zen', 'nemotron-3.5-lightning-free'): 'nemotron-3-5-lightning',
+}
 
 
 def valid_score(score):

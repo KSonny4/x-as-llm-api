@@ -131,3 +131,14 @@ def test_daily_cache_no_refresh_from_catalog(tmp_path):
     with patch('aa.urlopen', side_effect=OSError('secret-must-not-leak')):
         aa.refresh_state(state, now=1800086401)
     assert state['aa_stale'] and state['aa_scores']['m-high'] == 90
+
+
+def test_reviewed_exact_provider_aliases_without_family_or_setting_guesses():
+    from aa import score_for
+    scores={'ling-3-0-flash-fin':55.6,'nemotron-3-5-lightning':26.8,
+            'muse-spark-1-3':75.8,'muse-spark-1-3-xhigh':76.5,'mimo-v2-5-0424':56.8}
+    assert score_for(scores,'opencode-zen','ling-3.0-flash-fin-free')==55.6
+    assert score_for(scores,'opencode-zen','nemotron-3.5-lightning-free')==26.8
+    assert score_for(scores,'other','ling-3.0-flash-fin-free') is None
+    assert score_for(scores,'opencode-zen','muse-spark-1.3-contributor-free') is None
+    assert score_for(scores,'opencode-zen','mimo-v2.5-free') is None
