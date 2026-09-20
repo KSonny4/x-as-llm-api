@@ -9,7 +9,9 @@
     "Shape mirrors keeper-divergent-alert.json (proven): group interval is",
     "  integer seconds, range -> reduce(last) -> threshold(gt). for 0s on",
     "  mismatch (rare + actionable); for 5m on stale (deploy gaps flap).",
-    "Both notify HonzaTraderBot (telegram, owner-confirmed)."
+    "Both notify HonzaTraderBot (telegram, owner-confirmed).",
+    "stale v2 (2026-09-20): measures max zen probe checked_at (>2h), not",
+    "ledger generated_at - render-only refreshes cannot silence it."
   ],
   "apiVersion": 1,
   "groups": [
@@ -112,15 +114,15 @@
         },
         {
           "uid": "keeper-queue-stale",
-          "title": "Key-queue ledger stale (>3h)",
+          "title": "Key-queue heartbeat stalled (>2h without a zen round)",
           "condition": "C",
           "for": "5m",
           "keep_firing_for": "0s",
           "noDataState": "NoData",
           "execErrState": "Error",
           "annotations": {
-            "summary": "Pool heartbeat ledger older than 3h",
-            "description": "No key round rendered for 3h \u2014 prober or publisher stalled. Queue: https://keeper.pkubelka.cz/"
+            "summary": "No zen key round in 2h (last heartbeat {{ $value }}s ago)",
+            "description": "Measures actual testing progress (max zen probe time), not ledger render age - re-rendering cannot game it. Queue: https://keeper.pkubelka.cz/"
           },
           "labels": {
             "severity": "page",
@@ -136,7 +138,7 @@
               },
               "datasourceUid": "grafanacloud-prom",
               "model": {
-                "expr": "time() - keeper_keyqueue_generated_at_seconds",
+                "expr": "time() - max(keeper_probe_checked_at_seconds{connection=~\"zen/.*\"})",
                 "intervalMs": 60000,
                 "maxDataPoints": 43200,
                 "queryType": "range",
@@ -173,7 +175,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        10800
+                        7200
                       ],
                       "type": "gt"
                     },
