@@ -636,15 +636,32 @@ def keyqueue_view():
 
 
 def keyqueue_items(doc):
-    """Server-rendered pool list for the matrix page section."""
-    return ("".join(
-        '<li data-q="%s">%s \u2014 %s%s</li>'
-        % (html.escape(k.get("name", "?")),
-           html.escape(k.get("name", "?")),
-           html.escape(k.get("state", "pending")),
-           (" \u2014 " + html.escape(k.get("checked_at") or ""))
-           if k.get("checked_at") else "")
-        for k in doc.get("keys", [])) or "<li>no pool ledger</li>")
+    """Server-rendered pool list for the matrix page section: state +
+both verdicts + next test (auditor fix: no verdict-less rows)."""
+    rows = []
+    for k in doc.get("keys", []):
+        name = html.escape(k.get("name", "?"))
+        state = html.escape(k.get("state", "pending"))
+        zen = k.get("zencli") or {}
+        op = k.get("opencode")
+        bits = "zencli=%s" % ("ok" if zen.get("ok") else
+                                ("fail" if "ok" in zen else "—"))
+        bits += " opencode=%s" % (
+            "ok" if (op or {}).get("ok") else
+            ("fail" if op else "—")) if op is not None else " opencode=—"
+        if k.get("mismatch"):
+            bits += " MISMATCH"
+        if k.get("retry_hint_secs") is not None:
+            bits += " retry~%ss" % html.escape(
+                str(k["retry_hint_secs"]))
+        nxt = (" next=%s" % html.escape(k["next_test"])
+               if k.get("next_test") else "")
+        chk = ((" \u2014 " + html.escape(k.get("checked_at") or ""))
+               if k.get("checked_at") else "")
+        rows.append('<li data-q="%s">%s \u2014 %s \u2014 %s%s%s</li>'
+                    % (name, name, state, html.escape(bits), chk,
+                       nxt))
+    return "".join(rows) or "<li>no pool ledger</li>"
 
 
 def page_index(state):

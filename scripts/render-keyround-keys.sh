@@ -7,6 +7,13 @@ set -u
 PREFIX="secret/projects/pi-infinity-llm"
 first=1
 echo -n "["
+conn_for() {
+  case "$1" in
+    OPENCODE_ZEN_API_KEY) echo "zen/big-pickle-spare" ;;
+    OPENCODE_ZEN_API_KEY_PETR) echo "zen/big-pickle" ;;
+    OPENCODE_ZEN_RETIRED_*) echo "zen/retired-${1##*_RETIRED_}" ;;
+  esac
+}
 for k in OPENCODE_ZEN_API_KEY OPENCODE_ZEN_API_KEY_PETR \
   OPENCODE_ZEN_RETIRED_1 OPENCODE_ZEN_RETIRED_2 OPENCODE_ZEN_RETIRED_3 \
   OPENCODE_ZEN_RETIRED_4 OPENCODE_ZEN_RETIRED_5 OPENCODE_ZEN_RETIRED_6 \
@@ -16,9 +23,10 @@ for k in OPENCODE_ZEN_API_KEY OPENCODE_ZEN_API_KEY_PETR \
   [ -n "$v" ] || { echo "no value: $k" >&2; continue; }
   [ $first = 1 ] || echo -n ","
   first=0
-  python3 - "$k" "$v" <<'EOF'
+  python3 - "$k" "$v" "$(conn_for "$k")" <<'EOF'
 import json, sys
-print(json.dumps({"name": sys.argv[1], "value": sys.argv[2]}), end="")
+print(json.dumps({"name": sys.argv[1], "value": sys.argv[2],
+                  "conn": sys.argv[3]}), end="")
 EOF
 done
 echo "]"

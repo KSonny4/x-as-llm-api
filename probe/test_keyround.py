@@ -12,30 +12,53 @@ import keyround
 
 
 def fake_opencode(tmp, text, marker):
+    """Deployment-faithful fake: consults $HOME/.local/share/opencode/
+auth.json like the real binary (missing file or wrong key fails).
+The right key arrives via FAKE_EXPECTED_KEY env."""
     p = os.path.join(tmp, "opencode")
     with open(p, "w") as fh:
-        fh.write("#!/bin/sh\necho '%s' > '%s'\necho '%s'\n"
-                 % (marker, marker, text))
+        fh.write("#!/bin/sh\n"
+                 "echo \"x\" > \"%s\"\n" % marker +
+                 "KEY=$(python3 -c \"import json,os;"
+                 "print(json.load(open(os.environ['HOME']+"
+                 "'/.local/share/opencode/auth.json'))"
+                 "['opencode']['key'])\" 2>/dev/null)\n"
+                 "if [ \"$KEY\" != \"$FAKE_EXPECTED_KEY\" ]; then\n"
+                 "  echo 'Invalid API key.' >&2\n"
+                 "  exit 1\n"
+                 "fi\n"
+                 "echo '%s'\n" % text)
     os.chmod(p, os.stat(p).st_mode | stat.S_IEXEC)
     return p
 
 
 STUB_SERVER = '''
-import json, sys
+import json, os, sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 OK = (sys.argv[1] == "ok")
 MARKER = sys.argv[2]
 PORT = int(sys.argv[sys.argv.index("-port") + 1])
+# Deployment-faithful: the stub consults the staged key like the real
+# opencode child would (proves HOME plumbing delivers it).
+try:
+    staged = json.load(open(os.environ["HOME"] +
+        "/.local/share/opencode/auth.json"))["opencode"]["key"]
+except Exception:
+    staged = None
+KEY_OK = (staged is not None
+          and staged == os.environ.get("FAKE_EXPECTED_KEY"))
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_POST(self):
         ln = int(self.headers.get("Content-Length", 0))
         self.rfile.read(ln)
-        open(MARKER, "w").write("zencli-ran")
+        open(MARKER, "w").write("zencli-ran HOME=" +
+                                  os.environ.get("HOME", ""))
+        good = OK and KEY_OK
         raw = (json.dumps({"choices": [{"message": {
-            "content": "KEYROUND-ALIVE"}}]}).encode() if OK
-               else b\'{"error": "denied"}\')
-        self.send_response(200 if OK else 403)
+            "content": "KEYROUND-ALIVE"}}]}).encode() if good
+               else b\'{"error": "Invalid API key."}\')
+        self.send_response(200 if good else 403)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
@@ -45,7 +68,8 @@ HTTPServer(("127.0.0.1", PORT), H).serve_forever()
 
 
 class RoundTest(unittest.TestCase):
-    def run_round_e2e(self, tmp, zen_ok):
+    def run_round_e2e(self, tmp, zen_ok, value="sekret",
+                      expected="sekret"):
         stub = os.path.join(tmp, "stub_zencli.py")
         with open(stub, "w") as fh:
             fh.write(STUB_SERVER)
@@ -54,24 +78,47 @@ class RoundTest(unittest.TestCase):
         import sys as _sys
         port = 18000 + (abs(hash(tmp)) % 2000)
         keyround.SERVER_PORT = port
-        return keyround.run_round(
-            "K1", "sekret", tmp,
-            [_sys.executable, stub, "ok" if zen_ok else "no",
-             zmark],
-            fake_opencode(tmp, "KEYROUND-ALIVE", omark)), port
+        old = os.environ.get("FAKE_EXPECTED_KEY")
+        os.environ["FAKE_EXPECTED_KEY"] = expected
+        try:
+            v = keyround.run_round(
+                "K1", value, tmp,
+                [_sys.executable, stub, "ok" if zen_ok else "no",
+                 zmark],
+                fake_opencode(tmp, "KEYROUND-ALIVE", omark))
+        finally:
+            if old is None:
+                del os.environ["FAKE_EXPECTED_KEY"]
+            else:
+                os.environ["FAKE_EXPECTED_KEY"] = old
+        return v, port, zmark
 
     def test_working_no_fallback(self):
         tmp = tempfile.mkdtemp()
-        v, _ = self.run_round_e2e(tmp, True)
+        v, _, zmark = self.run_round_e2e(tmp, True)
         self.assertTrue(v["working"])
         self.assertTrue(v["zencli"]["ok"])
         self.assertIsNone(v["opencode"])
         self.assertFalse(v["mismatch"])
         self.assertNotIn("sekret", json.dumps(v))
+        with open(zmark) as fh:
+            self.assertIn("HOME=" + tmp, fh.read())
+
+    def test_bogus_key_fails_both_legs(self):
+        # Regression: 2026-09-20 keyless server 200'd a bogus key.
+        # Both legs must consult the staged key now.
+        tmp = tempfile.mkdtemp()
+        v, _, _ = self.run_round_e2e(tmp, True, value="bogus",
+                                      expected="sekret")
+        self.assertFalse(v["working"])
+        self.assertFalse(v["zencli"]["ok"])
+        self.assertIsNotNone(v["opencode"])
+        self.assertFalse(v["opencode"]["ok"])
+        self.assertFalse(v["mismatch"])
 
     def test_fallback_mismatch(self):
         tmp = tempfile.mkdtemp()
-        v, _ = self.run_round_e2e(tmp, False)
+        v, _, _ = self.run_round_e2e(tmp, False)
         self.assertFalse(v["working"])
         self.assertFalse(v["zencli"]["ok"])
         self.assertTrue(v["opencode"]["ok"])
@@ -136,7 +183,8 @@ class RoundTest(unittest.TestCase):
 
 
 class PoolTest(unittest.TestCase):
-    KEYS = '[{"name": "A", "value": "va"}, {"name": "B", "value": "vb"}]'
+    KEYS = ('[{"name": "A", "value": "va", "conn": "zen/a"}, '
+            '{"name": "B", "value": "vb", "conn": "zen/b"}]')
 
     def _env(self, **kw):
         old = dict(os.environ)
@@ -153,15 +201,16 @@ class PoolTest(unittest.TestCase):
     def test_pool_pick_membership(self):
         old = self._env(KEYS_JSON=self.KEYS)
         try:
-            seen = {keyround.pick_key()[0] for _ in range(20)}
-            self.assertTrue(seen <= {"A", "B"})
+            seen = {keyround.pick_key() for _ in range(20)}
+            self.assertTrue({s[0] for s in seen} <= {"A", "B"})
+            self.assertTrue(all(s[2].startswith("zen/") for s in seen))
         finally:
             self._restore(old)
 
     def test_explicit_key_wins(self):
         old = self._env(KEYS_JSON=self.KEYS, KEYROUND_KEY="B")
         try:
-            self.assertEqual(keyround.pick_key(), ("B", "vb"))
+            self.assertEqual(keyround.pick_key(), ("B", "vb", "zen/b"))
         finally:
             self._restore(old)
 
@@ -203,6 +252,80 @@ class PoolTest(unittest.TestCase):
         self.assertIsNone(keyround.retry_hint(""))
         self.assertIsNone(keyround.retry_hint(None))
 
+
+
+class PublishTest(unittest.TestCase):
+    def verdict(self, working=True):
+        return {"key_name": "K1", "model": "big-pickle",
+                "zencli": {"ok": working, "text": "t"},
+                "opencode": None, "mismatch": False, "working": working,
+                "retry_hint_secs": None,
+                "checked_at": "2026-09-20T15:23:20Z"}
+
+    def _env(self, **kw):
+        old = dict(os.environ)
+        for k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+            os.environ.pop(k, None)
+        os.environ.update(kw)
+        return old
+
+    def _restore(self, old):
+        for k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+            os.environ.pop(k, None)
+        for k, v in old.items():
+            if k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+                os.environ[k] = v
+
+    def test_skipped_without_token_or_conn(self):
+        old = self._env()
+        try:
+            self.assertEqual(
+                keyround.publish_verdict(self.verdict(), "zen/a"),
+                "skipped")
+            os.environ["KEYROUND_KEEPER_TOKEN"] = "t"
+            self.assertEqual(
+                keyround.publish_verdict(self.verdict(), ""), "skipped")
+        finally:
+            self._restore(old)
+
+    def test_posts_probe_shape(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        seen = {}
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_POST(self):
+                ln = int(self.headers.get("Content-Length", 0))
+                seen["auth"] = self.headers.get("Authorization")
+                seen["doc"] = json.loads(self.rfile.read(ln))
+                raw = b'{"ok": true}'
+                self.send_response(202)
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+        srv = HTTPServer(("127.0.0.1", 0), H)
+        port = srv.server_address[1]
+        th = threading.Thread(target=srv.serve_forever, daemon=True)
+        th.start()
+        old = self._env(KEYROUND_KEEPER_TOKEN="sekret-tok",
+                        KEYROUND_KEEPER_URL="http://127.0.0.1:%d" % port)
+        try:
+            self.assertEqual(
+                keyround.publish_verdict(self.verdict(), "zen/a"),
+                "posted:202")
+        finally:
+            self._restore(old)
+            srv.shutdown()
+        self.assertEqual(seen["auth"], "Bearer sekret-tok")
+        doc = seen["doc"]
+        self.assertEqual(doc["connection_id"], "zen/a")
+        self.assertEqual(doc["state"], "ok")
+        self.assertEqual(doc["detail"]["l1"], "heartbeat")
+        self.assertEqual(doc["detail"]["source"], "keyround")
+        self.assertNotIn("sekret", json.dumps(doc).replace(
+            "sekret-tok", ""))
 
 if __name__ == "__main__":
     unittest.main()

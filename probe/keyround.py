@@ -24,7 +24,8 @@ ECHO_PROMPT = os.environ.get("KEYROUND_PROMPT",
 ECHO_EXPECTED = os.environ.get("KEYROUND_EXPECTED", "KEYROUND-ALIVE")
 SERVER_PORT = int(os.environ.get("KEYROUND_PORT", "8099"))
 ZENCLI_BIN = os.environ.get("ZENCLI_BIN", "/srv/zencli/zencli")
-OPENCODE_BIN = os.environ.get("OPENCODE_BIN", "/srv/zencli/opencode")
+OPENCODE_BIN = os.environ.get("OPENCODE_BIN",
+                               "/root/.opencode/bin/opencode")
 CLI_TIMEOUT = int(os.environ.get("KEYROUND_CLI_TIMEOUT", "120"))
 
 
@@ -41,7 +42,7 @@ def key_value():
 
 
 def pick_key():
-    """Returns (name, value). Explicit KEYROUND_KEY wins (manual
+    """Returns (name, value, conn). Explicit KEYROUND_KEY wins (manual
 dispatch); else random pool pick (healthy-pool sampling; pool curation
 — enter on pass, backoff on fail — lives in the keeper publish layer,
 which sees verdict history; the task stays stateless)."""
@@ -54,19 +55,19 @@ which sees verdict history; the task stays stateless)."""
             fail("KEYROUND_KEY set but KEYS_JSON missing")
         for e in json.loads(raw):
             if e.get("name") == only:
-                return only, e.get("value", "")
+                return only, e.get("value", ""), e.get("conn", "")
         fail("KEYROUND_KEY %s not in KEYS_JSON" % only)
     if not raw:
         # legacy single-key mode
         name = os.environ.get("KEYROUND_KEY_NAME", "")
         if not name:
             fail("KEYROUND_KEY_NAME missing")
-        return name, key_value()
+        return name, key_value(), ""
     entries = json.loads(raw)
     if not entries:
         fail("empty key pool")
     e = _random.SystemRandom().choice(entries)
-    return e.get("name", ""), e.get("value", "")
+    return e.get("name", ""), e.get("value", ""), e.get("conn", "")
 
 
 def jitter_sleep():
@@ -124,11 +125,18 @@ def wait_port(port, tries=30):
     return False
 
 
-def zencli_echo(server_cmd, port, model, prompt, start_timeout=30):
-    """Start zencli server, POST echo, stop it. Returns (ok, text)."""
+def zencli_echo(server_cmd, port, model, prompt, home,
+                start_timeout=30):
+    """Start zencli server, POST echo, stop it. Returns (ok, text).
+    HOME is forced to the staged dir: without it the server's opencode
+    child runs keyless and the vendor 200s anonymously, proving nothing
+    about the key (field incident 2026-09-20: bogus key verified ok)."""
+    env = dict(os.environ)
+    env["HOME"] = home
     proc = subprocess.Popen(
         server_cmd + ["-port", str(port)],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        env=env)
     try:
         if not wait_port(port, start_timeout):
             return False, "zencli server never listened"
@@ -175,7 +183,7 @@ def run_round(key_name, value, home, server_cmd, cli_bin):
     """One full round. Returns the verdict dict (no secret values)."""
     stage_key(value, home)
     z_ok, z_text = zencli_echo(server_cmd, SERVER_PORT, ECHO_MODEL,
-                               ECHO_PROMPT)
+                               ECHO_PROMPT, home)
     o_ok, o_text = None, None
     if not z_ok:
         o_ok, o_text = opencode_echo(cli_bin, ECHO_MODEL, ECHO_PROMPT,
@@ -195,10 +203,45 @@ def run_round(key_name, value, home, server_cmd, cli_bin):
                                         time.gmtime())}
 
 
+def publish_verdict(verdict, conn):
+    """Best-effort POST of the round to keeper /api/v1/probe (the
+automatic round-to-publication link). Skips silently without conn or
+token; never fails the round (stdout verdict is the record)."""
+    token = (os.environ.get("KEYROUND_KEEPER_TOKEN") or "").strip()
+    if not conn or not token:
+        return "skipped"
+    base = (os.environ.get("KEYROUND_KEEPER_URL",
+                            "https://keeper.pkubelka.cz")).rstrip("/")
+    op = verdict.get("opencode") or {}
+    l2 = (("pass" if op.get("ok") else "fail") if op else "not-run")
+    body = json.dumps({
+        "provider": "opencode-zen", "model": verdict.get("model"),
+        "state": "ok" if verdict.get("working") else "down",
+        "detail": {
+            "l1": ("heartbeat" if verdict.get("working")
+                     else "heartbeat-fail"),
+            "l2": l2, "source": "keyround",
+            "key_name": verdict.get("key_name"),
+            "mismatch": bool(verdict.get("mismatch")),
+            "retry_hint_secs": verdict.get("retry_hint_secs")},
+        "connection_id": conn,
+        "checked_at": verdict.get("checked_at", "")}).encode()
+    req = urllib.request.Request(
+        base + "/api/v1/probe", data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": "Bearer " + token}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            return "posted:%d" % res.status
+    except Exception as e:
+        sys.stderr.write("keyround publish failed: %s\n" % e)
+        return "failed"
+
+
 def main(argv):
     if not (os.environ.get("KEYROUND_KEY") or "").strip():
         jitter_sleep()  # pool mode only: manual pins run immediately
-    name, value = pick_key()
+    name, value, conn = pick_key()
     if not value or not str(value).strip() or str(value).strip() == "{}":
         fail("picked key %s has no usable value" % name)
     home = os.environ.get("KEYROUND_HOME") or tempfile.mkdtemp(
@@ -206,6 +249,8 @@ def main(argv):
     verdict = run_round(name, value, home,
                         [ZENCLI_BIN], OPENCODE_BIN)
     print(json.dumps(verdict))
+    sys.stderr.write("keyround publish: %s\n"
+                     % publish_verdict(verdict, conn))
     return 0
 
 

@@ -34,6 +34,11 @@ variable "keys_json" {
   default = "[]"
 }
 
+variable "keeper_token" {
+  type    = string
+  default = ""
+}
+
 job "keyround-periodic" {
   datacenters = ["ovh-vps"]
   type        = "batch"
@@ -49,7 +54,7 @@ job "keyround-periodic" {
     task "keyround" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/zencli:main-6"
+        image      = "registry.pkubelka.cz/zencli:main-7"
         force_pull = true
         auth {
           username = var.dr_user
@@ -63,6 +68,7 @@ job "keyround-periodic" {
 
       env {
         KEYS_JSON            = var.keys_json
+        KEYROUND_KEEPER_TOKEN = var.keeper_token
         KEYROUND_JITTER_SECS = "600"
       }
 
