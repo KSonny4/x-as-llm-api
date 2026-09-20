@@ -1,0 +1,79 @@
+# probe-keyround.nomad.hcl — pool heartbeat: one pool key + jitter per
+# firing, never a sweep. Manual dispatch pins a key (-meta key=NAME);
+# periodic hourly firings pick randomly from the pool (loose cadence;
+# the task sleeps KEYROUND_JITTER_SECS first so firings never burst).
+#
+# Pool + values via -var (values NEVER in git — rendered from Bao):
+#   export NOMAD_ADDR=https://nomad.pkubelka.cz  # or loopback :4647
+#   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
+#   KEYS_JSON="$(bash scripts/render-keyround-keys.sh)"
+#   nomad job run \
+#     -var=dr_user="publisher" \
+#     -var=dr_pass="$(...registry password...)" \
+#     -var=keys_json="$KEYS_JSON" \
+#     probe-keyround.nomad.hcl
+#   nomad job dispatch -meta key=OPENCODE_ZEN_RETIRED_1 keyround  # manual pin
+#
+# Pool curation (enter on pass, backoff on fail, recovery events) reads
+# verdict history in the keeper publish layer (M3) — the task stays
+# stateless. Memory floor 1024MB (CLI SIGKILLs below it, proven).
+# Auth guard: keyround.py exits 2 on missing/empty/{} values (fail closed).
+
+variable "dr_user" {
+  type    = string
+  default = ""
+}
+
+variable "dr_pass" {
+  type    = string
+  default = ""
+}
+
+variable "keys_json" {
+  type    = string
+  default = "[]"
+}
+
+job "keyround" {
+  datacenters = ["ovh-vps"]
+  type        = "batch"
+
+  parameterized {
+    payload = "optional"
+    meta_optional = ["key"]
+  }
+
+  periodic {
+    cron             = "0 * * * *"
+    prohibit_overlap = true
+  }
+
+  group "round" {
+    count = 1
+
+    task "keyround" {
+      driver = "docker"
+      config {
+        image      = "registry.pkubelka.cz/zencli:main-4"
+        force_pull = true
+        auth {
+          username = var.dr_user
+          password = var.dr_pass
+        }
+        command = "python3"
+        args    = ["/srv/probe/keyround.py"]
+      }
+
+      env {
+        KEYS_JSON           = var.keys_json
+        KEYROUND_KEY        = "${NOMAD_META_key}"
+        KEYROUND_JITTER_SECS = "600"
+      }
+
+      resources {
+        cpu    = 500
+        memory = 1024
+      }
+    }
+  }
+}
