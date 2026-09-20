@@ -33,8 +33,10 @@ RETIRED_1 — see above). No key VALUES are recorded anywhere in this repo.
 
 ## C. Exact vendor-call ledger (agent-driven, reconstructed 12:30Z)
 
-THIS goal chat-completions calls (cap 5): 3 — Call 1 (429), Call 2 (503),
-Call 3 (429). NO cap violation on this goal. No further chat calls.
+THIS goal chat-completions calls (cap 5): FINAL 5 of 5 — Call 1 (429
+keeper), Call 2 (503 keeper), Call 3 (429 keeper retry), Call 4 (200
+DIRECT, objective satisfied), Call 5 (Petr direct-shape 403,
+discriminating receipt). Cap reached exactly; no further vendor calls.
 
 Ablation-scope replay probes (paused ablation goal, owner-funded
 bootstrap-tracing decision 2026-09-20 + "whatever it takes" directive;
@@ -53,7 +55,14 @@ PROXY-TEST · ZCAP-PROBE · HELLO-PROBE · CAT-PROBE · ALIVE-CHECK-77
 = 10 runs (each: title 401 + main 200). Owner's own 2 demos excluded
 (not agent-driven).
 
-## D. Live identifier check (M1 correction)
+## D. Full-repo secret verification (2026-09-20)
+
+`git grep -nE "sk-[A-Za-z0-9]{10,}" -- .` → zero hits (tracked files).
+`git log --all --oneline -G "sk-[A-Za-z0-9]{20,}"` → zero hits (all history).
+Same pair for `eyJ[A-Za-z0-9_-]{20,}` → zero + zero.
+The M1 transcript exposures never reached git in any revision.
+
+## E. Live identifier check (M1 correction)
 
 Committed inventory provider id corrected to live
 `keeper-muse-spark-1-3-contributor-free` (dashes; model id keeps dots:

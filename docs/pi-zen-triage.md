@@ -26,35 +26,61 @@ $ pi --provider keeper-big-pickle --model big-pickle -p --no-session "Reply with
 exit=1
 ```
 
-## M3 classification (receipt-backed, per call)
+### Call 4: DIRECT provider (M2 GREEN)
 
-| Call | Route key at test time (hash-verified) | Verdict | Evidence |
+```text
+$ pi --provider opencode-zen-free --model big-pickle -p --no-session "Reply with exactly: PI-ZEN-DIRECT"
+PI-ZEN-DIRECT
+exit=0
+```
+
+### Call 5: Petr key direct-HTTPS shape test (1 vendor call)
+
+```text
+$ bun fetch POST https://opencode.ai/zen/v1/chat/completions, Bearer=<Petr key>,
+  CLI headers, {model:big-pickle, messages:[hi]}
+petr-direct: 403 {"type":"error","error":{"type":"FreeTierError","message":"OpenCode's free tier can only be used from within OpenCode"}}
+```
+
+## M3 classification (corrected 2026-09-20 ~12:45Z — Call 4 GREEN, v3 WITHDRAWN)
+
+M2 IS GREEN: Call 4 exit 0 + expected string via opencode-zen-free /
+big-pickle. BLESSED PATH RECORDED: direct provider, no keeper hop.
+
+WITHDRAWN (auditor was right): (a) "drained Petr bucket" — Call 5 shows
+the Petr key gets gate-403 direct, NOT quota-429; the key/bucket was
+never proven drained. (b) verdict-v3 "unforgeable from outside the
+binary" — Call 4 (pi Bun-stack HTTPS) passes; HTTP reuse IS possible.
+The undetermined remainder is only WHICH request element gates (likely
+keeper stripping CLI identity upstream: urllib UA, no x-opencode-* —
+keeper code path `call_upstream` sends Content-Type + bearer only).
+
+| Call | Route/key at test time (hash-verified) | Verdict | Evidence |
 |------|----------------------------------------|---------|----------|
-| 1 (big-pickle 429) | OPENCODE_ZEN_API_KEY_PETR | drained-key misroute (agent config error, fixed) | local CLI on RETIRED_1 returned live 200 same hour; route served PETR hash at test time |
-| 3 (big-pickle 429 retry) | OPENCODE_ZEN_RETIRED_1 | relay-path gate: same key 200s via CLI binary, 429s via keeper HTTP relay | route hash re-verified RETIRED_1 post-reorder before retry; CLI ALIVE-CHECK-77 200 same hour |
-| 2 (muse 503) | PETR (pre-reorder) | vendor capacity (endpoint down, not key-specific) | `Endpoint is unavailable` — model-endpoint shape, no key bucket implicated |
+| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | relay-path gate (CORRECTED: not drained-key) | Call 5: same key direct → 403 gate-shape, never 429 → the 429 shape comes from the relay path, not the key |
+| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | relay-path gate | same key 200s via CLI binary AND via pi-direct (Call 4); only the keeper relay 429s → path is the variable |
+| 2 (muse 503 keeper) | PETR (pre-reorder) | vendor capacity, endpoint-shaped | `Endpoint is unavailable`; key-independent |
+| 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — objective satisfied | exit 0 + `PI-ZEN-DIRECT` |
+| 5 (Petr direct shape) | PETR | gate-403 (discriminating receipt for Call 1) | same key as Call 1, different path, different verdict |
 
-Leg status: pi config GREEN (resolves, dispatches, surfaces vendor JSON);
-keeper route GREEN (resolves pack v2, forwards); vendor gate BLOCKS the
-HTTP-relay path per Call 3's same-key split (CLI 200 vs relay 429).
+Leg status: pi config GREEN; pi-direct provider GREEN (blessed);
+keeper relay GATED (429 both keys — documented, NOT fixed: keeper
+serving changes are OUT of this goal's scope; seed reorder kept as
+deployed hygiene). Vendor buckets proven non-empty (CLI + Call 4 200s).
 
 ## Single unblock per failure (owner + responsible party)
 
-- Call 1 cause: FIXED by agent (seed reorder RETIRED_1-first, redeployed,
-  route verified serving RETIRED_1 for both models 2026-09-20).
-- Calls 3/2 residual: NO in-scope fix — the contracted chat-completions
-  path (pi → keeper HTTP relay → zen) is vendor-gated per the Call 3
-  receipt. Next: follow-up goal (binary-on-Nomad incl. Go client
-  experiment). Responsible: owner approves follow-up scope; no quota wait
-  (bucket proven non-empty) and no blind retries.
+- big-pickle via keeper (Calls 1/3): USE THE BLESSED DIRECT PATH
+  (`pi --provider opencode-zen-free --model big-pickle`). No keeper fix
+  in this goal (OUT of scope). Responsible: agent (documented).
+- muse 503 (Call 2): retry when the endpoint recovers (endpoint-shaped,
+  separate from the big-pickle gate). Responsible: owner-none (time).
 - Hygiene (independent): ROTATE OPENCODE_ZEN_API_KEY_PETR (value touched
-  transcript during M1). Responsible: owner (vendor console mint +
-  `bao kv put`); agent re-seeds after.
+  transcript during M1). Responsible: owner (console mint + bao kv put).
 
-## Auditable total-call ledger
+## Prior (superseded) classification — kept for audit trail, DO NOT USE
 
-THIS goal's vendor-touching chat calls: **3 of 5** (Call 1 → 429,
-Call 2 → 503, Call 3 → 429). No further chat calls after Call 3.
+| Leg | Verdict | Evidence |
 
 Separately scoped (NOT this goal's budget): ~15 bare-HTTPS replay probes
 (bun/curl/node/real-SDK/title-first/warmup/h1/h2/v4/v6/tools+stream) run
