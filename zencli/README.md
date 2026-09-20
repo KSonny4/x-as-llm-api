@@ -115,16 +115,27 @@ note, not code.
 
 ## -serve mode (OpenAI-compatible HTTP in front of zen)
 
+Endpoints: `GET /v1/models` (7-model catalog, no vendor touch),
+`POST /v1/chat/completions` (non-stream + `stream:true` SSE).
+Flags: `-port` (default 8099), `-bind` (default 127.0.0.1),
+`-auth` (optional client bearer; empty = localhost trust),
+`-exec` (backend select), `-opencode-bin`.
+
 Two backends (flag `-exec` selects):
 
 - **exec (WORKING, proven 200)**: drives the genuine `opencode run`
-  subprocess per request — the only client the gate passes. Model `"X"`
-  maps to `opencode/X`; last user message becomes the prompt; CLI
-  stdout returns as `chat.completion` JSON. Per-request temp cwd,
-  110s timeout. No `ZEN_API_KEY` needed (CLI uses its own auth).
-  Proof transcript committed as `zencli/proof-exec.json`
-  (`EXEC-PROOF`, 200, 2026-09-20). Cost: ~15-40s per request
-  (CLI startup + inference).
+  subprocess per request — the only client the gate passes. Request
+  mapping: system + multi-turn messages flattened into one prompt
+  (system verbatim first, turns labeled, last user message raw);
+  model `"X"` → `opencode/X`; temperature/max_tokens have no CLI
+  equivalent and are ignored (documented, not silent — see code).
+  Response: `chat.completion` JSON, or format-exact SSE word-chunks +
+  `[DONE]` for `stream:true` (format parity, NOT token-realtime: one
+  subprocess completion, then chunked — stated plainly).
+  Per-request temp cwd, 110s timeout, parallel-safe. No `ZEN_API_KEY`
+  needed (CLI uses its own auth). Proven: non-stream multi-turn
+  (`FULL-PROOF`, 200), stream (`STREAM-PROOF`, 200, valid SSE).
+  Cost: ~15-40s per request (CLI startup + inference).
 - http (raw-wire mimicry): built, locally verified, vendor-GATED
   (403) — kept as instrument/fallback, not the path.
 

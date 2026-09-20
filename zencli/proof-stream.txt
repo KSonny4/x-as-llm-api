@@ -1,0 +1,8 @@
+data: {"choices":[{"delta":{"content":""},"finish_reason":"","index":0}],"created":1789911939,"id":"chatcmpl-8a2OyDcT0ofH","model":"big-pickle","object":"chat.completion.chunk"}
+
+data: {"choices":[{"delta":{"content":"STREAM-PROOF"},"finish_reason":"","index":0}],"created":1789911939,"id":"chatcmpl-8a2OyDcT0ofH","model":"big-pickle","object":"chat.completion.chunk"}
+
+data: {"choices":[{"delta":{"content":""},"finish_reason":"stop","index":0}],"created":1789911939,"id":"chatcmpl-8a2OyDcT0ofH","model":"big-pickle","object":"chat.completion.chunk"}
+
+data: [DONE]
+
