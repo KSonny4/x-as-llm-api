@@ -2,10 +2,33 @@
 
 ## Actual `pi --list-models` output (zen-relevant rows)
 
+Keeper-relayed rows:
 ```text
 keeper-big-pickle                       big-pickle                       128K  16.4K  no  no
-keeper-muse-spark-1-3-contributor-free  muse-spark-1.3-contributor-free  128K  16.4K  no  no
+keeper-muse-spark-1.3-contributor-free  muse-spark-1.3-contributor-free  128K  16.4K  no  no
 ```
+
+Direct rows (pi-opencode-direct@0.1.6, pure-HTTP CLI-identity provider):
+```text
+opencode-zen-free  big-pickle                     200K    32K     yes  no
+opencode-zen-free  ling-3.0-flash-fin-free        262.1K  32.8K   yes  no
+opencode-zen-free  mimo-v2.5-free                 200K    32K     yes  yes
+opencode-zen-free  muse-spark-1.2-contributor-free 1.0M   131.1K   yes  yes
+opencode-zen-free  muse-spark-1.3-contributor-free 1.0M   131.1K   yes  yes
+opencode-zen-free  nemotron-3-ultra-free           1M     128K     yes  no
+opencode-zen-free  nemotron-3.5-lightning-free     262.1K 262.1K   yes  no
+```
+Backing (names only): pi stored credential for opencode-zen-free
+(~/.pi/agent/auth.json `key`, len 67) hash-matches Bao
+OPENCODE_ZEN_RETIRED_1 — same working key as the CLI. Resolution order
+per extension docs: stored credential → env OPENCODE_API_KEY →
+anonymous. Provider stamps CLI-identity headers (UA opencode/1.18.31…
+pi-opencode-direct/0.1.6, x-opencode-client: cli,
+x-opencode-project: global).
+
+Excluded from this goal: `meta`/`omniroute` muse rows (unrelated
+providers that happen to name-match the grep — different vendors/
+credentials, not zen); paid models (CreditsError, no billing attached).
 
 ## Backing keys (names only, via GET /v1/route/:model)
 
