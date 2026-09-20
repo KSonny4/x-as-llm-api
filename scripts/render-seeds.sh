@@ -58,8 +58,8 @@ emit OPENROUTER_API_KEY_4 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "ope
 # MUST come first for every zen model. Never put an unproven/drained
 # key ahead of RETIRED_1 without a same-day working-key proof.
 emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/retired-1" "Big Pickle (retired key 1, owner-promoted)" 1
-emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle" "Big Pickle (Petr key)" 1
 emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle-spare" "Big Pickle (spare key)" 1
+emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/big-pickle" "Big Pickle (Petr key)" 1
 emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
 emit MOONSHOT_API_KEY moonshot "kimi-k2.7-code" "https://api.moonshot.ai/v1" openai "moonshot/kimi-k2.7-code" "Kimi K2.7 Code" 1
 emit MUSE_CODE_OAUTH claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6" "Claude Sonnet 4.6 (oauth 1)" 1
