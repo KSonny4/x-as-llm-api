@@ -1,0 +1,17 @@
+# zencli Nomad validation receipt (2026-09-20)
+
+Job: zencli-validate (batch, version 2) · alloc: fae21928
+Node: ovh-nomad-fresh (linux/amd64) · memory: 1024MB · status: complete
+Image: registry.pkubelka.cz/zencli:main-1
+  digest: sha256:8e49713e8fa5c7f4a098382498c080dcd8ce44848abd0d034b24d915578b9151
+Auth: opencode auth.json via -var=opencode_auth_json (names only, value never in git)
+Task: zencli serve on container loopback + curl echo prompt.
+
+Alloc log (stdout):
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"NOMAD-ZENCLI-ALIVE","role":"assistant"}}],"created":1789913692,"id":"chatcmpl-t2jqTaDxwueA","model":"big-pickle","object":"chat.completion","usage":{}}
+
+Expected string NOMAD-ZENCLI-ALIVE present → PASS (M2).
+
+Notes: first two allocs failed on image arch (arm64 built on Mac;
+rebuilt --platform linux/amd64, same tag, force_pull picked it up).
+Vendor touches this goal: 1 (the proof call inside the alloc).
