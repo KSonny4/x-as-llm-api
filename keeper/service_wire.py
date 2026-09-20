@@ -9,9 +9,53 @@ import translate
 
 COMMON = {'model', 'messages', 'stream', 'max_tokens', 'max_completion_tokens',
           'temperature', 'top_p', 'stop', 'tools', 'tool_choice', 'stream_options'}
+NATIVE = COMMON | {'response_format', 'parallel_tool_calls', 'n', 'seed',
+                   'frequency_penalty', 'presence_penalty', 'logprobs', 'top_logprobs',
+                   'logit_bias', 'user', 'reasoning_effort', 'verbosity'}
+
+
+def safe_request(req):
+    """No paid built-in tools/plugins, fallback models or provider overrides.
+
+    A free model does not imply paid search/image/audio add-ons are free. The
+    service executes no tools; ordinary client function schemas remain allowed.
+    Unknown request extensions are rejected, never silently forwarded/dropped.
+    """
+    if set(req) - NATIVE:
+        return False
+    for msg in req.get('messages', []):
+        if not isinstance(msg, dict) or set(msg) - {'role','content','tool_calls','tool_call_id','name'}:
+            return False
+        content = msg.get('content')
+        if content is not None and not isinstance(content, str):
+            if not isinstance(content, list) or any(not isinstance(p, dict) or set(p) != {'type','text'}
+                    or p['type'] != 'text' or not isinstance(p['text'], str) for p in content):
+                return False
+        for tc in msg.get('tool_calls', []):
+            if not isinstance(tc, dict) or set(tc) - {'id','type','function'} or tc.get('type') != 'function':
+                return False
+            if not isinstance(tc.get('function'), dict) or set(tc['function']) - {'name','arguments'}:
+                return False
+    tools = req.get('tools', [])
+    if not isinstance(tools, list): return False
+    for tool in tools:
+        if not isinstance(tool, dict) or set(tool) != {'type','function'} or tool['type'] != 'function':
+            return False
+        fn = tool['function']
+        if not isinstance(fn, dict) or set(fn) - {'name','description','parameters','strict'} or not isinstance(fn.get('name'), str):
+            return False
+    choice = req.get('tool_choice')
+    if choice is not None and choice not in ('auto','none','required'):
+        if not isinstance(choice, dict) or set(choice) != {'type','function'} or choice['type'] != 'function':
+            return False
+        if not isinstance(choice['function'], dict) or set(choice['function']) != {'name'}:
+            return False
+    return True
 
 
 def compatible(protocol, req):
+    if not safe_request(req):
+        return False
     if protocol == 'openai':
         return True
     if protocol not in ('anthropic', 'gemini', 'responses') or set(req) - COMMON:

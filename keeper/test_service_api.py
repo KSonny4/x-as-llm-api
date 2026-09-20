@@ -48,13 +48,13 @@ def test_bounded_ranked_failover_and_precise_feedback(tmp_path):
     state=ready(tmp_path); seen=[]
     def http(method,url,headers,payload):
         seen.append(payload['model'])
-        if payload['model']=='b':return HttpResponse(429, {'Retry-After':'120'}, b'{"error":"synthetic-secret"}')
+        if payload['model']=='b':return HttpResponse(500, {}, b'{"error":"synthetic-secret"}')
         return HttpResponse(200, {}, json.dumps({'model':'a','choices':[{'message':{'content':'ok'},'finish_reason':'stop'}]}).encode())
     state['inference_transport']=http
     code,raw,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]})
-    assert code==200 and seen==['b','a']
+    assert code==200 and seen==['b','b','a']
     failed=[c for c in state['availability'].connections() if c['excluded']]
-    assert len(failed)==1 and failed[0]['model']=='b'
+    assert len(failed)==2 and all(c['model']=='b' for c in failed)
     assert state['availability'].feedback(failed[0]['id'])
     assert b'synthetic-secret' not in raw
 
@@ -96,7 +96,7 @@ def test_stream_failure_before_first_event_falls_back(tmp_path):
         yield {'model':'a','choices':[{'index':0,'delta':{},'finish_reason':'stop'}]}
     state['stream_transport']=stream
     code,body,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}],'stream':True})
-    assert code==200 and b'hello' in b''.join(body) and seen==['b','a']
+    assert code==200 and b'hello' in b''.join(body) and seen==['b','b','a']
 
 
 def test_wire_tools_and_streams_across_all_protocols():
@@ -133,3 +133,41 @@ def test_translated_request_features_not_silently_dropped():
     gem=w.prepare({'model':'a','protocol':'gemini'},req)
     assert gem['generationConfig']=={'temperature':0.2,'topP':0.9,'stopSequences':['END'],'maxOutputTokens':42}
     assert not w.compatible('responses',req)
+
+
+def test_spend_and_fallback_extensions_rejected_before_any_inference(tmp_path):
+    state=ready(tmp_path);seen=[]
+    state['inference_transport']=lambda *a:seen.append(a)
+    base={'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]}
+    for extension in [{'plugins':[{'id':'web','engine':'exa'}]}, {'models':['paid/fallback']}, {'provider':{'allow_fallbacks':True}}, {'route':'fallback'}, {'tools':[{'type':'web_search_preview'}]}]:
+        code,raw,_=service_call(state,'/v1/chat/completions',{**base,**extension})
+        assert code==400 and json.loads(raw)['error']['code']=='unsupported_request_features'
+    assert not seen
+
+
+def test_empty_stream_does_not_become_working_and_falls_back_before_output(tmp_path):
+    state=ready(tmp_path);seen=[]
+    def stream(config,payload):
+        seen.append(config['model'])
+        yield {'model':config['model'],'choices':[{'index':0,'delta':{'role':'assistant'},'finish_reason':None}]}
+        if config['model']=='a':
+            yield {'model':'a','choices':[{'index':0,'delta':{'content':'Hello'},'finish_reason':None}]}
+        yield {'model':config['model'],'choices':[{'index':0,'delta':{},'finish_reason':'stop'}]}
+    state['stream_transport']=stream
+    before=len(state['availability'].store.rows('SELECT * FROM av_checks'))
+    code,body,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}],'stream':True})
+    assert code==200 and b'Hello' in b''.join(body)
+    assert seen==['b','b','a']
+    checks=state['availability'].store.rows('SELECT * FROM av_checks ORDER BY id')[before:]
+    assert [c['state'] for c in checks]==['invalid_response','invalid_response','working']
+
+
+def test_same_strongest_model_alternative_precedes_weaker(tmp_path):
+    state=ready(tmp_path);seen=[]
+    def http(method,url,headers,payload):
+        seen.append((payload['model'],headers['Authorization']))
+        if len(seen)==1:return HttpResponse(500,{},b'{}')
+        return HttpResponse(200,{},json.dumps({'model':payload['model'],'choices':[{'message':{'content':'Hello'}}]}).encode())
+    state['inference_transport']=http
+    code,raw,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]})
+    assert code==200 and [x[0] for x in seen]==['b','b'] and seen[0][1]!=seen[1][1]

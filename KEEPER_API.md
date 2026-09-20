@@ -96,11 +96,11 @@ compatible, free** route across all providers, not a claim of globally strongest
 If no scored compatible route is working, unscored working routes are eligible.
 Background checks establish availability; the service never spends on unknown
 pricing or paid routes. Actual upstream failure records precise feedback, and
-up to three model routes may be attempted before returning an OpenAI-shaped 503.
+up to three connection attempts may be made, preferring same-model alternative keys before a lower-ranked model before returning an OpenAI-shaped 503.
 No fallback occurs after any stream output. SSE comes incrementally from the
 upstream, not a buffered nonstream response. Tool calls/history are preserved.
 
-Native OpenAI routes pass request fields through. Anthropic, Gemini and Responses
+Native OpenAI routes accept an explicit safe chat-field allowlist. Paid plugins/built-in tools, alternate model lists and provider/routing overrides are rejected with 400, even on free models. Unknown extensions are never forwarded. Text and client function tools are supported; paid image/audio/search add-ons are not. Anthropic, Gemini and Responses
 routes translate text and function-tool history/calls, max output tokens,
 temperature/top-p and tool choice. Anthropic/Gemini also map stop sequences.
 Translated routes are skipped for unsupported features (e.g. multimodal content,
