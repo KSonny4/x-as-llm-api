@@ -185,3 +185,17 @@ def test_admin_exact_gateway_uses_verified_free_route_without_cli_spoof(tmp_path
     state['availability'].update_catalog('p',[free('b')])
     assert call(state,'POST','/v1/chat/completions',{'model':'a','messages':[{'role':'user','content':'hello'}]})[0]==503
     assert len(seen)==1
+
+
+def test_same_model_spare_after_stale_success_revalidation_failure(tmp_path):
+    state=ready(tmp_path)
+    state['availability'].clock.advance(301)
+    probes=[]
+    def verify_http(method,url,headers,payload):
+        probes.append(payload['model'])
+        if len(probes)==1:return HttpResponse(500,{},b'{}')
+        return HttpResponse(200,{},json.dumps({'model':payload['model'],'choices':[{'message':{'content':'Hello'}}]}).encode())
+    state['selector'].transport=verify_http
+    state['inference_transport']=lambda method,url,headers,payload: HttpResponse(200,{},json.dumps({'model':payload['model'],'choices':[{'message':{'content':'Hello'}}]}).encode())
+    code,raw,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]})
+    assert code==200 and json.loads(raw)['model']=='b' and probes==['b','b']

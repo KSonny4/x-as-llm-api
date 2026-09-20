@@ -191,7 +191,12 @@ def chat(state, body, allow_exact=False):
                 break
             attempts += 1
             config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
-            if 'error' in config: break
+            if 'error' in config:
+                if config['error'] == 'verification_pending':
+                    break
+                # A failed revalidation superseded that key's old success.
+                # Re-read remaining working keys for this same ranked model.
+                continue
             excluded.add(config['connection_id'])
             try:
                 payload = wire.prepare(config, req)
