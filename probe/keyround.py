@@ -229,6 +229,9 @@ token; never fails the round (stdout verdict is the record)."""
     req = urllib.request.Request(
         base + "/api/v1/probe", data=body,
         headers={"Content-Type": "application/json",
+                 # Cloudflare 403s default library UAs (Python-urllib);
+                 # browser-like UA required (cognee-memory precedent).
+                 "User-Agent": "keeper-keyround/1.0",
                  "Authorization": "Bearer " + token}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=30) as res:

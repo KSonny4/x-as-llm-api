@@ -298,6 +298,7 @@ class PublishTest(unittest.TestCase):
             def do_POST(self):
                 ln = int(self.headers.get("Content-Length", 0))
                 seen["auth"] = self.headers.get("Authorization")
+                seen["ua"] = self.headers.get("User-Agent")
                 seen["doc"] = json.loads(self.rfile.read(ln))
                 raw = b'{"ok": true}'
                 self.send_response(202)
@@ -319,6 +320,7 @@ class PublishTest(unittest.TestCase):
             self._restore(old)
             srv.shutdown()
         self.assertEqual(seen["auth"], "Bearer sekret-tok")
+        self.assertEqual(seen["ua"], "keeper-keyround/1.0")
         doc = seen["doc"]
         self.assertEqual(doc["connection_id"], "zen/a")
         self.assertEqual(doc["state"], "ok")
