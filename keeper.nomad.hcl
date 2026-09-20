@@ -197,7 +197,16 @@ job "keeper" {
         readonly_rootfs = true
         cap_drop        = ["ALL"]
         security_opt    = ["no-new-privileges"]
-        tmpfs           = ["/tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777"]
+        # Nomad's Docker driver uses mount blocks, not Docker CLI --tmpfs.
+        # Docker tmpfs mounts default to nosuid,nodev,noexec; verify on-node.
+        mount {
+          type   = "tmpfs"
+          target = "/tmp"
+          tmpfs_options {
+            size = 536870912
+            mode = 1023 # decimal representation of Unix 01777
+          }
+        }
         auth {
           username = var.dr_user
           password = var.dr_pass

@@ -97,6 +97,40 @@ func TestRawEventsOnlyNoToolsEmptyOrSecrets(t *testing.T) {
 		}
 	}
 }
+func TestProviderFailureStatusIsPreservedWithoutErrorBody(t *testing.T) {
+	for _, status := range []int{400, 401, 402, 403, 422, 429, 500, 200} {
+		raw, _ := json.Marshal(map[string]any{"type": "error", "error": map[string]any{"data": map[string]any{"statusCode": status, "message": "synthetic-selected", "responseHeaders": map[string]string{"retry-after": "120"}}}})
+		b := fixtureBridge(t, "printf '%s\\n' '"+string(raw)+"'; exit 1")
+		w := invoke(b, plain, "synthetic-selected")
+		want := status
+		if status == 500 || status == 200 {
+			want = 502
+		}
+		if w.Code != want || strings.Contains(w.Body.String(), "synthetic-selected") {
+			t.Fatalf("provider status %d returned %d or leaked diagnostics", status, w.Code)
+		}
+		if status == 429 && w.Header().Get("Retry-After") != "120" {
+			t.Fatal("upstream cooldown lost")
+		}
+	}
+}
+
+func TestProviderCooldownHeaderValidation(t *testing.T) {
+	date := time.Now().Add(48 * time.Hour).UTC().Format(http.TimeFormat)
+	for _, value := range []string{"172800", date, "12345", "invalid"} {
+		raw, _ := json.Marshal(map[string]any{"type": "error", "error": map[string]any{"data": map[string]any{"statusCode": 429, "responseHeaders": map[string]string{"Retry-After": value}}}})
+		b := fixtureBridge(t, "printf '%s\\n' '"+string(raw)+"'; exit 1")
+		w := invoke(b, plain, "12345")
+		want := value
+		if value == "12345" || value == "invalid" {
+			want = ""
+		}
+		if w.Code != 429 || w.Header().Get("Retry-After") != want {
+			t.Fatal("invalid cooldown propagation")
+		}
+	}
+}
+
 func TestConcurrentRequestsNeverShareAuth(t *testing.T) {
 	b := fixtureBridge(t, goodOutput)
 	var wg sync.WaitGroup

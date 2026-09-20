@@ -1,5 +1,9 @@
 # Engineering guidance: consuming Keeper
 
+**Candidate contract, not yet live:** the private OVH staging run was blocked by
+upstream rejection/rate limits and has been stopped. Production is unchanged;
+see [staging evidence](keeper-staging-2026-09-20.md). Do not switch consumers yet.
+
 ## Other-service configuration
 
 Use the existing OpenAI-compatible client with base URL

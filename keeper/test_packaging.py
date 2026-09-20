@@ -21,6 +21,27 @@ def test_docker_copies_all_runtime_assets_and_durable_nomad_bind():
     assert re.search(r'PROBE_DB\s*=\s*"/var/lib/keeper/probe.db"', nomad)
 
 
+def test_sidecar_nomad_uses_supported_tmpfs_mount():
+    import shutil
+    import pytest
+    if not shutil.which('nomad'):
+        pytest.skip('Nomad CLI needed for HCL rendering')
+    root = Path(__file__).resolve().parents[1]
+    args = ['nomad', 'job', 'run', '-output']
+    for key in ('keeper_token', 'keeper_service_token', 'keeper_zencli_token', 'keeper_image', 'zencli_image'):
+        args.append('-var=' + key + '=synthetic-' + key)
+    job = json.loads(subprocess.check_output(args + ['keeper.nomad.hcl'], cwd=root))['Job']
+    task = next(t for t in job['TaskGroups'][0]['Tasks'] if t['Name'] == 'zencli')
+    config = task['Config']
+    assert 'tmpfs' not in config  # Docker CLI option, NOT a Nomad driver field.
+    mount = config['mount'][0]
+    assert mount['type'] == 'tmpfs' and mount['target'] == '/tmp'
+    assert mount['tmpfs_options'][0] == {'size': 536870912, 'mode': 1023}
+    assert config['readonly_rootfs'] and config['cap_drop'] == ['ALL']
+    assert config['security_opt'] == ['no-new-privileges']
+    assert not config.get('volumes')
+
+
 def test_fake_provider_smoke_end_to_end_redacts_and_never_feedbacks_live_by_default(tmp_path):
     state,_=state_for(tmp_path)
     from test_availability import succeed

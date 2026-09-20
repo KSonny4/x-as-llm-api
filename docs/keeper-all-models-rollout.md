@@ -101,8 +101,8 @@ is suspected, using the existing Bao source of truth.
 
 Legacy raw `/packs` and `/v1/route/*` are unverified, administrator-bearer-only,
 no-store. New browser/API selection uses only exact observations. Legacy matrix
-shape is preserved in production but its columns now have exact route IDs and
-only v2 direct evidence. Unmatched AA IDs stay unscored; a stale cached Coding
+shape is preserved in the candidate, but its columns have exact route IDs and
+v2 transport-scoped evidence: CLI is L2, never direct/L1 proof. Unmatched AA IDs stay unscored; a stale cached Coding
 Index is labelled as such. Protocol feature limitations are in `KEEPER_API.md`.
 
 ## Approved genuine-CLI sidecar integration (latest topology)
@@ -111,6 +111,9 @@ The user explicitly required reuse of the repository's proven genuine OpenCode
 bridge as a distinct service backend; direct HTTP rejection must not erase that
 option. New root README and engineering guidance describe its text-only limits.
 Historical main-1 proof is not a hardened-image live receipt.
+The [2026-09-20 private staging run](keeper-staging-2026-09-20.md) is stopped:
+hardened CLI inference was rejected and direct checks were rate-limited;
+production was not switched.
 
 Parent's isolated preflight proved CNI bridge **unavailable** (missing
 `${attr.plugins.cni.version.bridge}`), then proved Docker `network_mode=host`

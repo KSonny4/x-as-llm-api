@@ -2,7 +2,12 @@
 
 Private free-model availability and an inference API for another service.
 
-- **Base URL:** `https://keeper.pkubelka.cz/v1`
+> **Not yet deployed:** the private OVH candidate found no usable free route.
+> The hardened genuine CLI was rejected (403); direct checks were rate-limited.
+> Production is unchanged. These are candidate consumption instructions, not a
+> working public API receipt. [Staging evidence](docs/keeper-staging-2026-09-20.md).
+
+- **Target base URL:** `https://keeper.pkubelka.cz/v1`
 - **Model:** `keeper-coder`
 - **Authentication:** separate, non-expiring `KEEPER_SERVICE_TOKEN`
 - **Scope:** inference only; no dashboard, admin access or provider-key export.
@@ -49,7 +54,7 @@ It does not pretend its historical buffered SSE is real streaming. Requests are
 never silently weakened to fit a backend. Paid search/plugins and routing/model
 fallback overrides are rejected.
 
-**Live deployment and fresh inference proof are pending parent verification.**
+**Public rollout is blocked on successful approved free-provider inference.**
 Historical genuine-CLI proofs are in `zencli/TRANSCRIPT.md`; they are not receipts
 for this hardened deployment. See [engineering guidance](docs/engineering-guidance.md),
 [API contract](KEEPER_API.md), and [rollout/rollback](docs/keeper-all-models-rollout.md).

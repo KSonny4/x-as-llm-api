@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -173,6 +174,46 @@ func parseText(raw []byte, key string) (string, string, error) {
 	}
 	return result, finish, nil
 }
+
+// Preserve structured provider denial/rate-limit semantics, never its message,
+// headers or body (which may contain credentials). Unknown failures stay 502.
+func cliFailure(w http.ResponseWriter, raw []byte, key string) {
+	status := http.StatusBadGateway
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
+	scanner.Buffer(make([]byte, 4096), 1<<20)
+	for scanner.Scan() {
+		var event struct {
+			Type  string `json:"type"`
+			Error struct {
+				Data struct {
+					Status  int               `json:"statusCode"`
+					Headers map[string]string `json:"responseHeaders"`
+				} `json:"data"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(scanner.Bytes(), &event) != nil || event.Type != "error" {
+			continue
+		}
+		switch event.Error.Data.Status {
+		case 400, 401, 402, 403, 422, 429:
+			status = event.Error.Data.Status
+			if status == 429 {
+				for name, value := range event.Error.Data.Headers {
+					if strings.EqualFold(name, "Retry-After") && !strings.Contains(value, key) {
+						if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
+							w.Header().Set("Retry-After", strconv.Itoa(seconds))
+						} else if date, err := http.ParseTime(value); err == nil {
+							w.Header().Set("Retry-After", date.UTC().Format(http.TimeFormat))
+						}
+					}
+				}
+			}
+		}
+		break
+	}
+	http.Error(w, "CLI generation failed", status)
+}
+
 func (b *Bridge) chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", 405)
@@ -234,12 +275,12 @@ func (b *Bridge) chat(w http.ResponseWriter, r *http.Request) {
 	var out boundedOutput
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
-		http.Error(w, "CLI generation failed", 502)
+		cliFailure(w, out.Bytes(), key)
 		return
 	}
 	text, finish, err := parseText(out.Bytes(), key)
 	if err != nil {
-		http.Error(w, "CLI generation failed", 502)
+		cliFailure(w, out.Bytes(), key)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
