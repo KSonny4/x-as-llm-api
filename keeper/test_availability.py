@@ -141,3 +141,16 @@ def test_all_confirmed_failures_are_failed_not_unchecked(tmp_path):
     s.finish_check(s.begin_check(cid), Result('access_denied'))
     assert s.accounts()['keys'][0]['state'] == 'failed'
     assert s.accounts()['owners'][0]['state'] == 'failed'
+
+
+def test_pricing_expiry_does_not_erase_30_hour_health(tmp_path):
+    s, clock = setup(tmp_path, [seed()])
+    s.update_catalog('p', [free('a')])
+    succeed(s, s.connections()[0])
+    clock.advance(25 * 3600)
+    c = s.connections()[0]
+    assert c['blocked_reason'] == 'catalog_stale'
+    assert s.begin_check(c['id']) is None
+    assert c['state'] == s.accounts()['owners'][0]['state'] == 'working'
+    clock.advance(5 * 3600)
+    assert s.connections()[0]['state'] == 'stale'

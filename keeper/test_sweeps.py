@@ -121,3 +121,18 @@ def test_worker_fake_provider_end_to_end_no_paid_or_cli_evidence(tmp_path):
     assert worker.progress(sid)['done'] == 5
     assert all(k['state'] == 'working' for k in s.accounts()['keys'])
     assert 'synthetic-secret' not in '\n'.join(s.store.db.iterdump())
+
+
+def test_feedback_on_exhausted_lease_survives_restart_once(tmp_path):
+    s, clock = setup(tmp_path, [seed()])
+    s.update_catalog('p', [free('a')])
+    worker = Sweeps(s, lease_seconds=30, max_attempts=1)
+    worker.schedule()
+    old = worker.claim()
+    s.report_failure(old['id'])
+    clock.advance(31)
+    restarted = Sweeps(Availability(Store(tmp_path / 'availability.db'), clock), lease_seconds=30, max_attempts=1)
+    fresh = restarted.claim()
+    assert fresh and fresh['id'] == old['id']
+    clock.advance(31)
+    assert restarted.claim() is None  # no new feedback: bounded exhaustion

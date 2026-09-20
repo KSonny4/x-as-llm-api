@@ -49,3 +49,8 @@ def test_retry_after_seconds_and_http_date_and_malformed():
         result = verify(conn(), 'secret', lambda *a: HttpResponse(429, {'Retry-After': value}, b'{}'), clock=lambda: 1600000000)
         assert result.state == 'rate_limited' and result.retry_after == 120
     assert verify(conn(), 'secret', lambda *a: HttpResponse(200, {}, b'not json')).state == 'invalid_response'
+
+@pytest.mark.parametrize('version,expected', [('exact', 'working'), ('substitute', 'model_mismatch')])
+def test_gemini_model_version_identity(version, expected):
+    doc = {'modelVersion': version, 'candidates': [{'content': {'parts': [{'text': 'Hi'}]}}]}
+    assert verify(conn('gemini'), 'synthetic', lambda *a: HttpResponse(200, {}, json.dumps(doc).encode())).state == expected

@@ -238,7 +238,7 @@ class Availability:
                 c['state'] = 'cooldown'
             elif c['state'] == 'working':
                 c['state'] = ('unknown' if age < 0 else 'stale' if age >= STALE_AFTER
-                              else c['blocked_reason'] or 'working')
+                              else 'working')
             elif c['blocked_reason']:
                 c['state'] = c['blocked_reason']
         return rows
@@ -286,8 +286,9 @@ class Availability:
         revision = row['revision'] + 1
         db.execute('UPDATE av_connections SET revision=? WHERE id=?', (revision, cid))
         cur = db.execute('''INSERT INTO av_checks
-            (connection_id,revision,key_revision,started_at) VALUES (?,?,?,?)''',
-            (cid, revision, row['key_revision'], self.clock()))
+            (connection_id,revision,key_revision,started_at,feedback_id) VALUES (?,?,?,?,?)''',
+            (cid, revision, row['key_revision'], self.clock(),
+             db.execute('SELECT COALESCE(MAX(id),0) FROM av_feedback WHERE connection_id=?', (cid,)).fetchone()[0]))
         return cur.lastrowid
 
     def begin_check(self, cid):

@@ -122,7 +122,8 @@ def verify(c, secret, transport=request, clock=time.time):
                       ('invalid_api_key', 'key_revoked', 'api_key_invalid') else 'access_denied')
     if res.status != 200 or not isinstance(doc, dict) or 'error' in doc:
         return Result('invalid_response')
-    if doc.get('model') and doc['model'] != c['model']:
+    if any(doc.get(field) and doc[field] != c['model']
+           for field in ('model', 'modelVersion') if field == 'model' or protocol == 'gemini'):
         return Result('model_mismatch')
     try:
         if protocol == 'openai':

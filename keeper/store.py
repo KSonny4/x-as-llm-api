@@ -77,6 +77,8 @@ class Store:
                 self.db.execute('INSERT INTO av_schema VALUES (1)')
             elif len(versions) != 1 or versions[0][0] != 1:
                 raise ValueError('unsupported availability schema')
+            if 'feedback_id' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}:
+                self.db.execute('ALTER TABLE av_checks ADD COLUMN feedback_id INTEGER NOT NULL DEFAULT 0')
             self.db.commit()
         except Exception:
             self.db.rollback()

@@ -46,6 +46,11 @@ class Sweeps:
                 db.execute('INSERT INTO av_sweep_jobs VALUES (?,?)', (sid, jid))
             return sid
 
+    def _new_feedback(self, db, check):
+        return bool(check and db.execute(
+            'SELECT 1 FROM av_feedback WHERE connection_id=? AND id>?',
+            (check['connection_id'], check['feedback_id'])).fetchone())
+
     def _recover(self, db):
         for job in db.execute("SELECT * FROM av_jobs WHERE state='running' AND lease_until<=?", (self.clock(),)).fetchall():
             check = db.execute('SELECT * FROM av_checks WHERE id=?', (job['check_id'],)).fetchone()
@@ -54,8 +59,11 @@ class Sweeps:
                            (job['connection_id'], check['revision']))
                 db.execute("UPDATE av_checks SET finished_at=?,state='transient_error',applied=0 WHERE id=?",
                            (self.clock(), check['id']))
-            db.execute('UPDATE av_jobs SET state=?,lease_until=NULL,check_id=NULL WHERE id=?',
-                       ('done' if job['attempts'] >= self.max_attempts else 'queued', job['id']))
+            newer = self._new_feedback(db, check)
+            db.execute('''UPDATE av_jobs SET state=?,lease_until=NULL,check_id=NULL,
+                attempts=CASE WHEN ? THEN 0 ELSE attempts END WHERE id=?''',
+                ('done' if job['attempts'] >= self.max_attempts and not newer else 'queued',
+                 int(newer), job['id']))
 
     def claim(self, connection_id=None):
         now = self.clock()
@@ -100,8 +108,8 @@ class Sweeps:
                 self._recover(db)
                 return False
             applied = self.service._finish(db, job['check_id'], result)
-            row = db.execute('SELECT excluded FROM av_connections WHERE id=?', (job['id'],)).fetchone()
-            feedback_race = not applied and row['excluded']
+            check = db.execute('SELECT * FROM av_checks WHERE id=?', (job['check_id'],)).fetchone()
+            feedback_race = not applied and self._new_feedback(db, check)
             retry = applied and result.state in ('rate_limited', 'transient_error') and current['attempts'] < self.max_attempts
             delay = max(result.retry_after, 60 * 2 ** (current['attempts'] - 1)) if retry else 0
             db.execute('''UPDATE av_jobs SET state=?,due_at=?,lease_until=NULL,check_id=NULL,
