@@ -1,0 +1,207 @@
+{
+  "_comment": [
+    "Key-queue mismatch + stale alerts (Grafana unified alerting).",
+    "mismatch: fires when keeper_keyqueue_mismatch == 1 on any pool key:",
+    "  zenCLI echo and opencode-direct disagreed on the same key+round",
+    "  (the user's custom trigger \u2014 gate/key/tooling change signal).",
+    "stale: fires when the pool ledger is older than 3h (heartbeat missed",
+    "  3 hourly firings) \u2014 the queue-stale safety.",
+    "Shape mirrors keeper-divergent-alert.json (proven): group interval is",
+    "  integer seconds, range -> reduce(last) -> threshold(gt). for 0s on",
+    "  mismatch (rare + actionable); for 5m on stale (deploy gaps flap).",
+    "Both notify HonzaTraderBot (telegram, owner-confirmed)."
+  ],
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "keeper-keyqueue",
+      "folder": "keeper",
+      "interval": 60,
+      "rules": [
+        {
+          "uid": "keeper-keyqueue-mismatch",
+          "title": "Key-queue zenCLI/opencode mismatch",
+          "condition": "C",
+          "for": "0s",
+          "keep_firing_for": "0s",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "summary": "zenCLI vs opencode verdict split on {{ $labels.key }}",
+            "description": "The two legs disagreed on the same key+round \u2014 gate, key, or tooling change. Queue: https://keeper.pkubelka.cz/"
+          },
+          "labels": {
+            "severity": "page",
+            "service": "keeper"
+          },
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "range",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "grafanacloud-prom",
+              "model": {
+                "expr": "max by (key) (keeper_keyqueue_mismatch)",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "queryType": "range",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "notification_settings": {
+            "receiver": "HonzaTraderBot"
+          }
+        },
+        {
+          "uid": "keeper-queue-stale",
+          "title": "Key-queue ledger stale (>3h)",
+          "condition": "C",
+          "for": "5m",
+          "keep_firing_for": "0s",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "summary": "Pool heartbeat ledger older than 3h",
+            "description": "No key round rendered for 3h \u2014 prober or publisher stalled. Queue: https://keeper.pkubelka.cz/"
+          },
+          "labels": {
+            "severity": "page",
+            "service": "keeper"
+          },
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "range",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "grafanacloud-prom",
+              "model": {
+                "expr": "time() - keeper_keyqueue_generated_at_seconds",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "queryType": "range",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "reducer": "last",
+                "refId": "B",
+                "type": "reduce"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        10800
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "expression": "B",
+                "intervalMs": 60000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "notification_settings": {
+            "receiver": "HonzaTraderBot"
+          }
+        }
+      ]
+    }
+  ]
+}
