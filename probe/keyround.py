@@ -23,8 +23,8 @@ ECHO_PROMPT = os.environ.get("KEYROUND_PROMPT",
                              "Reply with exactly: KEYROUND-ALIVE")
 ECHO_EXPECTED = os.environ.get("KEYROUND_EXPECTED", "KEYROUND-ALIVE")
 SERVER_PORT = int(os.environ.get("KEYROUND_PORT", "8099"))
-ZENCLI_BIN = os.environ.get("ZENCLI_BIN", "zencli")
-OPENCODE_BIN = os.environ.get("OPENCODE_BIN", "opencode")
+ZENCLI_BIN = os.environ.get("ZENCLI_BIN", "/srv/zencli/zencli")
+OPENCODE_BIN = os.environ.get("OPENCODE_BIN", "/srv/zencli/opencode")
 CLI_TIMEOUT = int(os.environ.get("KEYROUND_CLI_TIMEOUT", "120"))
 
 
