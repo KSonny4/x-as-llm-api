@@ -1,0 +1,5 @@
+# Equivalent scan of tripwire-excluded dirs (.pi-glla wt) 2026-09-20
+## prefixed patterns (sk-, service prefixes, JWT-3seg, bearer/token assigns):
+(zero hits above = clean)
+## hex runs:     1204 distinct values, sampled contexts all orchestrator machinery (resp_/call_ IDs, requestHash fields, @sha256: digests); UUIDs verified structural (auditorDispatch ids, session ids); eyJ hits verified tripwire-pattern quotes, not JWTs
+## prior remediation: 12 sk- values scrubbed to sk-REDACTED from audit session files (2026-09-20)
