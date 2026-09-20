@@ -1,8 +1,14 @@
 # Engineering guidance: consuming Keeper
 
-**Candidate contract, not yet live:** the private OVH staging run was blocked by
-upstream rejection/rate limits and has been stopped. Production is unchanged;
-see [staging evidence](keeper-staging-2026-09-20.md). Do not switch consumers yet.
+**Protected baseline: original zencli works on Nomad.** Its unchanged HTTP
+wrapper returned **200** for `big-pickle` using the successful local-login key.
+Read [the control receipt](zencli-sanity-check.md) before changing integration.
+Preserve the original; use it as the sanity check, not a replacement profile.
+
+**Candidate contract, not yet live:** the earlier modified OVH candidate failed
+and was stopped. That is separate from the later successful original control.
+Production is unchanged; see [staging evidence](keeper-staging-2026-09-20.md).
+Do not switch consumers yet.
 
 ## Other-service configuration
 
@@ -56,13 +62,18 @@ Direct credentials are private, no-store responses and are verified for the exac
 provider/key/model/route. Bridge-only success can make a key/owner working but is
 labelled service-only and cannot be exported as a direct provider connection.
 
-OpenCode execution is isolated per request: exact selected credential in a 0600
+The **current modified candidate, not the successful original control**, isolates
+OpenCode per request: exact selected credential in a 0600
 private auth file, fresh HOME/XDG/config, scrubbed inherited environment, pinned
 CLI v1.18.31, dedicated agent with all tools denied, one step, no plugins/project
 config/default account, exact provider/model whitelist and same free small model.
 Only raw generated-text JSON events with a successful finish count as proof.
 No host data mounts; internal loopback bearer mandatory; timeout/process-group
 cleanup; unprivileged read-only sidecar container. `--pure` alone is not a sandbox.
+This candidate configuration failed live checks and must not be called a verified
+working CLI profile. The successful original had no custom agent, tool/permission
+overrides, or forced step limit. Compare against that control while preserving
+production security boundaries; the cause of the difference is not yet isolated.
 
 ## Verification status
 
@@ -71,7 +82,9 @@ local tests. Parent must record reviewed build IDs, successful authenticated
 public API inference, actual selected transport, safe stream/tool results where
 supported, full key/model coverage including failures/cooldowns, and durable DB
 survival across allocation replacement. Never store credential values in that
-receipt. Historical CLI receipts establish feasibility only.
+receipt. The fresh original zencli control establishes an actual Nomad HTTP pass
+for its exact key/model/configuration, not public Keeper rollout. Preserve that
+positive evidence separately from candidate failures and direct HTTP results.
 
 The dashboard distinguishes failed/pending inventory discovery from an empty
 inventory, and shows per-key attempt/last-success timestamps and bridge failures.

@@ -1,0 +1,25 @@
+{
+  "job": "zencli-original-sanity-1789946002",
+  "image": "registry.pkubelka.cz/zencli@sha256:8e49713e8fa5c7f4a098382498c080dcd8ce44848abd0d034b24d915578b9151",
+  "credential_references": [
+    "OPENCODE_ZEN_RETIRED_1@bao:2"
+  ],
+  "original_source_unchanged_before": true,
+  "production_changed": false,
+  "endpoint": "container-loopback /v1/chat/completions",
+  "model": "big-pickle",
+  "prompt": "whats the date",
+  "custom_agent": false,
+  "custom_tool_or_permission_settings": false,
+  "forced_step_limit": false,
+  "allocation": "4c670783-351f-45d6-8846-9c551112c66f",
+  "exec_exit": 0,
+  "http_status": 200,
+  "stderr": "",
+  "returned_model": "big-pickle",
+  "answer": "September 20, 2026.",
+  "passed": true,
+  "production_version_unchanged": true,
+  "control_job_stopped": true,
+  "original_source_unchanged_after": true
+}

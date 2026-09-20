@@ -2,10 +2,16 @@
 
 Private free-model availability and an inference API for another service.
 
-> **Not yet deployed:** the private OVH candidate found no usable free route.
-> The hardened genuine CLI was rejected (403); direct checks were rate-limited.
-> Production is unchanged. These are candidate consumption instructions, not a
-> working public API receipt. [Staging evidence](docs/keeper-staging-2026-09-20.md).
+> **Verified sanity check: original zencli works on Nomad.** The unchanged
+> original HTTP wrapper returned **200**, model `big-pickle`, answer
+> `September 20, 2026.`, using the same key as the successful local CLI command.
+> **Preserve original zencli and use it as the control.**
+> [Exact receipt and reproduction](docs/zencli-sanity-check.md).
+>
+> **New Keeper API not yet deployed:** the modified candidate failed its earlier
+> tests; those failures do not invalidate the successful original control.
+> Production is unchanged. Instructions below describe the candidate contract,
+> not a working public rollout. [Staging evidence](docs/keeper-staging-2026-09-20.md).
 
 - **Target base URL:** `https://keeper.pkubelka.cz/v1`
 - **Model:** `keeper-coder`
@@ -54,9 +60,10 @@ It does not pretend its historical buffered SSE is real streaming. Requests are
 never silently weakened to fit a backend. Paid search/plugins and routing/model
 fallback overrides are rejected.
 
-**Public rollout is blocked on successful approved free-provider inference.**
-Historical genuine-CLI proofs are in `zencli/TRANSCRIPT.md`; they are not receipts
-for this hardened deployment. See [engineering guidance](docs/engineering-guidance.md),
+**Public rollout still requires successful Keeper integration and acceptance.**
+The [fresh original zencli Nomad HTTP control](docs/zencli-sanity-check.md) passed;
+its working path must be preserved. Earlier proofs are in `zencli/TRANSCRIPT.md`.
+Neither the control nor those historical proofs establish the modified deployment. See [engineering guidance](docs/engineering-guidance.md),
 [API contract](KEEPER_API.md), and [rollout/rollback](docs/keeper-all-models-rollout.md).
 
 The private dashboard is at `/login`; it uses the administrator credential,

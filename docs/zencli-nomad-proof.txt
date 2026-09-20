@@ -1,5 +1,12 @@
 # zencli Nomad validation receipt (2026-09-20)
 
+LATEST CONTROL: original zencli was reverified on Nomad through its HTTP API:
+HTTP 200, big-pickle, answer "September 20, 2026." Same key as the passing local
+CLI command. Job zencli-original-sanity-1789946002. Preserve original zencli and
+use it as the sanity-check control. Full receipt: docs/zencli-sanity-check.md;
+machine-readable evidence: docs/zencli-sanity-check.json. The historical receipt
+below remains intact; neither receipt claims the new Keeper API is deployed.
+
 Job: zencli-validate (batch, version 2) · alloc: fae21928
 Node: ovh-nomad-fresh (linux/amd64) · memory: 1024MB · status: complete
 Image: registry.pkubelka.cz/zencli:main-1

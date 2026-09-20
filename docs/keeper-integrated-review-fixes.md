@@ -1,5 +1,10 @@
 # Integrated review corrections
 
+**Later baseline receipt:** [original zencli works on Nomad](zencli-sanity-check.md)
+through its unchanged HTTP wrapper (HTTP 200, `big-pickle`). Preserve it as the
+control when integrating these changes. The local/security checks below do not
+establish that the modified CLI configuration reproduces that working behavior.
+
 Review base: `d751be8` (2026-09-20). These corrections follow the independent
 spec and security reviews; they are not a live deployment receipt.
 

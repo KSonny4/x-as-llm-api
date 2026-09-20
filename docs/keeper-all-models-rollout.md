@@ -4,6 +4,17 @@ This is deployment preparation, not a deployment receipt. The worker neither
 pushes images nor changes cluster state or secrets. Latest approved service API
 amendment: `docs/plans/2026-09-20-keeper-service-amendment.md`.
 
+## Required control before changing CLI integration
+
+**Original zencli has a successful Nomad HTTP sanity check:** unchanged `main-1`,
+`big-pickle`, HTTP **200**, answer `September 20, 2026.` The exact key also passed
+the local CLI command. Preserve the original source/image and compare candidate
+behavior against [this receipt and reproduction](zencli-sanity-check.md).
+
+A direct Zen HTTP failure, a changed custom agent, or normal CLI stderr status
+cannot invalidate that control. The successful control is not the modified
+candidate and is not proof of public Keeper rollout. Keep these gates distinct.
+
 ## Verified infrastructure facts supplied by parent
 
 - Live node: `ovh-nomad-fresh` (`d9619812-d1da-b474-2723-ffca768fb5be`).

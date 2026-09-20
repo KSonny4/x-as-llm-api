@@ -1,5 +1,23 @@
 # Keeper private OVH staging — 2026-09-20
 
+## Later successful control: original zencli works on Nomad
+
+The unchanged original `main-1` HTTP wrapper was subsequently tested on Nomad
+with the same stored key as the successful local CLI command. It returned
+**HTTP 200**, model `big-pickle`, answer **`September 20, 2026.`**
+Job: `zencli-original-sanity-1789946002`; allocation:
+`4c670783-351f-45d6-8846-9c551112c66f`.
+
+**Preserve original zencli and use this as the sanity-check baseline.** Read
+[the exact receipt and control configuration](zencli-sanity-check.md). There was
+no custom agent, tool/permission override, or forced step limit. Original source
+and production were unchanged; the temporary control was stopped afterward.
+
+The failed candidate observations below are historical results from a different
+configuration, not evidence that original zencli does not work on Nomad.
+
+## Earlier candidate status
+
 **Not deployed to the public endpoint.** Production remains job version 11,
 `main-keyqueue10`. The new inference principal/`keeper-coder` are not yet verified
 or operational at `https://keeper.pkubelka.cz/v1`.
@@ -53,9 +71,11 @@ A successful Nomad plan alone does **not** validate every Docker-driver option.
 
 An [OpenCode collaborator's statement](https://github.com/anomalyco/opencode/issues/49580#issuecomment-5723289721)
 says free-tier abuse checks were tightened and very custom configurations can
-be misclassified. Do not spoof client identity, enable paid fallback, or relax
-the deny-all sandbox to get a green result. Provider approval/compatibility or
-an actually available approved free API route is still needed.
+be misclassified. This is context, not an established diagnosis. The later
+original-wrapper control above passed: lack of a working original CLI path is
+not the current finding. Compare the integration against that preserved control;
+do not spoof client identity, enable paid fallback, or silently weaken production
+security. The candidate/control difference still requires isolation.
 
 Live diagnosis also found that the bridge mapped a structured CLI denial to
 HTTP 502, unnecessarily making it retryable. The follow-up source fix preserves
