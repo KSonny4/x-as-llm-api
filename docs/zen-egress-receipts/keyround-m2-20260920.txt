@@ -1,0 +1,5 @@
+# keyround M2 receipts 2026-09-20 (names only, no values)
+dispatch-1789917792 RETIRED_1:
+{"key_name": "OPENCODE_ZEN_RETIRED_1", "model": "big-pickle", "zencli": {"ok": true, "text": "KEYROUND-ALIVE"}, "opencode": null, "mismatch": false, "working": true, "retry_hint_secs": null, "checked_at": "2026-09-20T15:23:20Z"}
+dispatch-1789918099 SPARE:
+{"key_name": "OPENCODE_ZEN_API_KEY", "model": "big-pickle", "zencli": {"ok": true, "text": "KEYROUND-ALIVE"}, "opencode": null, "mismatch": false, "working": true, "retry_hint_secs": null, "checked_at": "2026-09-20T15:28:28Z"}
