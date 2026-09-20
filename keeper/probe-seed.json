@@ -1,0 +1,38 @@
+{
+ "zen/retired-1": {
+  "provider": "opencode-zen",
+  "model": "big-pickle",
+  "state": "ok",
+  "detail": {
+   "l1": "heartbeat",
+   "l2": "not-run",
+   "source": "keyround",
+   "key_name": "OPENCODE_ZEN_RETIRED_1",
+   "mismatch": false,
+   "zencli": {
+    "ok": true,
+    "text": "KEYROUND-ALIVE"
+   },
+   "opencode": null
+  },
+  "checked_at": "2026-09-20T15:23:20Z"
+ },
+ "zen/big-pickle-spare": {
+  "provider": "opencode-zen",
+  "model": "big-pickle",
+  "state": "ok",
+  "detail": {
+   "l1": "heartbeat",
+   "l2": "not-run",
+   "source": "keyround",
+   "key_name": "OPENCODE_ZEN_API_KEY",
+   "mismatch": false,
+   "zencli": {
+    "ok": true,
+    "text": "KEYROUND-ALIVE"
+   },
+   "opencode": null
+  },
+  "checked_at": "2026-09-20T15:28:28Z"
+ }
+}

@@ -1191,6 +1191,7 @@ def ingest_probe(state, doc):
         each = connection_id(route)
         state["probe_detail"][each] = record
         state["probe"][each] = doc["state"]
+        probe_db_save(each, record)
     state["matrix_cache"] = None
     return True, ""
 
@@ -1403,12 +1404,96 @@ class H(BaseHTTPRequestHandler):
         self._send(code, body, headers)
 
 
+def probe_db_path():
+    # Empty (tests, dev) = persistence disabled; production sets
+    # PROBE_DB=${NOMAD_ALLOC_DIR}/probe.db (survives task restarts,
+    # dies with the alloc — deploys fall back to probe-seed.json).
+    return os.environ.get("PROBE_DB", "")
+
+
+def probe_db_save(cid, record):
+    """Upsert one probe_detail record; never raises (probe path must
+    not break on a sick disk)."""
+    if not probe_db_path():
+        return
+    try:
+        import sqlite3
+        con = sqlite3.connect(probe_db_path())
+        try:
+            con.execute("CREATE TABLE IF NOT EXISTS probe_detail "
+                        "(cid TEXT PRIMARY KEY, record TEXT NOT NULL)")
+            con.execute("INSERT OR REPLACE INTO probe_detail VALUES "
+                        "(?, ?)", (cid, json.dumps(record)))
+            con.commit()
+        finally:
+            con.close()
+    except Exception:
+        pass
+
+
+def probe_db_load():
+    """All stored records; {} when the db is missing/empty/broken."""
+    try:
+        import sqlite3
+        if not os.path.exists(probe_db_path()):
+            return {}
+        con = sqlite3.connect(probe_db_path())
+        try:
+            rows = con.execute(
+                "SELECT cid, record FROM probe_detail").fetchall()
+        finally:
+            con.close()
+        out = {}
+        for cid, raw in rows:
+            try:
+                doc = json.loads(raw)
+            except ValueError:
+                continue
+            if isinstance(doc, dict):
+                out[cid] = doc
+        return out
+    except Exception:
+        return {}
+
+
+def load_probe_seed():
+    """Boot baseline from baked probe-seed.json (heartbeat verdicts).
+    {} when missing — keeper just starts unknown like before."""
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(here, "probe-seed.json"),
+                  encoding="utf-8") as fh:
+            doc = json.load(fh)
+        if isinstance(doc, dict):
+            return {k: v for k, v in doc.items()
+                    if isinstance(v, dict)}
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
+def hydrate_probe_state(state):
+    """Boot: seed baseline first, sqlite overlay (fresher, same-alloc
+    restarts) wins. Mirrors ingest_probe's twin maps."""
+    merged = dict(load_probe_seed())
+    merged.update(probe_db_load())
+    for cid, record in merged.items():
+        state["probe_detail"][cid] = record
+        if isinstance(record.get("state"), str):
+            state["probe"][cid] = record["state"]
+    if merged:
+        state["matrix_cache"] = None
+    return len(merged)
+
+
 def main():
     token = require_token(os.environ.get("KEEPER_TOKEN", ""))
     H.token = token
     H.token_next = os.environ.get("KEEPER_TOKEN_NEXT", "")
     H.state = make_state(token, load_seed(os.environ.get("SEED_FILE", "")))
-    print("keeper v2 on 0.0.0.0:%d" % PORT, flush=True)
+    n = hydrate_probe_state(H.state)
+    print("keeper v2 on 0.0.0.0:%d probe_hydrated=%d" % (PORT, n),
+          flush=True)
     HTTPServer(("0.0.0.0", PORT), H).serve_forever()
 
 

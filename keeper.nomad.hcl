@@ -109,6 +109,7 @@ job "keeper" {
         KEEPER_TOKEN_NEXT = var.keeper_token_next
         ARTIFICIALANALYSIS_API_KEY = var.aa_api_key
         SEED_FILE         = "${NOMAD_SECRETS_DIR}/seeds.json"
+        PROBE_DB          = "${NOMAD_ALLOC_DIR}/probe.db"
       }
 
       template {

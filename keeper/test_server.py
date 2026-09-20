@@ -942,5 +942,71 @@ class TupleMatrixTest(RouteCase):
 
 
 
+
+
+class ProbePersistTest(unittest.TestCase):
+    def blank(self):
+        return {"probe_detail": {}, "probe": {}, "matrix_cache": "x"}
+
+    def test_hydrate_empty_without_files(self):
+        old = os.environ.get("PROBE_DB")
+        os.environ["PROBE_DB"] = os.path.join(
+            tempfile.mkdtemp(), "nope.db")
+        try:
+            # no probe-seed.json next to server in test checkout... if the
+            # repo file exists it hydrates; either way it must not raise
+            n = server.hydrate_probe_state(self.blank())
+            self.assertIsInstance(n, int)
+        finally:
+            if old is None:
+                del os.environ["PROBE_DB"]
+            else:
+                os.environ["PROBE_DB"] = old
+
+    def test_sqlite_roundtrip_and_overlay(self):
+        tmp = os.path.join(tempfile.mkdtemp(), "p.db")
+        old = os.environ.get("PROBE_DB")
+        os.environ["PROBE_DB"] = tmp
+        try:
+            server.probe_db_save("zen/x",
+                                 {"state": "ok", "checked_at": "t"})
+            self.assertEqual(server.probe_db_load()["zen/x"]["state"],
+                             "ok")
+            st = self.blank()
+            n = server.hydrate_probe_state(st)
+            self.assertGreaterEqual(n, 1)
+            self.assertEqual(st["probe_detail"]["zen/x"]["state"], "ok")
+            self.assertEqual(st["probe"]["zen/x"], "ok")
+            self.assertIsNone(st["matrix_cache"])
+        finally:
+            if old is None:
+                del os.environ["PROBE_DB"]
+            else:
+                os.environ["PROBE_DB"] = old
+
+    def test_ingest_persists_when_db_set(self):
+        tmp = os.path.join(tempfile.mkdtemp(), "p.db")
+        old = os.environ.get("PROBE_DB")
+        os.environ["PROBE_DB"] = tmp
+        try:
+            st = server.make_state("tok", {"routes": []})
+            st["routes"] = [
+                {"provider": "opencode-zen", "model": "big-pickle",
+                 "connection_id": "zen/retired-1"}]
+            ok, err = server.ingest_probe(st, {
+                "provider": "opencode-zen", "model": "big-pickle",
+                "state": "ok", "detail": {"l1": "heartbeat"},
+                "connection_id": "zen/retired-1",
+                "checked_at": "2026-09-20T15:23:20Z"})
+            self.assertTrue(ok, err)
+            self.assertEqual(
+                server.probe_db_load()["zen/retired-1"]["state"], "ok")
+        finally:
+            if old is None:
+                del os.environ["PROBE_DB"]
+            else:
+                os.environ["PROBE_DB"] = old
+
+
 if __name__ == "__main__":
     unittest.main()
