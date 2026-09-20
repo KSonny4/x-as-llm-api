@@ -1,19 +1,22 @@
 {
- "generated_at": "2026-09-20T15:31:34Z",
+ "generated_at": "2026-09-20T16:17:21Z",
  "keys": [
   {
    "name": "OPENCODE_ZEN_API_KEY",
-   "state": "ok",
+   "state": "dead",
    "zencli": {
-    "ok": true,
-    "text": "KEYROUND-ALIVE"
+    "ok": false,
+    "text": "zencli upstream: HTTP Error 502: Bad Gateway"
    },
-   "opencode": null,
+   "opencode": {
+    "ok": false,
+    "text": "exec-fail: Command '['/root/.opencode/bin/opencode', 'run', '--pure', '-m', 'opencode/big-pickle', 'Reply with exactly: KEYROUND-ALIVE']' timed out after 120 seconds"
+   },
    "mismatch": false,
    "retry_hint_secs": null,
-   "checked_at": "2026-09-20T15:28:28Z",
-   "consecutive_dead": 0,
-   "next_test": "2026-09-20T16:28:28Z"
+   "checked_at": "2026-09-20T16:16:36Z",
+   "consecutive_dead": 1,
+   "next_test": "2026-09-20T18:16:36Z"
   },
   {
    "name": "OPENCODE_ZEN_API_KEY_PETR",
@@ -36,9 +39,9 @@
    "opencode": null,
    "mismatch": false,
    "retry_hint_secs": null,
-   "checked_at": "2026-09-20T15:23:20Z",
+   "checked_at": "2026-09-20T16:11:20Z",
    "consecutive_dead": 0,
-   "next_test": "2026-09-20T16:23:20Z"
+   "next_test": "2026-09-20T17:11:20Z"
   },
   {
    "name": "OPENCODE_ZEN_RETIRED_2",

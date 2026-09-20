@@ -15,24 +15,27 @@
    },
    "opencode": null
   },
-  "checked_at": "2026-09-20T15:23:20Z"
+  "checked_at": "2026-09-20T16:11:20Z"
  },
  "zen/big-pickle-spare": {
   "provider": "opencode-zen",
   "model": "big-pickle",
-  "state": "ok",
+  "state": "down",
   "detail": {
-   "l1": "heartbeat",
+   "l1": "heartbeat-fail",
    "l2": "not-run",
    "source": "keyround",
    "key_name": "OPENCODE_ZEN_API_KEY",
    "mismatch": false,
    "zencli": {
-    "ok": true,
-    "text": "KEYROUND-ALIVE"
+    "ok": false,
+    "text": "zencli upstream: HTTP Error 502: Bad Gateway"
    },
-   "opencode": null
+   "opencode": {
+    "ok": false,
+    "text": "exec-fail: Command '['/root/.opencode/bin/opencode', 'run', '--pure', '-m', 'opencode/big-pickle', 'Reply with exactly: KEYROUND-ALIVE']' timed out after 120 seconds"
+   }
   },
-  "checked_at": "2026-09-20T15:28:28Z"
+  "checked_at": "2026-09-20T16:16:36Z"
  }
 }
