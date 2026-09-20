@@ -63,6 +63,28 @@ variable "seeds_json" {
   default = "{\"routes\": []}"
 }
 
+# Parent verified driver.docker.volumes.enabled=true on ovh-nomad-fresh.
+# Provision this dedicated bind directory before rollout; not allocation-local.
+variable "keeper_data_path" {
+  type    = string
+  default = "/opt/nomad-volumes/keeper"
+}
+
+# Required immutable reviewed image; do not accidentally deploy the old image.
+variable "keeper_image" {
+  type = string
+}
+
+variable "public_origin" {
+  type    = string
+  default = "https://keeper.pkubelka.cz"
+}
+
+# Manually issued non-expiring inference-only principal, NEVER admin authority.
+variable "keeper_service_token" {
+  type = string
+}
+
 job "keeper" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -82,19 +104,20 @@ job "keeper" {
     }
 
     update {
-      max_parallel     = 1
-      health_check     = "checks"
-      min_healthy_time = "10s"
-      healthy_deadline = "5m"
+      max_parallel      = 1
+      health_check      = "checks"
+      min_healthy_time  = "10s"
+      healthy_deadline  = "5m"
       progress_deadline = "10m"
-      auto_revert      = false
-      canary           = 0
+      auto_revert       = false
+      canary            = 0
     }
 
     task "server" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/keeper:main-keyqueue10"
+        image      = var.keeper_image
+        volumes    = ["${var.keeper_data_path}:/var/lib/keeper"]
         ports      = ["http"]
         force_pull = true
         auth {
@@ -104,12 +127,17 @@ job "keeper" {
       }
 
       env {
-        PORT              = "8080"
-        KEEPER_TOKEN      = var.keeper_token
-        KEEPER_TOKEN_NEXT = var.keeper_token_next
+        PORT                       = "8080"
+        KEEPER_TOKEN               = var.keeper_token
+        KEEPER_TOKEN_NEXT          = var.keeper_token_next
         ARTIFICIALANALYSIS_API_KEY = var.aa_api_key
-        SEED_FILE         = "${NOMAD_SECRETS_DIR}/seeds.json"
-        PROBE_DB          = "${NOMAD_ALLOC_DIR}/probe.db"
+        SEED_FILE                  = "${NOMAD_SECRETS_DIR}/seeds.json"
+        PROBE_DB                   = "/var/lib/keeper/probe.db"
+        AVAILABILITY_DB            = "/var/lib/keeper/availability.db"
+        AA_CACHE                   = "/var/lib/keeper/aa-coding.json"
+        FEEDBACK_LOG               = "/var/lib/keeper/legacy-feedback.jsonl"
+        PUBLIC_ORIGIN              = var.public_origin
+        KEEPER_SERVICE_TOKEN       = var.keeper_service_token
       }
 
       template {
