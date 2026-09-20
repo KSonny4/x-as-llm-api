@@ -329,5 +329,94 @@ class PublishTest(unittest.TestCase):
         self.assertNotIn("sekret", json.dumps(doc).replace(
             "sekret-tok", ""))
 
+
+class EligibilityTest(unittest.TestCase):
+    QUEUE = {"generated_at": "2026-09-20T16:00:00Z", "keys": [
+        {"name": "A", "state": "ok", "next_test": "2026-09-20T15:00:00Z"},
+        {"name": "B", "state": "dead", "next_test": "2026-09-20T20:00:00Z"},
+        {"name": "C", "state": "testing", "next_test": None}]}
+
+    def serve_queue(self, doc, port_holder):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_GET(self):
+                raw = json.dumps(doc).encode()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+        srv = HTTPServer(("127.0.0.1", 0), H)
+        port_holder.append(srv.server_address[1])
+        th = threading.Thread(target=srv.serve_forever, daemon=True)
+        th.start()
+        return srv
+
+    def _env(self, **kw):
+        old = dict(os.environ)
+        for k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+            os.environ.pop(k, None)
+        os.environ.update(kw)
+        return old
+
+    def _restore(self, old):
+        for k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+            os.environ.pop(k, None)
+        for k, v in old.items():
+            if k in ("KEYROUND_KEEPER_TOKEN", "KEYROUND_KEEPER_URL"):
+                os.environ[k] = v
+
+    def test_due_and_skip(self):
+        ports = []
+        srv = self.serve_queue(self.QUEUE, ports)
+        old = self._env(KEYROUND_KEEPER_TOKEN="t",
+                        KEYROUND_KEEPER_URL="http://127.0.0.1:%d"
+                        % ports[0])
+        try:
+            # A due (past next_test); B backed off; C mid-round.
+            self.assertEqual(keyround.eligible_names(), ["A"])
+        finally:
+            self._restore(old)
+            srv.shutdown()
+
+    def test_fallback_on_unreachable(self):
+        old = self._env(KEYROUND_KEEPER_TOKEN="t",
+                        KEYROUND_KEEPER_URL="http://127.0.0.1:1")
+        try:
+            self.assertIsNone(keyround.eligible_names())
+        finally:
+            self._restore(old)
+
+    def test_no_token_no_fetch(self):
+        old = self._env()
+        try:
+            self.assertIsNone(keyround.eligible_names())
+        finally:
+            self._restore(old)
+
+    def test_nothing_due_idles_clean(self):
+        ports = []
+        q = {"generated_at": "x", "keys": [
+            {"name": "A", "state": "dead",
+             "next_test": "2999-01-01T00:00:00Z"}]}
+        srv = self.serve_queue(q, ports)
+        old = self._env(KEYROUND_KEEPER_TOKEN="t",
+                        KEYROUND_KEEPER_URL="http://127.0.0.1:%d"
+                        % ports[0],
+                        KEYS_JSON='[{"name": "A", "value": "v",'
+                                  ' "conn": "zen/a"}]')
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                keyround.pick_key()
+            self.assertEqual(cm.exception.code, 0)
+        finally:
+            self._restore(old)
+            for k in ("KEYS_JSON",):
+                os.environ.pop(k, None)
+            srv.shutdown()
+
 if __name__ == "__main__":
     unittest.main()

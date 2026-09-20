@@ -124,10 +124,24 @@ def connection_id(route):
 
 
 def find_route(state, model):
-    for route in state["routes"]:
-        if route.get("model") == model:
-            return route
-    return None
+    """First route for a model, proven-healthy connections first.
+    Health (live probe state) outranks seed order: ok beats
+    pending/unknown beats dead — a dead key never shadows a proven one
+    just because it was seeded earlier."""
+    cands = [r for r in state["routes"] if r.get("model") == model]
+    if not cands:
+        return None
+    probe = state.get("probe") or {}
+    rank = {"ok": 0, "limited": 1, "misconfigured": 1,
+            "suspect": 2, "unknown": 3}
+
+    def sort_key(pair):
+        i, r = pair
+        # Unprobed sorts with unknown (3); down (or anything
+        # unexpected) sinks last at 4.
+        return (rank.get(probe.get(connection_id(r), "unknown"), 4), i)
+
+    return sorted(enumerate(cands), key=sort_key)[0][1]
 
 
 def pack_path(provider, model):
@@ -508,14 +522,14 @@ def metrics_view(state):
         "# HELP keeper_keyqueue_generated_at_seconds Unix time the pool ledger was rendered.",
         "# TYPE keeper_keyqueue_generated_at_seconds gauge",
     ]
-    for k in keyqueue_view().get("keys", []):
+    for k in keyqueue_view(state).get("keys", []):
         name = prom_esc(k.get("name", ""))
         lines.append('keeper_keyqueue_mismatch{key="%s"} %d'
                      % (name, 1 if k.get("mismatch") else 0))
         for s in ("pending", "testing", "ok", "dead"):
             lines.append('keeper_keyqueue_state{key="%s",state="%s"} %d'
                          % (name, s, 1 if k.get("state") == s else 0))
-    gen = keyqueue_view().get("generated_at")
+    gen = keyqueue_view(state).get("generated_at")
     ts = probe_epoch(gen or "")
     if ts is not None:
         lines.append("keeper_keyqueue_generated_at_seconds %d" % ts)
@@ -623,16 +637,61 @@ def keyqueue_path():
     return os.path.join(here, "keyqueue.json")
 
 
-def keyqueue_view():
-    """Pool ledger for GET /api/v1/key-queue (names only, never keys)."""
+def keyqueue_view(state=None):
+    """Pool ledger for GET /api/v1/key-queue (names only, never keys).
+    Baked keyqueue.json overlaid with live ingested rounds (detail.source
+    == keyround): POSTing a round immediately moves the queue AND the
+    mismatch metric (both read this view, never the file directly)."""
     try:
         with open(keyqueue_path(), encoding="utf-8") as fh:
             doc = json.load(fh)
-        if isinstance(doc, dict) and isinstance(doc.get("keys"), list):
-            return doc
+        if not (isinstance(doc, dict)
+                and isinstance(doc.get("keys"), list)):
+            doc = {"generated_at": None, "keys": []}
     except (OSError, ValueError):
-        pass
-    return {"generated_at": None, "keys": []}
+        doc = {"generated_at": None, "keys": []}
+    if state is not None:
+        doc = overlay_keyqueue_live(doc, state.get("probe_detail") or {})
+    return doc
+
+
+def overlay_keyqueue_live(doc, probe_detail):
+    """Fold live heartbeat records into a ledger copy. Newer live
+    verdicts replace baked fields; dead streak extends, recovery resets."""
+    import copy
+    from datetime import datetime, timedelta, timezone
+    doc = copy.deepcopy(doc)
+    by_name = {k.get("name"): k for k in doc.get("keys", [])}
+    for _cid, rec in probe_detail.items():
+        det = rec.get("detail") or {}
+        if det.get("source") != "keyround":
+            continue
+        name = det.get("key_name")
+        entry = by_name.get(name)
+        if entry is None:
+            continue
+        live_ts = rec.get("checked_at", "")
+        if live_ts <= (entry.get("checked_at") or ""):
+            continue
+        down = rec.get("state") == "down"
+        dead = (entry.get("consecutive_dead", 0) + 1) if down else 0
+        try:
+            base = datetime.strptime(live_ts, "%Y-%m-%dT%H:%M:%SZ")
+            base = base.replace(tzinfo=timezone.utc)
+            gap = min(2 ** dead, 24) if dead else 1
+            nxt = (base + timedelta(hours=gap)).strftime(
+                "%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError, TypeError):
+            nxt = entry.get("next_test")
+        entry.update({
+            "state": "dead" if down else "ok",
+            "zencli": det.get("zencli"),
+            "opencode": det.get("opencode"),
+            "mismatch": bool(det.get("mismatch")),
+            "retry_hint_secs": det.get("retry_hint_secs"),
+            "checked_at": live_ts, "consecutive_dead": dead,
+            "next_test": nxt})
+    return doc
 
 
 def keyqueue_items(doc):
@@ -1008,12 +1067,13 @@ def page_index(state):
                ",".join(html.escape(c) for c in col_ids),
                "".join(prov_head), "".join(mod_head),
                "".join(rows), unassigned or "<li>none</li>",
-               "".join(perkey_secs), page_queue_section(), keymap_js))
+               "".join(perkey_secs), page_queue_section(state),
+               keymap_js))
 
 
-def page_queue_section():
+def page_queue_section(state):
     """Standalone key-queue fragment (page section content)."""
-    return keyqueue_items(keyqueue_view())
+    return keyqueue_items(keyqueue_view(state))
 
 
 def _zen_keymap(state):
@@ -1346,7 +1406,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
 
     if method == "GET" and clean_path == "/api/v1/key-queue":
         # Pool heartbeat ledger (key names + verdicts, never values).
-        return json_resp(200, keyqueue_view())
+        return json_resp(200, keyqueue_view(state))
 
     if method == "GET" and clean_path == "/api/v1/detail":
         # Stored probe evidence for one connection (bearer-gated like

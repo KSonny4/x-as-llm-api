@@ -1008,5 +1008,94 @@ class ProbePersistTest(unittest.TestCase):
                 os.environ["PROBE_DB"] = old
 
 
+
+class KeyqueueLiveTest(unittest.TestCase):
+    BAKED = {"generated_at": "2026-09-20T15:00:00Z", "keys": [
+        {"name": "K1", "state": "dead", "zencli": {"ok": False},
+         "opencode": None, "mismatch": False, "retry_hint_secs": None,
+         "checked_at": "2026-09-20T14:00:00Z", "consecutive_dead": 2,
+         "next_test": "2026-09-20T18:00:00Z"},
+        {"name": "K2", "state": "pending", "zencli": None,
+         "opencode": None, "mismatch": False, "retry_hint_secs": None,
+         "checked_at": None, "consecutive_dead": 0, "next_test": None}]}
+
+    def rec(self, key, state, ts, mismatch=False):
+        return {"provider": "opencode-zen", "model": "big-pickle",
+                "state": state,
+                "detail": {"l1": "heartbeat", "l2": "not-run",
+                           "source": "keyround", "key_name": key,
+                           "mismatch": mismatch,
+                           "zencli": {"ok": state == "ok"},
+                           "opencode": None},
+                "checked_at": ts}
+
+    def test_live_newer_wins_and_resets_streak(self):
+        out = server.overlay_keyqueue_live(
+            self.BAKED, {"zen/1": self.rec("K1", "ok",
+                                           "2026-09-20T16:00:00Z")})
+        k1 = [k for k in out["keys"] if k["name"] == "K1"][0]
+        self.assertEqual(k1["state"], "ok")
+        self.assertEqual(k1["consecutive_dead"], 0)
+        self.assertEqual(k1["next_test"], "2026-09-20T17:00:00Z")
+        self.assertTrue(k1["zencli"]["ok"])
+
+    def test_live_down_extends_streak(self):
+        out = server.overlay_keyqueue_live(
+            self.BAKED, {"zen/1": self.rec("K1", "down",
+                                           "2026-09-20T16:30:00Z")})
+        k1 = [k for k in out["keys"] if k["name"] == "K1"][0]
+        self.assertEqual(k1["state"], "dead")
+        self.assertEqual(k1["consecutive_dead"], 3)
+        self.assertEqual(k1["next_test"], "2026-09-21T00:30:00Z")
+
+    def test_stale_live_and_non_keyround_ignored(self):
+        out = server.overlay_keyqueue_live(self.BAKED, {
+            "zen/1": self.rec("K1", "ok", "2026-09-20T13:00:00Z"),
+            "zen/9": {"provider": "x", "model": "y", "state": "ok",
+                      "detail": {"l1": "ok"}, "checked_at": "t"}})
+        k1 = [k for k in out["keys"] if k["name"] == "K1"][0]
+        self.assertEqual(k1["state"], "dead")  # baked stands
+        self.assertEqual(len(out["keys"]), 2)  # no phantom keys
+
+    def test_mismatch_visible_in_overlay(self):
+        out = server.overlay_keyqueue_live(
+            self.BAKED, {"zen/2": self.rec("K2", "down",
+                                           "2026-09-20T16:00:00Z",
+                                           mismatch=True)})
+        k2 = [k for k in out["keys"] if k["name"] == "K2"][0]
+        self.assertTrue(k2["mismatch"])
+        self.assertEqual(k2["state"], "dead")
+
+
+class FindRouteHealthTest(unittest.TestCase):
+    def state(self, cids, probe):
+        st = server.make_state("tok", {"routes": [
+            {"provider": "p", "model": "m", "connection_id": c}
+            for c in cids]})
+        st["probe"] = dict(probe)
+        return st
+
+    def test_dead_first_seed_still_resolves_proven(self):
+        st = self.state(["zen/dead", "zen/proven"],
+                        {"zen/dead": "down", "zen/proven": "ok"})
+        self.assertEqual(server.find_route(st, "m")["connection_id"],
+                         "zen/proven")
+
+    def test_unknown_beats_down(self):
+        st = self.state(["zen/dead", "zen/new"],
+                        {"zen/dead": "down"})
+        self.assertEqual(server.find_route(st, "m")["connection_id"],
+                         "zen/new")
+
+    def test_seed_order_tiebreak(self):
+        st = self.state(["zen/a", "zen/b"], {})
+        self.assertEqual(server.find_route(st, "m")["connection_id"],
+                         "zen/a")
+
+    def test_no_match_none(self):
+        st = self.state(["zen/a"], {})
+        self.assertIsNone(server.find_route(st, "other"))
+
+
 if __name__ == "__main__":
     unittest.main()

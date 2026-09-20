@@ -41,6 +41,36 @@ def key_value():
     return v
 
 
+def eligible_names():
+    """Keys due for testing per the live keeper queue (None = queue
+    unreachable: fall back to the full pool, never to nothing)."""
+    token = (os.environ.get("KEYROUND_KEEPER_TOKEN") or "").strip()
+    if not token:
+        return None
+    base = (os.environ.get("KEYROUND_KEEPER_URL",
+                            "https://keeper.pkubelka.cz")).rstrip("/")
+    req = urllib.request.Request(
+        base + "/api/v1/key-queue",
+        headers={"User-Agent": "keeper-keyround/1.0",
+                 "Authorization": "Bearer " + token})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            doc = json.loads(res.read().decode("utf-8", "replace"))
+    except Exception as e:
+        sys.stderr.write("keyround eligibility fetch failed: %s\n" % e)
+        return None
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    out = []
+    for k in doc.get("keys", []):
+        if k.get("state") == "testing":
+            continue
+        nxt = k.get("next_test")
+        if nxt and nxt > now:
+            continue
+        out.append(k.get("name"))
+    return out
+
+
 def pick_key():
     """Returns (name, value, conn). Explicit KEYROUND_KEY wins (manual
 dispatch); else random pool pick (healthy-pool sampling; pool curation
@@ -66,6 +96,12 @@ which sees verdict history; the task stays stateless)."""
     entries = json.loads(raw)
     if not entries:
         fail("empty key pool")
+    due = eligible_names()
+    if due is not None:
+        entries = [e for e in entries if e.get("name") in set(due)]
+        if not entries:
+            sys.stderr.write("keyround: nothing due, pool idle\n")
+            raise SystemExit(0)
     e = _random.SystemRandom().choice(entries)
     return e.get("name", ""), e.get("value", ""), e.get("conn", "")
 
@@ -223,7 +259,9 @@ token; never fails the round (stdout verdict is the record)."""
             "l2": l2, "source": "keyround",
             "key_name": verdict.get("key_name"),
             "mismatch": bool(verdict.get("mismatch")),
-            "retry_hint_secs": verdict.get("retry_hint_secs")},
+            "retry_hint_secs": verdict.get("retry_hint_secs"),
+            "zencli": verdict.get("zencli"),
+            "opencode": verdict.get("opencode")},
         "connection_id": conn,
         "checked_at": verdict.get("checked_at", "")}).encode()
     req = urllib.request.Request(
