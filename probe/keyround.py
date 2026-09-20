@@ -196,7 +196,8 @@ def run_round(key_name, value, home, server_cmd, cli_bin):
 
 
 def main(argv):
-    jitter_sleep()
+    if not (os.environ.get("KEYROUND_KEY") or "").strip():
+        jitter_sleep()  # pool mode only: manual pins run immediately
     name, value = pick_key()
     if not value or not str(value).strip() or str(value).strip() == "{}":
         fail("picked key %s has no usable value" % name)

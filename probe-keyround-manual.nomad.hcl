@@ -39,7 +39,7 @@ job "keyround-manual" {
     task "keyround" {
       driver = "docker"
       config {
-        image      = "registry.pkubelka.cz/zencli:main-5"
+        image      = "registry.pkubelka.cz/zencli:main-6"
         force_pull = true
         auth {
           username = var.dr_user
