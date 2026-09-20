@@ -97,10 +97,55 @@ def build_ledger(verdicts, testing=(), now=None):
             "keys": keys}
 
 
+def live_queue(base, token):
+    """Merged queue view from a live keeper (names+verdicts, no values).
+    Lets renders capture auto-published rounds that never touched a
+    receipt file (field gap 2026-09-20: pool-3's ok died with an alloc)."""
+    import urllib.request
+    req = urllib.request.Request(
+        base.rstrip("/") + "/api/v1/key-queue",
+        headers={"User-Agent": "keeper-keyround/1.0",
+                 "Authorization": "Bearer " + token})
+    with urllib.request.urlopen(req, timeout=30) as res:
+        doc = json.load(res)
+    if not (isinstance(doc, dict) and isinstance(doc.get("keys"), list)):
+        raise ValueError("bad live queue shape")
+    return doc
+
+
+def live_verdicts(doc):
+    """Live queue entries back into verdict-shaped dicts for build_ledger
+    (history merge: live lines behave like the newest receipt lines)."""
+    out = []
+    for k in doc.get("keys", []):
+        if not k.get("checked_at"):
+            continue
+        out.append({
+            "key_name": k.get("name"), "model": "big-pickle",
+            "models": k.get("models"),
+            "models_ok": k.get("models_ok"),
+            "models_total": k.get("models_total"),
+            "zencli": k.get("zencli"), "opencode": k.get("opencode"),
+            "mismatch": bool(k.get("mismatch")),
+            "working": k.get("state") == "ok",
+            "retry_hint_secs": k.get("retry_hint_secs"),
+            "checked_at": k.get("checked_at")})
+    return out
+
+
 def main(argv):
     root = argv[1] if len(argv) > 1 else "."
-    testing = argv[2:]
-    ledger = build_ledger(load_verdicts(root), testing)
+    testing = [a for a in argv[2:] if not a.startswith("--")]
+    live = [a.split("=", 1)[1] for a in argv[2:]
+            if a.startswith("--live=")]
+    verdicts = load_verdicts(root)
+    if live:
+        token = os.environ.get("KEEPER_TOKEN", "")
+        if not token:
+            print("live requested without KEEPER_TOKEN env")
+            return 2
+        verdicts = verdicts + live_verdicts(live_queue(live[0], token))
+    ledger = build_ledger(verdicts, testing)
     out = os.path.join(root, "keeper", "keyqueue.json")
     with open(out, "w") as fh:
         json.dump(ledger, fh, indent=1)

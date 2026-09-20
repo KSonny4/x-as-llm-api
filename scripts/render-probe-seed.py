@@ -67,7 +67,25 @@ def build_seed(verdicts):
 
 def main(argv):
     root = argv[1] if len(argv) > 1 else "."
-    seed = build_seed(load_verdicts(root))
+    live = [a.split("=", 1)[1] for a in argv[2:]
+            if a.startswith("--live=")]
+    verdicts = load_verdicts(root)
+    if live:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location(
+            "render_keyqueue",
+            os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "render-keyqueue.py"))
+        _rk = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_rk)
+        token = os.environ.get("KEEPER_TOKEN", "")
+        if not token:
+            print("live requested without KEEPER_TOKEN env")
+            return 2
+        verdicts = verdicts + _rk.live_verdicts(
+            _rk.live_queue(live[0], token))
+    seed = build_seed(verdicts)
     out = os.path.join(root, "keeper", "probe-seed.json")
     with open(out, "w") as fh:
         json.dump(seed, fh, indent=1)

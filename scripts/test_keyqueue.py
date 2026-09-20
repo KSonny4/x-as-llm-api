@@ -71,6 +71,22 @@ class LedgerTest(unittest.TestCase):
              if x["name"] == "OPENCODE_ZEN_RETIRED_4"][0]
         self.assertEqual(k["state"], "testing")
 
+    def test_live_verdicts_shape(self):
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location(
+            "rk", "render-keyqueue.py")
+        rk = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(rk)
+        out = rk.live_verdicts({"keys": [
+            {"name": "A", "state": "ok", "zencli": {"ok": True},
+             "opencode": None, "mismatch": False,
+             "retry_hint_secs": None, "models_ok": 7, "models_total": 8,
+             "models": {"m": {}}, "checked_at": "2026-09-20T17:00:00Z"},
+            {"name": "B", "state": "pending", "checked_at": None}]})
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0]["working"])
+        self.assertEqual(out[0]["models_ok"], 7)
+
     def test_no_secret_values(self):
         import json
         led = build_ledger(
