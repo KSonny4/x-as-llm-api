@@ -115,6 +115,26 @@ note, not code.
 
 ## -serve mode (OpenAI-compatible HTTP in front of zen)
 
+Two backends (flag `-exec` selects):
+
+- **exec (WORKING, proven 200)**: drives the genuine `opencode run`
+  subprocess per request — the only client the gate passes. Model `"X"`
+  maps to `opencode/X`; last user message becomes the prompt; CLI
+  stdout returns as `chat.completion` JSON. Per-request temp cwd,
+  110s timeout. No `ZEN_API_KEY` needed (CLI uses its own auth).
+  Proof transcript committed as `zencli/proof-exec.json`
+  (`EXEC-PROOF`, 200, 2026-09-20). Cost: ~15-40s per request
+  (CLI startup + inference).
+- http (raw-wire mimicry): built, locally verified, vendor-GATED
+  (403) — kept as instrument/fallback, not the path.
+
+```bash
+./zencli -serve -exec -port 8099
+curl -X POST http://127.0.0.1:8099/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"big-pickle","messages":[{"role":"user","content":"hi"}]}'
+```
+
 ```bash
 ZEN_API_KEY=... ./zencli -serve -port 8099
 curl -X POST http://127.0.0.1:8099/v1/chat/completions \
