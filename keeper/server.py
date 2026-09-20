@@ -13,6 +13,7 @@ import json
 import os
 import secrets
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -33,6 +34,7 @@ KEEPER_PACK_VERSION = "v2"
 
 SESSION_COOKIE = "keeper_session"
 SESSION_TTL = 12 * 3600  # 12h browser sessions, in-memory: restart = re-login
+_SESSION_LOCK = threading.RLock()  # only short session dictionary operations
 
 # Assignable in tests to stub upstream providers (no live calls in suite).
 urlopen = urllib.request.urlopen
@@ -234,10 +236,11 @@ def _valid_session(state, raw):
     if not raw or state is None:
         return False
     now = time.time()
-    sessions = state.setdefault("sessions", {})
-    for key in [k for k, exp in sessions.items() if exp <= now]:
-        del sessions[key]
-    return sessions.get(hashlib.sha256(raw.encode()).hexdigest(), 0) > now
+    with _SESSION_LOCK:
+        sessions = state.setdefault("sessions", {})
+        for key in [k for k, exp in sessions.items() if exp <= now]:
+            sessions.pop(key, None)
+        return sessions.get(hashlib.sha256(raw.encode()).hexdigest(), 0) > now
 
 
 def _set_session_cookie(raw):
@@ -568,9 +571,11 @@ def metrics_view(state):
 
 def health_view(state):
     if "availability" in state:
+        connections = state["availability"].connections()
         return {"ok": not bool(state.get("worker_error")), "keeperPackVersion": KEEPER_PACK_VERSION,
-                "routes": {c["id"]: c["state"] for c in state["availability"].connections()},
-                "evidence": "exact_direct_api"}
+                "routes": {c["id"]: c["state"] for c in connections},
+                "route_protocols": {c["id"]: c["protocol"] for c in connections},
+                "evidence": "exact_transport" if any(c["protocol"] == "zencli" for c in connections) else "exact_direct_api"}
     return {"ok": True, "keeperPackVersion": KEEPER_PACK_VERSION,
             "routes": dict(state["probe"])}
 
@@ -663,12 +668,15 @@ def keyqueue_view(state=None):
     == keyround): POSTing a round immediately moves the queue AND the
     mismatch metric (both read this view, never the file directly)."""
     if state is not None and "availability" in state:
+        keys = state["availability"].accounts()["keys"]
+        mixed = any(c["protocol"] == "zencli" for k in keys for c in k["connections"])
         return {"generated_at": datetime.now(timezone.utc).isoformat(),
-                "evidence": "exact_direct_api", "keys": [
+                "evidence": "exact_transport" if mixed else "exact_direct_api", "keys": [
                     {"name": k["reference"], "provider": k["provider"], "owner": k["owner"],
                      "state": "ok" if k["state"] == "working" else k["state"],
                      "working_models": k["working"], "total_models": k["total"],
-                     "active": bool(k["active"])} for k in state["availability"].accounts()["keys"]]}
+                     "working_transports": sorted({c["protocol"] for c in k["connections"] if c["state"] == "working"}),
+                     "active": bool(k["active"])} for k in keys]}
     try:
         with open(keyqueue_path(), encoding="utf-8") as fh:
             doc = json.load(fh)
@@ -1405,14 +1413,16 @@ def route(method, path, headers, token, body=None, query="", state=None):
         if not accepted(auth, token):
             return 401, b"unauthorized", [("Content-Type", "text/plain")]
         raw = secrets.token_urlsafe(32)
-        state.setdefault("sessions", {})[
-            hashlib.sha256(raw.encode()).hexdigest()] = time.time() + SESSION_TTL
+        with _SESSION_LOCK:
+            state.setdefault("sessions", {})[
+                hashlib.sha256(raw.encode()).hexdigest()] = time.time() + SESSION_TTL
         return json_resp(200, {"ok": True}, [_set_session_cookie(raw)])
     if method == "POST" and clean_path == "/api/v1/session/logout":
         raw = _session_raw(headers)
         if raw:
-            state.get("sessions", {}).pop(
-                hashlib.sha256(raw.encode()).hexdigest(), None)
+            with _SESSION_LOCK:
+                state.get("sessions", {}).pop(
+                    hashlib.sha256(raw.encode()).hexdigest(), None)
         return json_resp(200, {"ok": True}, [_clear_session_cookie()])
     if clean_path.startswith("/api/v2/"):
         return api_v2.handle(state, method, clean_path, body, _session_raw(headers) if cookie_ok else "")

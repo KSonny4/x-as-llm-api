@@ -10,7 +10,7 @@ import html
 import re
 from urllib.parse import urlencode
 
-from availability import Model, identity, safe_base, seed_model, CATALOG_TTL
+from availability import Model, identity, safe_base, seed_model, CATALOG_TTL, PROTOCOLS
 from inference import request, USER_AGENT
 
 ZEN_DOC = 'https://raw.githubusercontent.com/anomalyco/opencode/dev/packages/web/src/content/docs/zen.mdx'
@@ -243,6 +243,21 @@ class CatalogDiscovery:
                     checked_at=excluded.checked_at,
                     succeeded_at=COALESCE(excluded.succeeded_at,av_discovery.succeeded_at), error=excluded.error''',
                     (k['id'], self.service.clock(), None if error else self.service.clock(), error))
+        # Zen pricing is a separate authoritative document. A successful price
+        # refresh must revoke obsolete free proof even when EVERY key inventory
+        # request fails; those errors must not discard known negative evidence.
+        if 'opencode-zen' in public:
+            known = {m.model: m for m in public['opencode-zen']}
+            prior = self.service.store.rows("SELECT * FROM av_models WHERE provider='opencode-zen'")
+            union = unions.setdefault('opencode-zen', {})
+            for old in prior:
+                source = known.get(old['model'])
+                if source and (source.eligibility != 'free' or source.protocol not in PROTOCOLS):
+                    union[source.id] = source
+                elif source is None and old['provenance'] == ZEN_DOC:
+                    missing = Model(old['provider'], old['model'], old['base_url'],
+                                    old['protocol'], 'unknown', ZEN_DOC)
+                    union[missing.id] = missing
         for provider, models in unions.items():
             published = list(models.values())
             if self.bridge_enabled and provider == 'opencode-zen':

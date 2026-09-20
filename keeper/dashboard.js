@@ -49,6 +49,15 @@
     $('copy-token').focus();
   }
   async function getToken(id) {clearCredential();showCredential(await api('credentials',{model_id:id}));await refresh(false);}
+  function inventoryStatus() {
+    const discovery=snapshot.discovery||[], warnings=[];
+    const active=snapshot.keys.filter(k=>k.active&&k.supported&&k.has_secret&&!k.revoked);
+    const failed=discovery.filter(d=>d.error&&active.some(k=>k.id===d.credential_id)).length;
+    const pending=active.filter(k=>!discovery.some(d=>d.credential_id===k.id)).length;
+    if(failed||pending)warnings.push('Inventory incomplete: '+failed+' key discovery failures, '+pending+' awaiting discovery. Zero models or a completed sweep does not mean all inventories were checked.');
+    if(snapshot.bridge_error)warnings.push('CLI bridge unavailable: synchronization failed. Direct-provider results remain separate.');
+    $('inventory-warning').textContent=warnings.join(' ');$('inventory-warning').hidden=!warnings.length;
+  }
   function render() {
     if(!snapshot)return;
     const content=$('content'), fragment=document.createDocumentFragment();let count=0;
@@ -59,6 +68,8 @@
       const d=details('owner:'+owner.owner,title), inner=el('div',undefined,'detail');
       keys.forEach(k=>{const title=el('span',undefined,'row');title.append(el('strong',k.provider+' · '+k.reference),badge(k.state),el('span',k.working+' / '+k.total+' working · '+k.checked+' checked','muted'));
         const key=details(k.id,title), detail=el('div',undefined,'detail');
+        const discovery=(snapshot.discovery||[]).find(d=>d.credential_id===k.id);
+        detail.append(el('p',discovery?(discovery.error?'Discovery failed':'Inventory discovery succeeded')+' · Last attempt: '+stamp(discovery.checked_at)+' · Last success: '+stamp(discovery.succeeded_at):'Inventory discovery not yet attempted',discovery?.error?'discovery-error':'muted'));
         detail.append(button('Check key',()=>check({credential_id:k.id})),cellsTable(k.connections));key.append(detail);inner.append(key);});d.append(inner);fragment.append(d);
     });
     else snapshot.models.filter(m=>matches(m.provider,[m.model,m.provider])).forEach(m=>{
@@ -80,7 +91,7 @@
   }
   async function refresh(announce=true) {
     if(loading)return;loading=true;
-    try {snapshot=await api('catalog');const chosen=$('provider').value;const providers=[...new Set([...snapshot.models,...snapshot.keys].map(m=>m.provider))].sort();
+    try {snapshot=await api('catalog');inventoryStatus();const chosen=$('provider').value;const providers=[...new Set([...snapshot.models,...snapshot.keys].map(m=>m.provider))].sort();
       $('provider').replaceChildren(el('option','All providers'));$('provider').firstChild.value='';providers.forEach(p=>{const o=el('option',p);o.value=p;$('provider').append(o);});$('provider').value=chosen;
       // Avoid replacing a focused control while periodic polling is in progress.
       if(announce || !$('content').contains(document.activeElement))render();

@@ -16,12 +16,15 @@ def matrix(state):
                 status = 'ok' if c['state'] == 'working' else c['state']
                 cells.setdefault(c['model_id'], []).append({
                     'connection_id':c['id'], 'name':key['reference'], 'model':c['model'],
-                    'state':status, 'l1':status, 'l2':'not-run', 'divergent':False,
+                    'protocol':c['protocol'], 'base_url':c['base_url'], 'state':status,
+                    'l1':'not-run' if c['protocol']=='zencli' else status,
+                    'l2':status if c['protocol']=='zencli' else 'not-run', 'divergent':False,
                     'checked_at':c['checked_at'], 'aa_score':aa.score_for(state.get('aa_scores',{}),c['provider'],c['model'])})
         rows.append({'email':owner['owner'],'cells':cells})
     return {'emails':[row['email'] for row in rows], 'rows':rows,
-            'providers':[{'id':m['id'],'provider':m['provider'],'model':m['model'],'probed':bool(m['checked'])} for m in models],
+            'providers':[{'id':m['id'],'provider':m['provider'],'model':m['model'],'protocol':m['protocol'],'base_url':m['base_url'],'probed':bool(m['checked'])} for m in models],
             'diagnostics':{'unassigned':[{'id':k['id'],'provider':k['provider'],'name':k['reference']} for k in accounts['keys'] if k['owner'] is None],
                            'skipped_inactive':[], 'divergent':[], 'inventory_more':{}},
             'aa_stale':state.get('aa_stale',True),'keeperPackVersion':'v2',
-            'evidence':'exact_direct_api', 'preferred_api':'/api/v2/catalog'}
+            'evidence':'exact_transport' if any(m['protocol']=='zencli' for m in models) else 'exact_direct_api',
+            'preferred_api':'/api/v2/catalog'}

@@ -227,6 +227,25 @@ class Availability:
                         db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (old['id'],))
             for m in models:
                 self._put_model(db, m)
+            # Missing inventory is not negative evidence. An observed loss of
+            # eligibility is: invalidate cached protocol identities at the same
+            # endpoint and Zen's explicitly derived CLI transport atomically.
+            # Preserve history/presence and never let older pricing override a
+            # newer proof. Revision changes fence already-running verifications.
+            for m in models:
+                if m.eligibility == 'free' and m.protocol in PROTOCOLS:
+                    continue
+                stamp = self.clock() if m.verified_at is None else m.verified_at
+                invalidated = db.execute('''SELECT id FROM av_models
+                    WHERE provider=? AND model=? AND id<>? AND eligibility='free'
+                    AND checked_at<=? AND (base_url=? OR
+                    (?='opencode-zen' AND protocol='zencli' AND base_url=?))''',
+                    (provider, m.model, m.id, stamp, m.base_url, provider, BRIDGE_BASE)).fetchall()
+                for old in invalidated:
+                    db.execute('''UPDATE av_models SET eligibility=?,provenance=?,checked_at=?
+                        WHERE id=?''', (m.eligibility if m.eligibility != 'free' else 'unknown',
+                                       m.provenance, stamp, old['id']))
+                    db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (old['id'],))
             self._expand(db)
 
     def connections(self):
@@ -331,6 +350,12 @@ class Availability:
     def finish_check(self, ticket, result):
         with self.store.transaction() as db:
             return self._finish(db, ticket, result)
+
+    def discard_request_check(self, ticket):
+        """Close request-validation attempts without changing health/feedback."""
+        with self.store.transaction() as db:
+            db.execute('''UPDATE av_checks SET finished_at=?,state='request_rejected',applied=0
+                WHERE id=? AND finished_at IS NULL''', (self.clock(), ticket))
 
     def report_failure(self, cid, reason='client_failure'):
         # Never persist arbitrary client text; it can contain a provider key.

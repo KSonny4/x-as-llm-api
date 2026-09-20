@@ -5,6 +5,7 @@ mapped fields and text/function-tool history; unsupported features make that
 route incompatible, never silently dropped. Provider identity stays exact.
 """
 import json
+import math
 import translate
 
 COMMON = {'model', 'messages', 'stream', 'max_tokens', 'max_completion_tokens',
@@ -14,6 +15,77 @@ NATIVE = COMMON | {'response_format', 'parallel_tool_calls', 'n', 'seed',
                    'logit_bias', 'user', 'reasoning_effort', 'verbosity'}
 
 
+def valid_values(req):
+    """Validate shared OpenAI types/ranges before choosing a credential.
+
+    Provider-specific validation still belongs upstream; rejecting a request is
+    never evidence that an otherwise working provider credential has failed.
+    """
+    def number(value, low, high):
+        return (isinstance(value, (int, float)) and not isinstance(value, bool)
+                and low <= value <= high and math.isfinite(value))
+    for field in ('max_tokens', 'max_completion_tokens', 'n'):
+        value = req.get(field)
+        if value is not None and (type(value) is not int or value <= 0): return False
+    if req.get('max_tokens') is not None and req.get('max_completion_tokens') is not None: return False
+    for field, low, high in (('temperature', 0, 2), ('top_p', 0, 1),
+                             ('frequency_penalty', -2, 2), ('presence_penalty', -2, 2)):
+        if req.get(field) is not None and not number(req[field], low, high): return False
+    for field in ('stream', 'parallel_tool_calls', 'logprobs'):
+        if req.get(field) is not None and type(req[field]) is not bool: return False
+    if req.get('seed') is not None and type(req['seed']) is not int: return False
+    if req.get('top_logprobs') is not None and (type(req['top_logprobs']) is not int or not 0 <= req['top_logprobs'] <= 20): return False
+    for field in ('user', 'reasoning_effort', 'verbosity'):
+        if req.get(field) is not None and not isinstance(req[field], str): return False
+    stop = req.get('stop')
+    if stop is not None and not (isinstance(stop, str) or isinstance(stop, list)
+            and len(stop) <= 4 and all(isinstance(s, str) for s in stop)): return False
+    bias = req.get('logit_bias')
+    if bias is not None and (not isinstance(bias, dict) or any(not isinstance(k, str)
+            or not number(v, -100, 100) for k, v in bias.items())): return False
+    options = req.get('stream_options')
+    if options is not None and (not isinstance(options, dict) or set(options) - {'include_usage'}
+            or any(type(v) is not bool for v in options.values()) or not req.get('stream')): return False
+    fmt = req.get('response_format')
+    if fmt is not None:
+        if not isinstance(fmt, dict) or fmt.get('type') not in ('text', 'json_object', 'json_schema'): return False
+        if fmt['type'] == 'json_schema':
+            schema = fmt.get('json_schema')
+            if not isinstance(schema, dict) or not isinstance(schema.get('name'), str) or not isinstance(schema.get('schema'), dict): return False
+            if 'strict' in schema and type(schema['strict']) is not bool: return False
+    messages = req.get('messages')
+    if not isinstance(messages, list) or not messages: return False
+    for msg in messages:
+        if not isinstance(msg, dict) or msg.get('role') not in ('system', 'developer', 'user', 'assistant', 'tool'): return False
+        if msg.get('content') is None and not (msg['role'] == 'assistant' and msg.get('tool_calls')): return False
+        if msg['role'] == 'tool' and (not isinstance(msg.get('tool_call_id'), str) or not msg['tool_call_id']): return False
+        if 'name' in msg and not isinstance(msg['name'], str): return False
+        calls = msg.get('tool_calls', [])
+        if not isinstance(calls, list) or calls and msg['role'] != 'assistant': return False
+        for call in calls:
+            if not isinstance(call, dict) or not isinstance(call.get('id'), str) or not call['id']: return False
+            fn = call.get('function')
+            if not isinstance(fn, dict) or not isinstance(fn.get('name'), str) or not fn['name'] or not isinstance(fn.get('arguments'), str): return False
+    tools = req.get('tools', [])
+    if not isinstance(tools, list): return False
+    for tool in tools:
+        if not isinstance(tool, dict): return False
+        if tool.get('type') != 'function': continue  # feature allowlist rejects built-ins
+        if not isinstance(tool.get('function'), dict): return False
+        fn = tool['function']
+        if not isinstance(fn.get('name'), str) or not fn['name']: return False
+        if 'parameters' in fn and not isinstance(fn['parameters'], dict): return False
+        if 'strict' in fn and type(fn['strict']) is not bool: return False
+        if 'description' in fn and not isinstance(fn['description'], str): return False
+    choice = req.get('tool_choice')
+    if isinstance(choice, dict):
+        fn = choice.get('function')
+        if not isinstance(fn, dict) or not isinstance(fn.get('name'), str) or not fn['name']: return False
+        if fn['name'] not in {t['function']['name'] for t in tools if t.get('type') == 'function'}: return False
+    if choice == 'required' and not tools: return False
+    return True
+
+
 def safe_request(req):
     """No paid built-in tools/plugins, fallback models or provider overrides.
 
@@ -21,7 +93,7 @@ def safe_request(req):
     service executes no tools; ordinary client function schemas remain allowed.
     Unknown request extensions are rejected, never silently forwarded/dropped.
     """
-    if set(req) - NATIVE:
+    if set(req) - NATIVE or not valid_values(req):
         return False
     for msg in req.get('messages', []):
         if not isinstance(msg, dict) or set(msg) - {'role','content','tool_calls','tool_call_id','name'}:

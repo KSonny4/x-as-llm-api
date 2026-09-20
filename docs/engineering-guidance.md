@@ -35,6 +35,11 @@ Keeper per-token quota/rate/concurrency cap. Upstream provider limits remain rea
   with no working compatible free backend returns an OpenAI-shaped 503, not a
   paid substitute or silently stripped features. A real stream failure after
   output emits a generic error and closes; clients must not treat it as complete.
+- Malformed parameter values/message roles are rejected before selecting a key.
+  Upstream HTTP 400/422 request rejections return a sanitized 400 without
+  excluding healthy credentials or repeating that request across the key pool.
+  Streaming checks retain incomplete credential prefixes across text/tool-argument
+  chunks before release; ordinary output remains incremental.
 - Do not automatically downgrade a coding-agent tool request to plain text: that
   changes user intent. Only explicitly text-only tasks should use text-only
   backend compatibility. Keeper is a model API, not a hosted autonomous agent.
@@ -63,6 +68,16 @@ public API inference, actual selected transport, safe stream/tool results where
 supported, full key/model coverage including failures/cooldowns, and durable DB
 survival across allocation replacement. Never store credential values in that
 receipt. Historical CLI receipts establish feasibility only.
+
+The dashboard distinguishes failed/pending inventory discovery from an empty
+inventory, and shows per-key attempt/last-success timestamps and bridge failures.
+Legacy mixed-transport responses use `evidence: exact_transport`; CLI success is
+L2, never direct/L1 proof. Do not infer direct support from aggregate key health.
+
+Optional offline browser regression (requires Playwright and a browser):
+`node keeper/browser-smoke.cjs`. Set `PLAYWRIGHT_MODULE` and `CHROME_EXECUTABLE`
+when using existing installations; screenshots/results go to a temporary folder
+or `KEEPER_BROWSER_OUT`. Only synthetic fixtures are used, never live secrets.
 
 See `docs/keeper-all-models-rollout.md` for topology, backup and rollback. The node
 has no CNI bridge plugin; the approved, tested topology is Docker host networking,

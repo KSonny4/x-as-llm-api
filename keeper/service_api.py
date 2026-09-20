@@ -22,6 +22,10 @@ class UpstreamFailure(Exception):
         self.result = Result(state, delay)
 
 
+class UpstreamRequestError(Exception):
+    """A rejected request is not evidence against a provider credential."""
+
+
 def error(code, name):
     return response(code, {'error': {'message': name, 'type': 'keeper_error', 'code': name}})
 
@@ -32,6 +36,7 @@ def models():
 
 
 def classify(status, headers, now):
+    if status in (400, 422): return UpstreamRequestError()
     if status == 429: return UpstreamFailure('rate_limited', retry_after(headers, now))
     if status in (401, 402, 403): return UpstreamFailure('access_denied')
     return UpstreamFailure('transient_error' if status >= 500 else 'invalid_response')
@@ -78,6 +83,74 @@ def _safe_doc(doc, config):
     return raw.encode()
 
 
+def _string_fragments(value, path=()):
+    """Stable logical channels, including interleaved choice/tool indexes."""
+    if isinstance(value, str):
+        yield path, value
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            yield from _string_fragments(child, path + (key,))
+    elif isinstance(value, list):
+        for position, child in enumerate(value):
+            index = child.get('index', position) if isinstance(child, dict) else position
+            if type(index) is not int: index = position
+            yield from _string_fragments(child, path + (index,))
+
+
+def _secret_guard(parts, config):
+    """Hold incomplete credential prefixes BEFORE releasing their SSE events.
+
+    Keep only suffixes that could complete a secret in a later logical fragment.
+    Other events stream immediately. Ambiguous interleaved streams have a bounded
+    pending window and fail closed rather than grow memory or expose prefixes.
+    """
+    secrets = [s for s in config.get('secret_values', [config['api_key']]) if s]
+    longest = max((len(s) for s in secrets), default=1)
+    tails, pending, size, closed = {}, [], 0, set()
+    for part in parts:
+        encoded = _safe_doc(part, config)
+        fragments = []
+        for choice in part.get('choices', []):
+            index = choice.get('index', 0)
+            delta = choice.get('delta', {})
+            if index in closed and delta:
+                raise UpstreamFailure('invalid_response')
+            # Role, IDs and function names are atomic metadata, not text
+            # deltas. Treating repeated model names as text can buffer every
+            # ':free' stream when a JWT happens to start with 'e'.
+            for field, value in delta.items():
+                if field not in ('role', 'tool_calls'):
+                    fragments.extend(_string_fragments(value, (index, field)))
+            for call in delta.get('tool_calls', []):
+                arguments = call.get('function', {}).get('arguments')
+                if isinstance(arguments, str):
+                    fragments.append(((index, 'tool', call.get('index', 0)), arguments))
+        for channel, text in fragments:
+            combined = tails.get(channel, '') + text
+            if any(secret in combined for secret in secrets):
+                raise UpstreamFailure('invalid_response')
+            suffix = next((combined[-n:] for n in range(min(len(combined), longest - 1), 0, -1)
+                           if any(secret.startswith(combined[-n:]) for secret in secrets)), '')
+            if suffix: tails[channel] = suffix
+            else: tails.pop(channel, None)
+        for choice in part.get('choices', []):
+            if choice.get('finish_reason') is not None:
+                index = choice.get('index', 0)
+                closed.add(index)
+                # The choice is complete; later deltas are rejected above.
+                tails = {channel: value for channel, value in tails.items() if channel[0] != index}
+        pending.append(part)
+        size += len(encoded)
+        if len(pending) > 256 or size > 1024 * 1024:
+            raise UpstreamFailure('invalid_response')
+        if not tails:
+            yield from pending
+            pending.clear()
+            size = 0
+    # Only a successful upstream terminal permits incomplete prefixes to flush.
+    yield from pending
+
+
 def _usable(doc):
     for choice in doc.get('choices', []):
         msg = choice.get('message', {})
@@ -101,7 +174,7 @@ def _validated_chunks(events, config):
     """Hold metadata until usable text/tool output; empty streams prove nothing."""
     prefix, tools, meaningful = [], {}, False
     try:
-        for part in wire.stream_chunks(events, config):
+        for part in _secret_guard(wire.stream_chunks(events, config), config):
             _safe_doc(part, config)
             for choice in part.get('choices', []):
                 delta = choice.get('delta', {})
@@ -110,8 +183,12 @@ def _validated_chunks(events, config):
                 for call in delta.get('tool_calls', []):
                     key = (choice.get('index', 0), call.get('index', 0))
                     tool = tools.setdefault(key, {'id':'', 'name':'', 'arguments':''})
-                    tool['id'] += call.get('id', '')
-                    tool['name'] += call.get('function', {}).get('name', '')
+                    for field, value in (('id', call.get('id', '')),
+                                         ('name', call.get('function', {}).get('name', ''))):
+                        if value:
+                            if tool[field] and tool[field] != value:
+                                raise UpstreamFailure('invalid_response')
+                            tool[field] = value
                     tool['arguments'] += call.get('function', {}).get('arguments', '')
                     if tool['id'] and tool['name']:
                         meaningful = True
@@ -164,6 +241,7 @@ def chat(state, body, allow_exact=False):
     except (ValueError, TypeError):
         return error(400, 'invalid_json')
     try:
+        if not wire.valid_values(req): return error(400, 'invalid_request')
         if not wire.safe_request(req): return error(400, 'unsupported_request_features')
     except (TypeError, KeyError, ValueError):
         return error(400, 'invalid_request')
@@ -225,6 +303,9 @@ def chat(state, body, allow_exact=False):
                 raw = _safe_doc(doc, config)
                 s.finish_check(ticket, Result('working'))
                 return 200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')]
+            except UpstreamRequestError:
+                s.discard_request_check(ticket)
+                return error(400, 'upstream_rejected_request')
             except Exception as exc:
                 _failed(state, config, ticket, exc)
     return error(503, 'no_working_compatible_free_model')
