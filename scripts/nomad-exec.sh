@@ -10,7 +10,12 @@
 set -u
 export NOMAD_ADDR="${NOMAD_ADDR:-https://nomad.pkubelka.cz}"
 if [ -z "${NOMAD_TOKEN:-}" ]; then
-  NOMAD_TOKEN="$(bao kv get -field=management secret/projects/NomadSetup/acl)" || exit 1
+  if [ "${NOMAD_ADDR}" = "http://127.0.0.1:4647" ]; then
+    # New-box loopback forward: bootstrap token from Bao (never stored).
+    NOMAD_TOKEN="$(bao kv get -format=json secret/projects/nomad/NOMAD_BOOTSTRAP | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["data"]["acl_token"],end="")')" || exit 1
+  else
+    NOMAD_TOKEN="$(bao kv get -field=management secret/projects/NomadSetup/acl)" || exit 1
+  fi
   export NOMAD_TOKEN
 fi
 JOB="${1:-keeper}"
