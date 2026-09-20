@@ -79,7 +79,25 @@ PROXY-TEST · ZCAP-PROBE · HELLO-PROBE · CAT-PROBE · ALIVE-CHECK-77
 Same pair for `eyJ[A-Za-z0-9_-]{20,}` → zero + zero.
 The M1 transcript exposures never reached git in any revision.
 
-## E. Live identifier check (M1 correction)
+## F. Attempt accounting (pi retry source-read 2026-09-20, pi 0.85.1)
+
+Contract unit is test CALLS (invocations): 5/5, met literally. Upstream
+HTTP attempts per invocation (read from installed pi source, no vendor
+calls): provider-level `maxRetries` resolves undefined→0 (user
+settings `retry: null` → `retryProviderRequest` defaults `?? 0`), so
+each invocation fires exactly 1 upstream attempt — EXCEPT possible
+agent-turn reruns: `retry.enabled` defaults true with budget 3 /
+backoff 2s, and 503/`service unavailable` matches pi's RETRYABLE
+pattern while `FreeUsageLimitError` is explicitly NON_RETRYABLE.
+Therefore: Calls 1/3 (429 FreeUsageLimitError) = 1 attempt each
+(non-retryable, no rerun); Call 4 (200) = 1; Call 5 (bun script,
+no retry logic) = 1; Call 2 (503) = 1 verified + up to 3 turn-reruns
+NOT excludable from existing receipts → worst case 4 for Call 2.
+Worst-case upstream total: 8 across 5 invocations. No invocation
+retried at the provider layer; only Call 2 carries turn-rerun
+uncertainty, disclosed here.
+
+## G. Live identifier check (M1 correction)
 
 Committed inventory provider id corrected to live
 `keeper-muse-spark-1-3-contributor-free` (dashes; model id keeps dots:

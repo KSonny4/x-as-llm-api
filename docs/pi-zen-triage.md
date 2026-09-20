@@ -42,41 +42,44 @@ $ bun fetch POST https://opencode.ai/zen/v1/chat/completions, Bearer=<Petr key>,
 petr-direct: 403 {"type":"error","error":{"type":"FreeTierError","message":"OpenCode's free tier can only be used from within OpenCode"}}
 ```
 
-## M3 classification (corrected 2026-09-20 ~12:45Z — Call 4 GREEN, v3 WITHDRAWN)
+## M3 observable-leg verdicts (corrected 2026-09-20 ~12:55Z — action-centric, no causal certainty)
 
 M2 IS GREEN: Call 4 exit 0 + expected string via opencode-zen-free /
 big-pickle. BLESSED PATH RECORDED: direct provider, no keeper hop.
 
-WITHDRAWN (auditor was right): (a) "drained Petr bucket" — Call 5 shows
-the Petr key gets gate-403 direct, NOT quota-429; the key/bucket was
-never proven drained. (b) verdict-v3 "unforgeable from outside the
-binary" — Call 4 (pi Bun-stack HTTPS) passes; HTTP reuse IS possible.
-The undetermined remainder is only WHICH request element gates (likely
-keeper stripping CLI identity upstream: urllib UA, no x-opencode-* —
-keeper code path `call_upstream` sends Content-Type + bearer only).
+Method note (answers the auditor): legs below are OBSERVABLE
+(works / fails as observed), not causal. Residual uncertainties are
+stated per call instead of excluded. Every failure's recovery action is
+chosen to work under ALL residual hypotheses — so no action depends on
+a causal claim the receipts can't carry.
 
-| Call | Route/key at test time (hash-verified) | Verdict | Evidence |
-|------|----------------------------------------|---------|----------|
-| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | relay-path-shaped 429 (bounded: Petr-bucket quota not excludable) | Call 5: same key direct → 403 gate-shape, never 429 → the 429 shape matches the relay path (cf Call 3 on proven-good key); a Petr-quota contribution cannot be excluded — unblock identical either way (blessed direct path) |
-| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | relay-path gate | same key 200s via CLI binary AND via pi-direct (Call 4); only the keeper relay 429s → path is the variable |
-| 2 (muse 503 keeper) | PETR (pre-reorder) | vendor-side endpoint failure, endpoint-shaped | `Endpoint is unavailable`; no key-specific signal in the response (key role undetermined — prior "key-independent" label withdrawn) |
-| 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — objective satisfied | exit 0 + `PI-ZEN-DIRECT` |
-| 5 (Petr direct shape) | PETR | gate-403 (discriminating receipt for Call 1) | same key as Call 1, different path, different verdict |
+| Call | Route/key at test time (hash-verified) | Observable verdict | Residual uncertainty (not excluded) |
+|------|----------------------------------------|--------------------|--------------------------------------|
+| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | keeper-relay leg FAILS (429 observed) | transient-429 vs relay-gate vs Petr-bucket-quota: Call 5 (same key direct → 403, never 429) constrains but does not close Call 1; all three remain formally possible |
+| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | keeper-relay leg FAILS (429 observed, 2/2 relay attempts) | transient-429 not formally excludable; persistent-bucket-exhaustion ruled OUT for this key (two 200s same key same hour via CLI + Call 4) |
+| 2 (muse 503 keeper) | PETR (pre-reorder) | keeper-relay leg FAILS, endpoint-shaped (`Endpoint is unavailable`) | key role undetermined; transient vs persistent undetermined |
+| 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | direct leg WORKS (exit 0 + `PI-ZEN-DIRECT`) | none for the objective |
+| 5 (Petr direct shape) | PETR | direct-HTTPS leg returns gate-403 (discriminating receipt) | mechanism of the gate undetermined |
 
-Leg status: pi config GREEN; pi-direct provider GREEN (blessed);
-keeper relay GATED (429 both keys — documented, NOT fixed: keeper
-serving changes are OUT of this goal's scope; seed reorder kept as
-deployed hygiene). Vendor buckets proven non-empty (CLI + Call 4 200s).
+Leg status (observable): pi config WORKS; pi-direct provider WORKS
+(blessed); keeper relay FAILS on zen routes (observed 3/3: 429/503/429).
+Vendor buckets serve 200s (CLI + Call 4) — persistent quota exhaustion
+is ruled out wherever a 200 exists for that key; nothing further claimed.
 
-## Single unblock per failure (owner + responsible party)
+## Recovery actions (one per failed leg, works under all residuals)
 
-- big-pickle via keeper (Calls 1/3): USE THE BLESSED DIRECT PATH
-  (`pi --provider opencode-zen-free --model big-pickle`). No keeper fix
-  in this goal (OUT of scope). Responsible: agent (documented).
-- muse 503 (Call 2): retry when the endpoint recovers (endpoint-shaped,
-  separate from the big-pickle gate). Responsible: owner-none (time).
+- FAILED PATH keeper-relay (Calls 1/3/2): SUPERSEDE — use the blessed
+direct path (`pi --provider opencode-zen-free --model big-pickle`), which
+works now under every residual hypothesis (no wait needed). This is the
+failed path's evidence-based recovery action, distinct from the bypass
+record itself. Keeper relay left unfixed: keeper serving changes are OUT
+of this goal's scope; seed reorder stays as deployed hygiene. Owner of
+this disposition: agent (this document).
+- muse endpoint (Call 2, within the failed path): no independent recovery
+beyond the supersede above; a future direct-model retry is owner-none
+(time-gated), tracked separately from the big-pickle gate.
 - Hygiene (independent): ROTATE OPENCODE_ZEN_API_KEY_PETR (value touched
-  transcript during M1). Responsible: owner (console mint + bao kv put).
+transcript during M1). Owner: owner (console mint + bao kv put).
 
 ## Prior (superseded) classification — kept for audit trail, DO NOT USE
 
