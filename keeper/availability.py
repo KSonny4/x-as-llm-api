@@ -10,6 +10,7 @@ import json
 import math
 import time
 from urllib.parse import urlsplit
+from typing import Optional
 
 STALE_AFTER = 30 * 3600
 CATALOG_TTL = 24 * 3600
@@ -38,10 +39,23 @@ class Model:
     eligibility: str = 'unknown'
     provenance: str = ''
     requires_free_tier: bool = False
+    verified_at: Optional[float] = None
 
     @property
     def id(self):
         return identity(self.provider, self.model, self.base_url, self.protocol)
+
+
+def seed_model(route):
+    """Only exact, timestamped pricing evidence is usable from trusted seeds."""
+    evidence = route.get('free_eligibility') or {}
+    stamp = evidence.get('verified_at') if isinstance(evidence, dict) else None
+    known = (isinstance(evidence, dict) and evidence.get('kind') in ('zero_price', 'recurring_allowance')
+             and bool(evidence.get('provenance')) and isinstance(stamp, (int, float)) and math.isfinite(stamp))
+    return Model(route['provider'], route['model'], safe_base(route.get('base_url', '')),
+                 route.get('wire', 'openai'), 'free' if known else 'unknown',
+                 str(evidence['provenance']) if known else '',
+                 bool(known and evidence['kind'] == 'recurring_allowance'), stamp if known else None)
 
 
 @dataclass(frozen=True)
@@ -66,6 +80,12 @@ CONNECTION_SQL = """SELECT c.*, k.provider, k.reference, k.owner, k.active,
  JOIN av_models m ON m.id=c.model_id"""
 
 
+def evidence_age(stamp, now):
+    if not isinstance(stamp, (int, float)) or not math.isfinite(stamp):
+        return -1
+    return now - stamp
+
+
 def blocked_reason(c, now):
     if not c['active']:
         return 'disabled'
@@ -81,11 +101,22 @@ def blocked_reason(c, now):
         return 'paid' if c['eligibility'] == 'paid' else 'eligibility_unknown'
     if not c['provenance']:
         return 'eligibility_unknown'
-    if not 0 <= now - c['catalog_checked_at'] < CATALOG_TTL:
+    if not 0 <= evidence_age(c['catalog_checked_at'], now) < CATALOG_TTL:
         return 'catalog_stale'
     if c['requires_free_tier'] and not c['free_tier']:
         return 'free_tier_unverified'
     return None
+
+
+def aggregate_health(states):
+    states = list(states)
+    for health in ('working', 'stale', 'suspect', 'cooldown'):
+        if health in states:
+            return health
+    failed = RESULT_STATES - {'working', 'unsupported'} | {'failed', 'revoked'}
+    if states and all(state in failed for state in states):
+        return 'failed'
+    return 'unknown'
 
 
 class Availability:
@@ -134,9 +165,8 @@ class Availability:
                     revision=av_credentials.revision+?''', (kid,) + values + (int(bool(changed)),))
                 for r in rs:
                     if r.get('model'):
-                        model = Model(provider, r['model'], safe_base(r.get('base_url', '')),
-                                      r.get('wire', 'openai'))
-                        self._put_model(db, model, replace=False)
+                        model = seed_model(r)
+                        self._put_model(db, model, replace=model.eligibility == 'free')
             removed = set(existing) - {identity(*pair) for pair in grouped}
             for kid in removed:
                 if existing[kid]['active']:
@@ -148,8 +178,17 @@ class Availability:
             raise ValueError('invalid eligibility')
         if m.eligibility == 'free' and (not m.provenance or not safe_base(m.base_url)):
             raise ValueError('free model requires pricing provenance and safe endpoint')
+        checked_at = self.clock() if m.verified_at is None else m.verified_at
+        if not math.isfinite(checked_at):
+            raise ValueError('invalid catalog time')
+        old = db.execute('SELECT * FROM av_models WHERE id=?', (m.id,)).fetchone()
+        if old and replace:
+            if isinstance(old['checked_at'], (int, float)) and checked_at < old['checked_at']:
+                return
+            if (old['eligibility'], old['requires_free_tier'], old['present']) != (m.eligibility, int(m.requires_free_tier), 1):
+                db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (m.id,))
         values = (m.id, m.provider, m.model, m.base_url, m.protocol, m.eligibility,
-                  m.provenance, self.clock(), int(m.requires_free_tier))
+                  m.provenance, checked_at, int(m.requires_free_tier))
         suffix = ''' ON CONFLICT(id) DO UPDATE SET eligibility=excluded.eligibility,
             provenance=excluded.provenance, checked_at=excluded.checked_at,
             requires_free_tier=excluded.requires_free_tier, present=1''' if replace else ' ON CONFLICT(id) DO NOTHING'
@@ -174,7 +213,11 @@ class Availability:
             raise ValueError('catalog provider mismatch')
         with self.store.transaction() as db:
             if complete:
-                db.execute('UPDATE av_models SET present=0 WHERE provider=?', (provider,))
+                current_ids = {m.id for m in models}
+                for old in db.execute('SELECT id FROM av_models WHERE provider=? AND present=1', (provider,)).fetchall():
+                    if old['id'] not in current_ids:
+                        db.execute('UPDATE av_models SET present=0 WHERE id=?', (old['id'],))
+                        db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (old['id'],))
             for m in models:
                 self._put_model(db, m)
             self._expand(db)
@@ -186,21 +229,33 @@ class Availability:
             c['observation_state'] = c['state']
             c['blocked_reason'] = blocked_reason(c, now)
             c['retry_at'] = max(c['retry_at'], c['cooldown'])
-            age = now - c['checked_at'] if c['checked_at'] is not None else -1
-            if c['state'] == 'working' and c['blocked_reason'] in (None, 'catalog_stale') and age < 0:
-                c['state'] = 'unknown'
-            elif c['state'] == 'working' and c['blocked_reason'] in (None, 'catalog_stale') and age >= STALE_AFTER:
-                c['state'] = 'stale'
-            elif c['blocked_reason']:
+            age = evidence_age(c['checked_at'], now)
+            if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale':
                 c['state'] = c['blocked_reason']
             elif c['excluded']:
                 c['state'] = 'suspect'
             elif c['retry_at'] > now:
                 c['state'] = 'cooldown'
             elif c['state'] == 'working':
-                age = now - c['checked_at'] if c['checked_at'] is not None else -1
-                c['state'] = 'unknown' if age < 0 else ('stale' if age >= STALE_AFTER else 'working')
+                c['state'] = ('unknown' if age < 0 else 'stale' if age >= STALE_AFTER
+                              else c['blocked_reason'] or 'working')
+            elif c['blocked_reason']:
+                c['state'] = c['blocked_reason']
         return rows
+
+    def catalog(self):
+        """Secret-free, local-only route catalog; consumers must not collapse IDs."""
+        rows = self.connections()
+        models = self.store.rows('SELECT * FROM av_models ORDER BY provider,model,protocol,base_url')
+        for model in models:
+            cells = [c for c in rows if c['model_id'] == model['id']]
+            model['connections'] = cells
+            model['working_keys'] = sum(c['state'] == 'working' for c in cells)
+            model['total_keys'] = len(cells)
+            model['checked'] = sum(c['checked_at'] is not None for c in cells)
+            model['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
+            model['state'] = 'working' if model['working_keys'] else 'unavailable'
+        return {'models': models, 'discovery': self.store.rows('SELECT * FROM av_discovery ORDER BY credential_id')}
 
     def accounts(self):
         keys = self.store.rows('SELECT * FROM av_credentials ORDER BY provider,reference')
@@ -214,11 +269,11 @@ class Availability:
             k['checked'] = sum(c['checked_at'] is not None for c in cells)
             k['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
             k['state'] = ('disabled' if not k['active'] else 'revoked' if k['revoked']
-                          else 'working' if k['working'] else 'stale' if any(c['state'] == 'stale' for c in cells)
-                          else 'unknown')
+                          else aggregate_health(c['state'] for c in cells
+                                                if c['blocked_reason'] in (None, 'catalog_stale')))
             owners.setdefault(k['owner'], []).append(k)
         return {'keys': keys, 'owners': [
-            {'owner': owner, 'state': 'working' if any(k['working'] for k in ks) else 'unknown',
+            {'owner': owner, 'state': aggregate_health(k['state'] for k in ks if k['active']),
              'working_keys': sum(k['working'] > 0 for k in ks), 'total_keys': len(ks)}
             for owner, ks in owners.items()]}
 

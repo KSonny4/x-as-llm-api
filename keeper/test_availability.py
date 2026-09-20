@@ -119,3 +119,25 @@ def test_later_started_check_supersedes_old_check(tmp_path):
     assert s.finish_check(new, Result('access_denied'))
     assert not s.finish_check(old, Result('working'))
     assert s.connections()[0]['state'] == 'access_denied'
+
+
+def test_catalog_local_snapshot_separate_provider_identity_and_discovery_status(tmp_path):
+    s, _ = setup(tmp_path, [seed(), seed(provider='other')])
+    s.update_catalog('p', [free('a')])
+    s.update_catalog('other', [free('a', 'other')])
+    succeed(s, next(c for c in s.connections() if c['provider'] == 'p'))
+    catalog = s.catalog()
+    assert len(catalog['models']) == 2
+    assert next(m for m in catalog['models'] if m['provider'] == 'p')['working_keys'] == 1
+    assert next(m for m in catalog['models'] if m['provider'] == 'other')['working_keys'] == 0
+    assert catalog['discovery'] == []
+    assert 'synthetic-secret' not in json.dumps(catalog)
+
+
+def test_all_confirmed_failures_are_failed_not_unchecked(tmp_path):
+    s, _ = setup(tmp_path, [seed()])
+    s.update_catalog('p', [free('a')])
+    cid = s.connections()[0]['id']
+    s.finish_check(s.begin_check(cid), Result('access_denied'))
+    assert s.accounts()['keys'][0]['state'] == 'failed'
+    assert s.accounts()['owners'][0]['state'] == 'failed'

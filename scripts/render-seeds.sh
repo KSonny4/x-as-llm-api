@@ -5,42 +5,47 @@
 # NOTHING secret is stored: this file carries key names + route shapes only.
 # Usage: bash scripts/render-seeds.sh > /tmp/seeds-live.json
 # Deploy: nomad job run -var=seeds_json="$(cat /tmp/seeds-live.json)" keeper.nomad.hcl
-set -u
+set -euo pipefail
 PREFIX="secret/projects/pi-infinity-llm"
-FALLBACK_OWNER="ksonny4@gmail.com"
-
 get() { bao kv get -format=json "$PREFIX/$1" 2>/dev/null; }
 
-route() { # route <KEY> <provider> <model> <base> <wire> <conn> <name> <live:1|0>
-  local key="$1" doc email status cred="live:0"
+route() { # route <KEY> <provider> <model> <base> <wire> <conn> <name> <legacy-live>
+  local key="$1" doc
   doc="$(get "$key")" || { echo "no Bao entry: $key" >&2; return 1; }
-  email="$(echo "$doc" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['data'].get('email','') or '')")"
-  status="$(echo "$doc" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['data'].get('status','') or '')")"
-  [ -n "$email" ] || email="$FALLBACK_OWNER"
-  if [ "$8" = 1 ]; then
-    cred="$(echo "$doc" | python3 -c "import json,sys; d=json.load(sys.stdin)['data']['data']; print(d.get('key') or d.get('access') or '')")"
-    [ -n "$cred" ] || { echo "live key $key has no key/access value" >&2; return 1; }
-  fi
-  python3 - "$key" "$2" "$3" "$4" "$5" "$6" "$7" "$email" "$status" "$cred" <<'EOF'
+  # Secret document goes through stdin, never process arguments. Missing values
+  # remain visible/signin-required rather than creating a fabricated credential.
+  printf '%s' "$doc" | python3 -c '
 import json, sys
-key, provider, model, base, wire, conn, name, owner, status, cred = sys.argv[1:]
+key, provider, model, base, wire, conn, name = sys.argv[1:]
+doc = json.load(sys.stdin)["data"]
+d = doc["data"]
+version = doc.get("metadata", {}).get("version")
+if not isinstance(version, int) or version < 1:
+    raise SystemExit("seed metadata requires a Bao credential generation")
+status = str(d.get("status") or "unknown")
 r = {"provider": provider, "model": model, "base_url": base,
-     "wire": wire, "env_var": key, "owner": owner, "name": name,
-     "connection_id": conn, "active": True,
-     "bao_status": status or "unknown"}
-if provider == "opencode-zen" and cred != "live:0":
-    r["l2_ref"] = "opencode/" + model
-if cred != "live:0":
+     "wire": wire, "env_var": key, "owner": d.get("email") or "", "name": name,
+     "credential_ref": key + "@bao:" + str(version),
+     "connection_id": conn, "bao_status": status,
+     "active": status.lower() not in ("disabled", "retired", "inactive", "revoked", "banned")}
+cred = d.get("key") or d.get("access")
+if isinstance(cred, str) and cred.strip():
     r["api_key"] = cred
+for field in ("account_id", "free_tier", "no_paid_fallback", "tier_provenance"):
+    if field in d:
+        r[field] = d[field]
+eligibility = d.get("model_eligibility", {}).get(model)
+if isinstance(eligibility, dict):
+    r["free_eligibility"] = eligibility
 print(json.dumps(r))
-EOF
+' "$key" "$2" "$3" "$4" "$5" "$6" "$7"
 }
 
 OR_BASE="https://openrouter.ai/api/v1"
 # Root-cause fix (2026-09-19): direct Zen with fleet UA (the 403 was
 # the Python-urllib default UA, never the OVH IP). Worker parked spare.
 ZEN_BASE="https://opencode.ai/zen/v1"
-ANTHropic_BASE="https://api.anthropic.com"
+ANTHropic_BASE="https://api.anthropic.com/v1"
 
 {
 echo '{"routes": ['
@@ -51,25 +56,21 @@ emit OPENROUTER_API_KEY_2 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "ope
 emit OPENROUTER_API_KEY openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key1" "GPT-4o mini via OpenRouter (key 1)" 1
 emit OPENROUTER_API_KEY_3 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key3" "GPT-4o mini via OpenRouter (key 3)" 1
 emit OPENROUTER_API_KEY_4 openrouter "openai/gpt-4o-mini" "$OR_BASE" openai "openrouter/gpt-4o-mini-key4" "GPT-4o mini via OpenRouter (key 4)" 1
-# Route order = resolution preference: find_route serves the FIRST
-# route matching a model. 2026-09-20 proof: local `opencode run -m
-# opencode/big-pickle` succeeds on OPENCODE_ZEN_RETIRED_1 while the
-# Petr-key route 429s (drained bucket) — so the proven-working key
-# MUST come first for every zen model. Never put an unproven/drained
-# key ahead of RETIRED_1 without a same-day working-key proof.
+# Historical order is retained for legacy consumers; availability never treats
+# route order or CLI results as evidence. Bao status, not key names, controls activity.
 emit OPENCODE_ZEN_RETIRED_1 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-1" "Big Pickle (pool key 1)" 1
 emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-spare" "Big Pickle (pool spare key)" 1
 emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-petr" "Big Pickle (pool Petr key)" 1
-emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
+emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com/v1beta" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
 emit MOONSHOT_API_KEY moonshot "kimi-k2.7-code" "https://api.moonshot.ai/v1" openai "moonshot/kimi-k2.7-code" "Kimi K2.7 Code" 1
 emit MUSE_CODE_OAUTH claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6" "Claude Sonnet 4.6 (oauth 1)" 1
 emit MUSE_CODE_OAUTH_2 claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6-oauth2" "Claude Sonnet 4.6 (oauth 2)" 1
 emit MUSE_CODE_OAUTH_3 claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6-oauth3" "Claude Sonnet 4.6 (oauth 3)" 1
-# --- placeholders (no credential in seeds; unknown until a wire exists) ---
-emit KILOCODE_TOKEN kilocode "kilocode-key (endpoint TBD)" "" none "kilocode/placeholder" "Kilocode token (no keeper wire yet)" 0
-emit CLOUDFLARE_AI_KEY cloudflare-ai "workers-ai key 1 (no wire yet)" "" none "cloudflare/key-1" "Cloudflare AI key 1 (needs account id + wire)" 0
-emit CLOUDFLARE_AI_KEY_2 cloudflare-ai "workers-ai key 2 (no wire yet)" "" none "cloudflare/key-2" "Cloudflare AI key 2 (needs account id + wire)" 0
-emit CLOUDFLARE_AI_KEY_3 cloudflare-ai "workers-ai key 3 (no wire yet)" "" none "cloudflare/key-3" "Cloudflare AI key 3 (needs account id + wire)" 0
+# --- unsupported adapters remain accounted for; real metadata is retained ---
+emit KILOCODE_TOKEN kilocode "" "https://api.kilo.ai/api/gateway" openai "kilocode/catalog" "Kilo Gateway" 1
+emit CLOUDFLARE_AI_KEY cloudflare-ai "workers-ai (adapter unsupported)" "" none "cloudflare/key-1" "Cloudflare AI key 1 (adapter unsupported)" 0
+emit CLOUDFLARE_AI_KEY_2 cloudflare-ai "workers-ai (adapter unsupported)" "" none "cloudflare/key-2" "Cloudflare AI key 2 (adapter unsupported)" 0
+emit CLOUDFLARE_AI_KEY_3 cloudflare-ai "workers-ai (adapter unsupported)" "" none "cloudflare/key-3" "Cloudflare AI key 3 (adapter unsupported)" 0
 emit DEVIN_CLI_TOKEN devin-cli "devin sessions (no wire yet)" "" none "devin/placeholder" "Devin CLI token (no keeper wire yet)" 0
 emit CODEX_OAUTH codex "codex (no verified wire)" "" none "codex/placeholder" "Codex OAuth (no verified keeper wire)" 0
 emit ANTIGRAVITY_OAUTH antigravity "antigravity 1 (CLI-only)" "" none "antigravity/key-1" "Antigravity OAuth 1 (CLI-only, no API)" 0
@@ -83,7 +84,7 @@ emit OPENCODE_ZEN_RETIRED_5 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/po
 emit OPENCODE_ZEN_RETIRED_6 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-6" "Big Pickle (pool key 6)" 1
 emit OPENCODE_ZEN_RETIRED_7 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-7" "Big Pickle (pool key 7)" 1
 emit OPENCODE_ZEN_RETIRED_8 opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-8" "Big Pickle (pool key 8)" 1
-# --- zen free-model sweep (e2e: every key x every free model) ---
+# --- historical seed inventory; fresh provider pricing controls eligibility ---
 for spec in \
   "ling-3.0-flash-fin-free:ling-flash:Ling Flash (free)" \
   "mimo-v2.5-free:mimo:Mimo (free)" \
@@ -93,7 +94,7 @@ for spec in \
   "nemotron-3.5-lightning-free:nemotron-lightning:Nemotron Lightning (free)" \
   "jev-1.13-free:jev113:Jev 1.13 (free)"; do
   model="${spec%%:*}"; rest="${spec#*:}"; tag="${rest%%:*}"; label="${rest#*:}"
-  # RETIRED_1 first: proven-working key (see note above). Order matters.
+  # Repeated routes share one Bao-versioned credential reference.
   emit OPENCODE_ZEN_RETIRED_1 opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-1" "$label (pool key 1)" 1
   emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-petr" "$label (pool Petr key)" 1
   emit OPENCODE_ZEN_API_KEY opencode-zen "$model" "$ZEN_BASE" openai "zen/$tag-pool-spare" "$label (pool spare key)" 1

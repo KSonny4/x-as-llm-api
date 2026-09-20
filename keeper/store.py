@@ -56,6 +56,8 @@ CREATE TABLE IF NOT EXISTS av_sweep_jobs (
  PRIMARY KEY(sweep_id, job_id));
 CREATE TABLE IF NOT EXISTS av_provider_pacing (
  provider TEXT PRIMARY KEY, next_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS av_key_pacing (
+ credential_id TEXT PRIMARY KEY REFERENCES av_credentials(id), next_at REAL NOT NULL);
 """
 
 
