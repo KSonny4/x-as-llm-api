@@ -702,6 +702,22 @@ def overlay_keyqueue_live(doc, probe_detail):
     return doc
 
 
+def model_sublist(k):
+    """Per-model ok/fail under a key row: WHICH models work, not just
+    how many. Short model names keep rows readable."""
+    models = k.get("models") or {}
+    if not models:
+        return ""
+    lis = []
+    for m in sorted(models):
+        ok = (models[m].get("zencli") or {}).get("ok")
+        short = html.escape(m.replace("-free", "").replace(
+            "-contributor", "").replace("ling-3.0-flash-fin", "ling"))
+        lis.append('<li data-m="%s">%s \u2014 %s</li>'
+                   % (html.escape(m), short, "ok" if ok else "fail"))
+    return "<ul>%s</ul>" % "".join(lis)
+
+
 def keyqueue_items(doc):
     """Server-rendered pool list for the matrix page section: state +
 both verdicts + next test (auditor fix: no verdict-less rows)."""
@@ -729,9 +745,9 @@ both verdicts + next test (auditor fix: no verdict-less rows)."""
                if k.get("next_test") else "")
         chk = ((" \u2014 " + html.escape(k.get("checked_at") or ""))
                if k.get("checked_at") else "")
-        rows.append('<li data-q="%s">%s \u2014 %s \u2014 %s%s%s</li>'
+        rows.append('<li data-q="%s">%s \u2014 %s \u2014 %s%s%s%s</li>'
                     % (name, name, state, html.escape(bits), chk,
-                       nxt))
+                       nxt, model_sublist(k)))
     return "".join(rows) or "<li>no pool ledger</li>"
 
 
