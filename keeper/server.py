@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import aa
 import api_v2
+import dashboard
 import inventory as inventory_mod
 import matrix as matrix_mod
 import translate as translate_mod
@@ -1377,6 +1378,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
         return json_resp(200, {"ok": True}, [_clear_session_cookie()])
     if clean_path.startswith("/api/v2/"):
         return api_v2.handle(state, method, clean_path, body, _session_raw(headers) if cookie_ok else "")
+    if "availability" in state and clean_path in dashboard.ASSETS and method == "GET":
+        return dashboard.serve(clean_path)
     params = urllib.parse.parse_qs(query)
 
     if method == "GET" and clean_path == "/packs":
