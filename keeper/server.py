@@ -501,7 +501,24 @@ def metrics_view(state):
         "# TYPE keeper_route_down gauge",
         "# HELP keeper_probe_checked_at_seconds Unix time of last dual probe.",
         "# TYPE keeper_probe_checked_at_seconds gauge",
+        "# HELP keeper_keyqueue_mismatch zenCLI-vs-opencode verdict disagreement per pool key (M4 alert source).",
+        "# TYPE keeper_keyqueue_mismatch gauge",
+        "# HELP keeper_keyqueue_state Pool key state as separate 0/1 series (label state).",
+        "# TYPE keeper_keyqueue_state gauge",
+        "# HELP keeper_keyqueue_generated_at_seconds Unix time the pool ledger was rendered.",
+        "# TYPE keeper_keyqueue_generated_at_seconds gauge",
     ]
+    for k in keyqueue_view().get("keys", []):
+        name = prom_esc(k.get("name", ""))
+        lines.append('keeper_keyqueue_mismatch{key="%s"} %d'
+                     % (name, 1 if k.get("mismatch") else 0))
+        for s in ("pending", "testing", "ok", "dead"):
+            lines.append('keeper_keyqueue_state{key="%s",state="%s"} %d'
+                         % (name, s, 1 if k.get("state") == s else 0))
+    gen = keyqueue_view().get("generated_at")
+    ts = probe_epoch(gen or "")
+    if ts is not None:
+        lines.append("keeper_keyqueue_generated_at_seconds %d" % ts)
     for cid in sorted((state.get("probe_detail") or {})):
         det = state["probe_detail"][cid] or {}
         verdict = matrix_mod.dual_verdict(det)
