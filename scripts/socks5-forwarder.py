@@ -13,6 +13,7 @@ import sys
 import threading
 
 LISTEN = ("127.0.0.1", 1080)
+HTTP_LISTEN = ("127.0.0.1", 1081)
 
 
 def relay(a, b):
@@ -79,15 +80,60 @@ def handle(client):
             pass
 
 
-def main():
+def handle_http(client):
+    """Minimal HTTP CONNECT forwarder (no auth). For clients without
+    SOCKS support (python urllib, Bun fetch): `HTTP_PROXY=
+    http://127.0.0.1:1081`. Plain-HTTP forwarding is intentionally
+    NOT implemented — CONNECT tunneling only."""
+    try:
+        head = b""
+        while b"\r\n\r\n" not in head:
+            chunk = client.recv(4096)
+            if not chunk:
+                return
+            head += chunk
+            if len(head) > 8192:
+                return
+        line = head.split(b"\r\n", 1)[0].decode()
+        parts = line.split()
+        if len(parts) < 2 or parts[0].upper() != "CONNECT":
+            client.sendall(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n")
+            return
+        target = parts[1]
+        if ":" in target:
+            host, port = target.rsplit(":", 1)
+            port = int(port)
+        else:
+            host, port = target, 443
+        print("http-connect %s:%d" % (host, port), file=sys.stderr,
+              flush=True)
+        upstream = socket.create_connection((host, port), timeout=30)
+        client.sendall(b"HTTP/1.1 200 Connection established\r\n\r\n")
+        relay(client, upstream)
+    except OSError:
+        try:
+            client.close()
+        except OSError:
+            pass
+
+
+def serve(addr, handler):
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(LISTEN)
+    srv.bind(addr)
     srv.listen(32)
-    print("socks5 on %s:%d" % LISTEN, file=sys.stderr, flush=True)
+    print("%s on %s:%d" % (handler.__name__, addr[0], addr[1]),
+          file=sys.stderr, flush=True)
     while True:
         client, _ = srv.accept()
-        threading.Thread(target=handle, args=(client,), daemon=True).start()
+        threading.Thread(target=handler, args=(client,),
+                         daemon=True).start()
+
+
+def main():
+    threading.Thread(target=serve, args=(LISTEN, handle),
+                     daemon=True).start()
+    serve(HTTP_LISTEN, handle_http)
 
 
 if __name__ == "__main__":
