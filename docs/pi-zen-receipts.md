@@ -19,17 +19,34 @@ RETIRED_1 — see above). No key VALUES are recorded anywhere in this repo.
 
 ## B. Per-call leg classification (receipt → inference labeled)
 
-- Call 1, big-pickle 429, route=Petr: RECEIPT route-hash=Petr + CLI-200
-  same key-family hour on RETIRED_1 → INFERENCE drained-key misroute
-  (agent config error). FIXED (reorder+redeploy, receipt A above).
+WITHDRAWN 2026-09-20 ~12:40Z: the "drained-key misroute" / "FIXED"
+labels below (Call 1) are superseded — Call 5 (Petr direct → 403
+gate-shape, never 429) shows the Petr key was never proven drained.
+Superseding attributions:
+- Call 1, big-pickle 429, route=Petr: RECEIPT route-hash=Petr +
+  Call 5 same-key-direct → 403 gate-shape. INFERENCE (bounded): the 429
+  shape matches the relay path seen in Call 3 (429 on RETIRED_1, a key
+  proven non-empty by Call 4 + CLI 200s); a Petr-bucket quota
+  contribution cannot be excluded from this evidence alone — different
+  paths can meet different checks. UNBLOCK (identical either way): use
+  the blessed direct path. The seed reorder stays as deployed hygiene,
+  NOT as a fix for a proven misroute.
 - Call 3, big-pickle 429 retry, route=RETIRED_1: RECEIPT route-hash=
-  RETIRED_1 + CLI ALIVE-CHECK-77 200 same key same hour → INFERENCE
-  relay-path gate (not quota: bucket proven non-empty by CLI 200).
-  NO in-scope fix in chat-completions-over-HTTP-relay.
+  RETIRED_1 + CLI ALIVE-CHECK-77 200 + Call 4 pi-direct 200, same key
+  same hour → INFERENCE relay-path gate (key-bucket quota excluded for
+  THIS key by the two 200s). NO in-scope fix in
+  chat-completions-over-HTTP-relay (keeper serving changes OUT).
 - Call 2, muse 503, route=Petr(pre-reorder): RECEIPT `Endpoint is
-  unavailable` → INFERENCE vendor capacity, endpoint-shaped, no key
-  bucket implicated. UNBLOCK (owner: none): retry when endpoint recovers.
-  Independent of big-pickle gate; tracked separately, not grouped.
+  unavailable` → INFERENCE vendor-side endpoint failure,
+  endpoint-shaped; the response carries no key-specific signal, and the
+  key's role is undetermined from this evidence alone (the earlier
+  "key-independent" label is withdrawn as overconfident). UNBLOCK
+  (owner: none): retry when the endpoint recovers. Independent of the
+  big-pickle gate; tracked separately, not grouped.
+
+Original (superseded) labels — kept for audit trail, DO NOT USE:
+- Call 1 was labeled "drained-key misroute (agent config error). FIXED" —
+  WITHDRAWN (see above).
 
 ## C. Exact vendor-call ledger (agent-driven, reconstructed 12:30Z)
 

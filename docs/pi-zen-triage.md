@@ -57,9 +57,9 @@ keeper code path `call_upstream` sends Content-Type + bearer only).
 
 | Call | Route/key at test time (hash-verified) | Verdict | Evidence |
 |------|----------------------------------------|---------|----------|
-| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | relay-path gate (CORRECTED: not drained-key) | Call 5: same key direct → 403 gate-shape, never 429 → the 429 shape comes from the relay path, not the key |
+| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | relay-path-shaped 429 (bounded: Petr-bucket quota not excludable) | Call 5: same key direct → 403 gate-shape, never 429 → the 429 shape matches the relay path (cf Call 3 on proven-good key); a Petr-quota contribution cannot be excluded — unblock identical either way (blessed direct path) |
 | 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | relay-path gate | same key 200s via CLI binary AND via pi-direct (Call 4); only the keeper relay 429s → path is the variable |
-| 2 (muse 503 keeper) | PETR (pre-reorder) | vendor capacity, endpoint-shaped | `Endpoint is unavailable`; key-independent |
+| 2 (muse 503 keeper) | PETR (pre-reorder) | vendor-side endpoint failure, endpoint-shaped | `Endpoint is unavailable`; no key-specific signal in the response (key role undetermined — prior "key-independent" label withdrawn) |
 | 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — objective satisfied | exit 0 + `PI-ZEN-DIRECT` |
 | 5 (Petr direct shape) | PETR | gate-403 (discriminating receipt for Call 1) | same key as Call 1, different path, different verdict |
 
