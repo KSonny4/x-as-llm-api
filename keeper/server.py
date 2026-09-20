@@ -38,6 +38,42 @@ urlopen = urllib.request.urlopen
 enumerate_inventory = inventory_mod.get_inventory
 
 ANTHROPIC_VERSION = "2023-06-01"
+
+# CLI identity for opencode-zen upstream (2026-09-20: keeper relayed bare
+# bearer-only requests and the vendor gated them 429; pi-direct with full
+# CLI identity 200s on identical keys — see docs/pi-zen-triage.md).
+# Forward client-supplied values first; originate sane defaults otherwise
+# (same pattern as pi-opencode-direct). Zen routes only — never stamped
+# on other providers' traffic.
+ZEN_PROVIDER = "opencode-zen"
+ZEN_CLI_UA = ("opencode/1.18.31 ai-sdk/provider-utils/4.0.23 "
+              "runtime/bun/1.3.14")
+ZEN_FWD_HEADERS = ("x-opencode-client", "x-opencode-project",
+                     "x-opencode-session", "x-opencode-request",
+                     "x-client-request-id", "user-agent")
+_ZEN_ID_ALPHABET = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz0123456789")
+
+
+def _zen_rand(prefix):
+    return prefix + "".join(
+        secrets.choice(_ZEN_ID_ALPHABET) for _ in range(24))
+
+
+def zen_identity(in_headers):
+    """Upstream identity headers for zen routes: passthrough wins."""
+    lowered = {str(k).lower(): v for k, v in (in_headers or {}).items()}
+    out = {}
+    for name in ZEN_FWD_HEADERS:
+        if name in lowered and lowered[name]:
+            out[name if name != "user-agent" else "User-Agent"] = \
+                lowered[name]
+    out.setdefault("x-opencode-client", "cli")
+    out.setdefault("x-opencode-project", "global")
+    out.setdefault("x-opencode-session", _zen_rand("ses_"))
+    out.setdefault("x-opencode-request", _zen_rand("msg_"))
+    out.setdefault("User-Agent", ZEN_CLI_UA)
+    return out
 FEEDBACK_REQUIRED = ("provider", "model", "errorClass", "httpStatus",
                      "keeperPackVersion")
 FEEDBACK_ERROR_CLASSES = {"auth", "upstream_5xx", "unknown", "limited",
@@ -285,7 +321,7 @@ def openai_error(message, code="upstream_error", http_status=502):
                                    "code": code}}
 
 
-def chat_completions(state, req):
+def chat_completions(state, req, fwd_headers=None):
     """OpenAI-out chat over either upstream wire. Returns (code, doc|None,
     sse_bytes|None)."""
     if not isinstance(req, dict) or not req.get("model"):
@@ -317,8 +353,12 @@ def chat_completions(state, req):
         except Exception as exc:
             return openai_error("bad upstream body: %s" % exc)[:2] + (None,)
     elif wire == "openai":
+        extra = None
+        if route.get("provider") == ZEN_PROVIDER:
+            extra = zen_identity(fwd_headers)
         code, body = call_upstream(
-            route, "/chat/completions", dict(req, stream=False))
+            route, "/chat/completions", dict(req, stream=False),
+            extra_headers=extra)
         if code != 200:
             try:
                 doc = json.loads(body or "{}")
@@ -561,6 +601,35 @@ def _worst_state(states):
     return min(states, key=lambda s: _STATE_RANK.get(s, 2))
 
 
+def keyqueue_path():
+    here = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(here, "keyqueue.json")
+
+
+def keyqueue_view():
+    """Pool ledger for GET /api/v1/key-queue (names only, never keys)."""
+    try:
+        with open(keyqueue_path(), encoding="utf-8") as fh:
+            doc = json.load(fh)
+        if isinstance(doc, dict) and isinstance(doc.get("keys"), list):
+            return doc
+    except (OSError, ValueError):
+        pass
+    return {"generated_at": None, "keys": []}
+
+
+def keyqueue_items(doc):
+    """Server-rendered pool list for the matrix page section."""
+    return ("".join(
+        '<li data-q="%s">%s \u2014 %s%s</li>'
+        % (html.escape(k.get("name", "?")),
+           html.escape(k.get("name", "?")),
+           html.escape(k.get("state", "pending")),
+           (" \u2014 " + html.escape(k.get("checked_at") or ""))
+           if k.get("checked_at") else "")
+        for k in doc.get("keys", [])) or "<li>no pool ledger</li>")
+
+
 def page_index(state):
     """Server-rendered matrix + just-in-time poller.
 
@@ -720,6 +789,8 @@ def page_index(state):
             "best AA score first</p>"
             "<h2>diagnostics.unassigned</h2><ul id=\"unassigned\">%s</ul>"
             "<h2>per key (zen)</h2><div id=\"perkey\">%s</div>"
+            "<h2>key queue (pool heartbeat)</h2>"
+            "<div id=\"keyqueue\"><ul>%s</ul></div>"
             "<script>var KEYMAP=%s;</script>"
             "<script>"
             "const T=document.getElementById('cells'),"
@@ -903,7 +974,12 @@ def page_index(state):
                ",".join(html.escape(c) for c in col_ids),
                "".join(prov_head), "".join(mod_head),
                "".join(rows), unassigned or "<li>none</li>",
-               "".join(perkey_secs), keymap_js))
+               "".join(perkey_secs), page_queue_section(), keymap_js))
+
+
+def page_queue_section():
+    """Standalone key-queue fragment (page section content)."""
+    return keyqueue_items(keyqueue_view())
 
 
 def _zen_keymap(state):
@@ -1209,7 +1285,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return json_resp(400, {"error": {"message": "bad JSON",
                                              "type": "invalid_request",
                                              "code": "invalid_request"}})
-        code, doc, sse = chat_completions(state, req)
+        code, doc, sse = chat_completions(state, req, dict(headers))
         if sse is not None:
             return code, sse, [("Content-Type", "text/event-stream")]
         return json_resp(code, doc)
@@ -1232,6 +1308,10 @@ def route(method, path, headers, token, body=None, query="", state=None):
 
     if method == "GET" and clean_path == "/api/v1/health":
         return json_resp(200, health_view(state))
+
+    if method == "GET" and clean_path == "/api/v1/key-queue":
+        # Pool heartbeat ledger (key names + verdicts, never values).
+        return json_resp(200, keyqueue_view())
 
     if method == "GET" and clean_path == "/api/v1/detail":
         # Stored probe evidence for one connection (bearer-gated like

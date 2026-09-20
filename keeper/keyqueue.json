@@ -1,0 +1,121 @@
+{
+ "generated_at": "2026-09-20T15:31:34Z",
+ "keys": [
+  {
+   "name": "OPENCODE_ZEN_API_KEY",
+   "state": "ok",
+   "zencli": {
+    "ok": true,
+    "text": "KEYROUND-ALIVE"
+   },
+   "opencode": null,
+   "mismatch": false,
+   "retry_hint_secs": null,
+   "checked_at": "2026-09-20T15:28:28Z",
+   "consecutive_dead": 0,
+   "next_test": "2026-09-20T16:28:28Z"
+  },
+  {
+   "name": "OPENCODE_ZEN_API_KEY_PETR",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_1",
+   "state": "ok",
+   "zencli": {
+    "ok": true,
+    "text": "KEYROUND-ALIVE"
+   },
+   "opencode": null,
+   "mismatch": false,
+   "retry_hint_secs": null,
+   "checked_at": "2026-09-20T15:23:20Z",
+   "consecutive_dead": 0,
+   "next_test": "2026-09-20T16:23:20Z"
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_2",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_3",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_4",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_5",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_6",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_7",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  },
+  {
+   "name": "OPENCODE_ZEN_RETIRED_8",
+   "state": "pending",
+   "zencli": null,
+   "opencode": null,
+   "mismatch": null,
+   "retry_hint_secs": null,
+   "checked_at": null,
+   "consecutive_dead": 0,
+   "next_test": null
+  }
+ ]
+}

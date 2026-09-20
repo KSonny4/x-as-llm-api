@@ -300,6 +300,20 @@ class MatrixEndpointTest(RouteCase):
         self.assertNotIn("k1", text)
         self.assertEqual(dict(headers)["Content-Type"], "text/html")
 
+    def test_keyqueue_endpoint_and_section(self):
+        code, raw, _ = self.call("GET", "/api/v1/key-queue")
+        self.assertEqual(code, 200)
+        doc = json.loads(raw)
+        self.assertIn("generated_at", doc)
+        self.assertIsInstance(doc["keys"], list)
+        for k in doc["keys"]:
+            self.assertIn(k["state"],
+                          ("pending", "testing", "ok", "dead"))
+            self.assertNotIn("value", json.dumps(k))
+        code, raw, _ = self.call("GET", "/")
+        self.assertEqual(code, 200)
+        self.assertIn('id="keyqueue"', raw.decode())
+
 
 class PagesTest(RouteCase):
     def test_guides_page(self):
