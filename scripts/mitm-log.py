@@ -63,9 +63,9 @@ def parse_hello(data):
         while q + 4 <= len(exts):
             et, el = struct.unpack("!HH", exts[q:q + 4])
             ed = exts[q + 4:q + 4 + el]
-            if et == 0 and el > 2:  # server_name
-                sl = struct.unpack("!H", ed[2:4])[0]
-                out["sni"] = ed[4:4 + sl].decode("ascii", "replace")
+            if et == 0 and el > 5:  # server_name: list(2)+type(1)+len(2)+name
+                sl = struct.unpack("!H", ed[3:5])[0]
+                out["sni"] = ed[5:5 + sl].decode("ascii", "replace")
             elif et == 16 and el > 2:  # alpn
                 al = struct.unpack("!H", ed[:2])[0]
                 out["alpn"] = ed[2:2 + al].decode("ascii", "replace")
