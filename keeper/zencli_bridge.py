@@ -5,11 +5,12 @@ fresh authoritative zero-price eligibility; each execution receives the exact
 selected key/model. Sidecar has no default account or durable secret store.
 """
 import json
+import time
 import urllib.error
 import urllib.request
 
 from availability import BRIDGE_BASE, CATALOG_TTL, Model, Result, evidence_age
-from inference import HttpResponse, NoRedirect, connection_config, verify as direct_verify, request
+from inference import HttpResponse, NoRedirect, connection_config, verify as direct_verify, request, retry_after
 
 
 def bridge_models(models):
@@ -76,8 +77,10 @@ class ZenCLI:
             return Result('unsupported')
         try:
             res = self.infer(self.config(c,secret), {'model':c['model'], 'messages':[{'role':'user','content':'Reply Hello.'}]})
+            if res.status == 429:
+                return Result('rate_limited', retry_after(res.headers, (clock or time.time)()))
             if res.status != 200:
-                return Result('access_denied' if res.status in (401,403) else 'transient_error')
+                return Result('access_denied' if res.status in (401,402,403) else 'transient_error')
             doc = res.json()
             if doc.get('model') != c['model']:
                 return Result('model_mismatch')

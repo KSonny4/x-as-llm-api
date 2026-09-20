@@ -4,7 +4,7 @@ Multiple process claims serialize in SQLite. Lease expiry fences abandoned
 checks, provider/key pacing persists, and manual checks cannot clear cooldowns.
 run() belongs on one background thread, never in the HTTP request handler.
 """
-from availability import CONNECTION_SQL, Result, blocked_reason
+from availability import CONNECTION_SQL, Result, blocked_reason, identity
 from inference import verify
 
 
@@ -80,23 +80,25 @@ class Sweeps:
                     continue
                 if max(c['cooldown'], c['retry_at']) > now:
                     continue
-                pacing = db.execute('SELECT next_at FROM av_provider_pacing WHERE provider=?', (c['provider'],)).fetchone()
-                key_pacing = db.execute('SELECT next_at FROM av_key_pacing WHERE credential_id=?', (c['credential_id'],)).fetchone()
+                scope = identity(c['provider'], c['base_url'], c['protocol'])
+                pacing = db.execute('SELECT next_at FROM av_transport_provider_pacing WHERE scope=?', (scope,)).fetchone()
+                key_pacing = db.execute('SELECT next_at FROM av_transport_key_pacing WHERE credential_id=? AND scope=?', (c['credential_id'], scope)).fetchone()
                 if (pacing and pacing[0] > now) or (key_pacing and key_pacing[0] > now):
                     continue
                 if db.execute('''SELECT 1 FROM av_jobs j JOIN av_connections c ON c.id=j.connection_id
-                    JOIN av_credentials k ON k.id=c.credential_id WHERE j.state='running' AND k.provider=?''',
-                    (c['provider'],)).fetchone():
+                    JOIN av_credentials k ON k.id=c.credential_id JOIN av_models m ON m.id=c.model_id
+                    WHERE j.state='running' AND k.provider=? AND m.base_url=? AND m.protocol=?''',
+                    (c['provider'], c['base_url'], c['protocol'])).fetchone():
                     continue
                 ticket = self.service._begin(db, c['id'])
                 if not ticket:
                     continue
                 db.execute("UPDATE av_jobs SET state='running',attempts=attempts+1,lease_until=?,check_id=? WHERE id=?",
                            (now + self.lease_seconds, ticket, job['id']))
-                db.execute('INSERT INTO av_provider_pacing VALUES (?,?) ON CONFLICT(provider) DO UPDATE SET next_at=excluded.next_at',
-                           (c['provider'], now + self.provider_interval))
-                db.execute('INSERT INTO av_key_pacing VALUES (?,?) ON CONFLICT(credential_id) DO UPDATE SET next_at=excluded.next_at',
-                           (c['credential_id'], now + self.key_interval))
+                db.execute('INSERT INTO av_transport_provider_pacing VALUES (?,?) ON CONFLICT(scope) DO UPDATE SET next_at=excluded.next_at',
+                           (scope, now + self.provider_interval))
+                db.execute('INSERT INTO av_transport_key_pacing VALUES (?,?,?) ON CONFLICT(credential_id,scope) DO UPDATE SET next_at=excluded.next_at',
+                           (c['credential_id'], scope, now + self.key_interval))
                 return {**dict(c), 'job_id': job['id'], 'check_id': ticket}
         return None
 

@@ -83,7 +83,7 @@ def test_feedback_during_job_schedules_fresh_verification(tmp_path):
     assert next(c for c in s.connections() if c['id'] == job['id'])['state'] == 'working'
 
 
-def test_revocation_blocks_sibling_jobs_but_malformed_is_not_key_wide(tmp_path):
+def test_transport_auth_failure_blocks_sibling_jobs_but_malformed_does_not(tmp_path):
     s, clock = setup(tmp_path, [seed()])
     s.update_catalog('p', [free('a'), free('b')])
     worker = Sweeps(s, provider_interval=1, key_interval=1)
@@ -94,7 +94,8 @@ def test_revocation_blocks_sibling_jobs_but_malformed_is_not_key_wide(tmp_path):
     job = worker.claim()
     assert job
     worker.complete(job, Result('auth_invalid'))
-    assert all(c['state'] == 'revoked' for c in s.connections())
+    assert all(c['state'] == 'auth_invalid' for c in s.connections())
+    assert not s.accounts()['keys'][0]['revoked']
     assert worker.progress(sid)['done'] == 2
 
 

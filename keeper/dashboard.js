@@ -37,7 +37,8 @@
     cells.forEach(c=>{const row=el('tr'), name=el('td'), state=el('td'), time=el('td');
       name.append(el('strong',c.model),el('p',c.protocol+' · '+c.base_url,'muted'));
       state.append(badge(c.state));if(c.blocked_reason) state.append(el('p',label(c.blocked_reason),'muted'));
-      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)));
+      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)),el('p',c.cooldown_scope==='legacy_scope_unknown'?'Legacy cooldown scope unknown':'Exact transport cooldown','muted'));
+      if(c.observation_state && c.observation_state!==c.state)state.append(el('p','Last observation: '+label(c.observation_state),'muted'));
       row.append(name,state,time);body.append(row);});table.append(body);wrap.append(table);return wrap;
   }
   async function check(scope) {const p=await api('checks',scope);notice('Queued '+p.total+' eligible connections. Cooldowns remain in effect.');await refresh(false);}
@@ -75,9 +76,10 @@
     else snapshot.models.filter(m=>matches(m.provider,[m.model,m.provider])).forEach(m=>{
       count++;const title=el('span',undefined,'row');title.append(el('strong',m.model+' / '+m.provider),badge(m.eligibility==='free'?m.state:m.eligibility),el('span','Coding '+(m.coding_index??'— unmatched')+' · '+m.working_keys+' / '+m.total_keys+' keys','muted'));
       const d=details(m.id,title), inner=el('div',undefined,'detail'), actions=el('div',undefined,'actions');
-      actions.append(button('Check model',()=>check({model_id:m.id})));
-      if(m.exportable)actions.append(button('Get verified token',()=>getToken(m.id)));
-      else actions.append(el('span','Service-only backend · provider key export unavailable','muted'));
+      if(m.state==='cli_required')actions.append(el('span','Use the separately verified CLI service route; no direct inference checks or key export.','muted'));
+      else actions.append(button('Check model',()=>check({model_id:m.id})));
+      if(m.exportable && m.state!=='cli_required')actions.append(button('Get verified token',()=>getToken(m.id)));
+      else if(!m.exportable)actions.append(el('span','Service-only backend · provider key export unavailable','muted'));
       inner.append(el('p',m.protocol+' · '+m.base_url,'muted'),el('p',m.transport_note,'muted'),el('p','Eligibility: '+m.eligibility+' · '+(m.provenance||'No pricing proof')+' · '+stamp(m.checked_at),'muted'),actions,cellsTable(m.connections));d.append(inner);fragment.append(d);
     });
     if(!count)fragment.append(el('p','No matching results. Try another filter; unknown and disabled entries remain accounted for.','muted'));

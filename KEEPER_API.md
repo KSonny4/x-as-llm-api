@@ -148,3 +148,23 @@ text input modalities before zero token rates establish free eligibility. Mixed
 text+audio Lyria entries remain visible with unknown eligibility: their zero
 text-token rates do not cover documented per-song/clip charges. Missing modality
 evidence is also blocked, including on partial discovery refreshes.
+
+
+### Transport policy and native CLI repair (schema 2)
+
+See [repair/canary/migration evidence](docs/keeper-transport-repair.md).
+Free Zen direct identities remain visible as `cli_required`; their history is
+retained but no direct inference checks, selection or credential export run.
+Genuine CLI routes remain separately checked with every eligible exact key/model.
+Other providers' supported transports are unchanged.
+
+Upstream cooldown/auth-invalid scope is exact credential + endpoint + protocol;
+manual revocation/disabled status and credential generations remain global.
+Catalog connections expose `cooldown_scope`: `exact_transport` or the conservatively
+retained `legacy_scope_unknown`. CLI 429/Retry-After is a real CLI cooldown, not a
+reason to probe a futile direct Zen route. No Keeper customer quota is introduced.
+
+Native build tools remain defined but permission requests are auto-rejected by
+pinned noninteractive OpenCode (never approval flags). No custom agent or forced
+step count. Tool-required runs without final text fail honestly. This does **not**
+make CLI-only routes compatible with ordinary tool-using or streaming agents.

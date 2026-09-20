@@ -1,4 +1,4 @@
-"""Exact direct-API availability domain. No legacy success imports or secrets.
+"""Exact-transport availability domain. No legacy success imports or secrets.
 
 Model metadata comes only from trusted discovery/seed configuration, never HTTP
 clients. Runtime secret resolution belongs to the service's caller. Public
@@ -79,12 +79,17 @@ class Result:
 
 
 CONNECTION_SQL = """SELECT c.*, k.provider, k.reference, k.owner, k.active,
- k.supported, k.has_secret, k.free_tier, k.revoked, k.cooldown,
+ k.supported, k.has_secret, k.free_tier, k.revoked,
+ k.cooldown AS legacy_cooldown,
+ MAX(k.cooldown,COALESCE(t.cooldown,0)) AS cooldown,
+ COALESCE(t.auth_invalid,0) AS transport_auth_invalid,
  k.revision AS key_revision, m.model, m.base_url, m.protocol,
  m.eligibility, m.provenance, m.requires_free_tier, m.present,
  m.checked_at AS catalog_checked_at
  FROM av_connections c JOIN av_credentials k ON k.id=c.credential_id
- JOIN av_models m ON m.id=c.model_id"""
+ JOIN av_models m ON m.id=c.model_id
+ LEFT JOIN av_transport_limits t ON t.credential_id=k.id
+ AND t.base_url=m.base_url AND t.protocol=m.protocol"""
 
 
 def evidence_age(stamp, now):
@@ -106,8 +111,12 @@ def blocked_reason(c, now):
         return 'catalog_removed'
     if c['eligibility'] != 'free':
         return 'paid' if c['eligibility'] == 'paid' else 'eligibility_unknown'
+    if c['provider'] == 'opencode-zen' and c['protocol'] != 'zencli':
+        return 'cli_required'
     if not c['provenance']:
         return 'eligibility_unknown'
+    if c['transport_auth_invalid']:
+        return 'auth_invalid'
     if not 0 <= evidence_age(c['catalog_checked_at'], now) < CATALOG_TTL:
         return 'catalog_stale'
     if c['requires_free_tier'] and not c['free_tier']:
@@ -255,6 +264,8 @@ class Availability:
             c['observation_state'] = c['state']
             c['blocked_reason'] = blocked_reason(c, now)
             c['retry_at'] = max(c['retry_at'], c['cooldown'])
+            c['cooldown_scope'] = ('legacy_scope_unknown' if c['legacy_cooldown'] > now
+                                   else 'exact_transport')
             age = evidence_age(c['checked_at'], now)
             if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale':
                 c['state'] = c['blocked_reason']
@@ -280,9 +291,14 @@ class Availability:
             model['total_keys'] = len(cells)
             model['checked'] = sum(c['checked_at'] is not None for c in cells)
             model['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
-            model['state'] = aggregate_health(c['state'] for c in cells)
+            model['state'] = ('cli_required' if model['provider'] == 'opencode-zen'
+                              and model['protocol'] != 'zencli' and model['eligibility'] == 'free'
+                              else aggregate_health(c['state'] for c in cells))
             model['exportable'] = model['protocol'] != 'zencli'
-            model['transport_note'] = 'Genuine CLI · flattened text history · no tools/stream/controls · service only' if model['protocol'] == 'zencli' else 'Direct provider API'
+            model['transport_note'] = ('Genuine CLI · flattened text history · no tools/stream/controls · service only'
+                if model['protocol'] == 'zencli' else 'CLI required · direct free Zen inference disabled by policy'
+                if model['provider'] == 'opencode-zen' and model['eligibility'] == 'free'
+                else 'Direct provider API')
         return {'models': models, 'discovery': self.store.rows('SELECT * FROM av_discovery ORDER BY credential_id')}
 
     def accounts(self):
@@ -292,13 +308,15 @@ class Availability:
         for k in keys:
             cells = [c for c in rows if c['credential_id'] == k['id']]
             k['connections'] = cells
+            k['cooldown_scope'] = 'legacy_scope_unknown' if k['cooldown'] > self.clock() else 'exact_transport'
+            k['cooldown'] = max((c['retry_at'] for c in cells), default=0)
             k['working'] = sum(c['state'] == 'working' for c in cells)
             k['total'] = len(cells)
             k['checked'] = sum(c['checked_at'] is not None for c in cells)
             k['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
             k['state'] = ('disabled' if not k['active'] else 'revoked' if k['revoked']
                           else aggregate_health(c['state'] for c in cells
-                                                if c['blocked_reason'] in (None, 'catalog_stale')))
+                                                if c['blocked_reason'] in (None, 'catalog_stale', 'auth_invalid')))
             owners.setdefault(k['owner'], []).append(k)
         return {'keys': keys, 'owners': [
             {'owner': owner, 'state': aggregate_health(k['state'] for k in ks if k['active']),
@@ -339,12 +357,15 @@ class Availability:
             db.execute('''UPDATE av_connections SET state=?,checked_at=?,retry_at=?,
                 excluded=CASE WHEN ?='working' THEN 0 ELSE excluded END WHERE id=?''',
                 (result.state, self.clock(), retry, result.state, c['id']))
-            if result.state == 'auth_invalid':
-                db.execute('UPDATE av_credentials SET revoked=1,revision=revision+1 WHERE id=?',
-                           (c['credential_id'],))
-            elif result.state == 'rate_limited':
-                db.execute('UPDATE av_credentials SET cooldown=MAX(cooldown,?) WHERE id=?',
-                           (max(retry, self.clock() + 60), c['credential_id']))
+            if result.state in ('auth_invalid', 'rate_limited'):
+                db.execute('''INSERT INTO av_transport_limits
+                    (credential_id,base_url,protocol,cooldown,auth_invalid) VALUES (?,?,?,?,?)
+                    ON CONFLICT(credential_id,base_url,protocol) DO UPDATE SET
+                    cooldown=MAX(cooldown,excluded.cooldown),
+                    auth_invalid=MAX(auth_invalid,excluded.auth_invalid)''',
+                    (c['credential_id'], c['base_url'], c['protocol'],
+                     max(retry, self.clock() + 60) if result.state == 'rate_limited' else 0,
+                     int(result.state == 'auth_invalid')))
         return bool(applied)
 
     def finish_check(self, ticket, result):

@@ -81,7 +81,8 @@ def test_older_negative_evidence_cannot_overwrite_newer_free_bridge(tmp_path):
     clock.advance(20)
     service.update_catalog('opencode-zen', [direct, *bridge_models([direct])])
     service.update_catalog('opencode-zen', [replace(direct, eligibility='paid', verified_at=prior)], complete=False)
-    assert all(not c['blocked_reason'] for c in service.connections())
+    assert all(c['blocked_reason'] == (None if c['protocol'] == 'zencli' else 'cli_required')
+               for c in service.connections())
 
 
 def test_partial_protocol_change_fences_prior_route(tmp_path):

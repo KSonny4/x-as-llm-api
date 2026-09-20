@@ -18,6 +18,16 @@ CREATE TABLE IF NOT EXISTS av_credentials (
  revoked INTEGER NOT NULL DEFAULT 0, cooldown REAL NOT NULL DEFAULT 0,
  revision INTEGER NOT NULL DEFAULT 0,
  UNIQUE(provider, reference));
+CREATE TABLE IF NOT EXISTS av_transport_limits (
+ credential_id TEXT NOT NULL REFERENCES av_credentials(id),
+ base_url TEXT NOT NULL, protocol TEXT NOT NULL,
+ cooldown REAL NOT NULL DEFAULT 0, auth_invalid INTEGER NOT NULL DEFAULT 0,
+ PRIMARY KEY(credential_id, base_url, protocol));
+CREATE TABLE IF NOT EXISTS av_transport_provider_pacing (
+ scope TEXT PRIMARY KEY, next_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS av_transport_key_pacing (
+ credential_id TEXT NOT NULL REFERENCES av_credentials(id), scope TEXT NOT NULL,
+ next_at REAL NOT NULL, PRIMARY KEY(credential_id, scope));
 CREATE TABLE IF NOT EXISTS av_models (
  id TEXT PRIMARY KEY, provider TEXT NOT NULL, model TEXT NOT NULL,
  base_url TEXT NOT NULL, protocol TEXT NOT NULL, eligibility TEXT NOT NULL,
@@ -74,16 +84,40 @@ class Store:
             self.db.executescript('BEGIN IMMEDIATE;\n' + SCHEMA)
             versions = self.db.execute('SELECT version FROM av_schema').fetchall()
             if not versions:
-                self.db.execute('INSERT INTO av_schema VALUES (1)')
-            elif len(versions) != 1 or versions[0][0] != 1:
+                self.db.execute('INSERT INTO av_schema VALUES (2)')
+            elif len(versions) != 1 or versions[0][0] not in (1, 2):
                 raise ValueError('unsupported availability schema')
             if 'feedback_id' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}:
                 self.db.execute('ALTER TABLE av_checks ADD COLUMN feedback_id INTEGER NOT NULL DEFAULT 0')
+            if versions and versions[0][0] == 1:
+                self._migrate_transport_limits()
+                self.db.execute('UPDATE av_schema SET version=2')
             self.db.commit()
         except Exception:
             self.db.rollback()
             self.db.close()
             raise
+
+    def _migrate_transport_limits(self):
+        # V1 did not store retry durations on checks. Conservatively carry its
+        # maximum deadline to every transport with applied rate evidence. Never
+        # infer a CLI limit from direct evidence. Without evidence retain the
+        # legacy global value, explicitly projected as unknown scope. Historical
+        # revoked is ambiguous (manual vs upstream); never auto-unrevoke it.
+        for key in self.db.execute('SELECT id,cooldown FROM av_credentials WHERE cooldown>0').fetchall():
+            scopes = self.db.execute('''SELECT DISTINCT m.base_url,m.protocol
+                FROM av_checks h JOIN av_connections c ON c.id=h.connection_id
+                JOIN av_models m ON m.id=c.model_id WHERE c.credential_id=?
+                AND h.state='rate_limited' AND h.applied=1 AND h.finished_at IS NOT NULL''',
+                (key['id'],)).fetchall()
+            for scope in scopes:
+                self.db.execute('''INSERT INTO av_transport_limits
+                    (credential_id,base_url,protocol,cooldown) VALUES (?,?,?,?)
+                    ON CONFLICT(credential_id,base_url,protocol) DO UPDATE SET
+                    cooldown=MAX(cooldown,excluded.cooldown)''',
+                    (key['id'], scope['base_url'], scope['protocol'], key['cooldown']))
+            if scopes:
+                self.db.execute('UPDATE av_credentials SET cooldown=0 WHERE id=?', (key['id'],))
 
     @contextmanager
     def transaction(self):

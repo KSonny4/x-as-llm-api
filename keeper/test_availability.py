@@ -92,9 +92,10 @@ def test_disabled_missing_owner_future_failure_and_revocation(tmp_path):
     assert next(x for x in s.connections() if x['id'] == c['id'])['state'] == 'unknown'
     clock.advance(10)
     s.finish_check(s.begin_check(c['id']), Result('auth_invalid'))
-    assert all(x['state'] == 'revoked' for x in s.connections() if x['credential_id'] == c['credential_id'])
+    assert all(x['state'] == 'auth_invalid' for x in s.connections() if x['credential_id'] == c['credential_id'])
+    assert not next(k for k in s.accounts()['keys'] if k['id'] == c['credential_id'])['revoked']
     s.sync_seeds([one, seed(key='OFF', active=False)])
-    assert next(x for x in s.connections() if x['id'] == c['id'])['state'] == 'revoked'
+    assert next(x for x in s.connections() if x['id'] == c['id'])['state'] == 'auth_invalid'
 
 
 def test_schema_preserves_old_tables_and_errors_propagate(tmp_path):

@@ -69,3 +69,11 @@ Neither the control nor those historical proofs establish the modified deploymen
 The private dashboard is at `/login`; it uses the administrator credential,
 not the inference-only service token. Verified direct provider-key export uses
 `/api/v2/credentials`; CLI-only success is explicitly non-exportable.
+
+
+Latest candidate: [native CLI / transport repair](docs/keeper-transport-repair.md).
+Free Zen direct routes are visible but `cli_required`, not futile inference
+probes. Genuine CLI uses the native build agent with noninteractive permission
+rejection, no custom agent/forced-step profile; it remains plain-text-only.
+Transport-scoped cooldowns preserve actual CLI limits without importing direct
+failures. Public rollout and real coding-agent compatibility need parent receipts.

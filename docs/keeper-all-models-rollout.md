@@ -161,7 +161,8 @@ Sidecar uses 1024 MiB / 500 MHz based on the existing measured Nomad proof
 with the actual pinned CLI before rollout; don't assume build-only proof is enough.
 CLI inference has a 110s deadline and Keeper's internal request timeout is 120s;
 long requests may also encounter external tunnel timeout. No user quota/cap is
-introduced. All tools are denied; streaming/tools require a compatible direct
+introduced. Native tool definitions remain; permission requests are auto-rejected by pinned
+noninteractive CLI (no custom agent or step limit). Streaming/tools require a compatible direct
 backend and must not be silently downgraded.
 
 The complete matrix now contains separate direct and CLI routes. Require actual
@@ -169,3 +170,12 @@ postdeploy CLI receipts with exact selected key/model and separate direct-route
 results; do not count old CLI records as new checks. Parent must run a minimal
 plain-text alias request **without generation controls** for bridge eligibility.
 Never activate the historical default-auth `zencli/entry.sh` in this service job.
+
+
+## Latest native CLI / transport repair
+
+Follow [exact-key canary and schema-2 migration/rollback](keeper-transport-repair.md)
+for the replacement candidate. Direct free Zen inference checks are now blocked
+by explicit `cli_required` policy, not needed as a prerequisite for CLI checks.
+Only actual new exact CLI evidence counts; do not import the protected receipt.
+Rollback to schema-1 code requires the pre-upgrade availability DB backup.

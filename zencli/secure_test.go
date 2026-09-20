@@ -39,10 +39,11 @@ const goodOutput = "printf '%s\\n' '{\"type\":\"text\",\"part\":{\"text\":\"hell
 func TestExactIsolatedKeyAndNativeConfiguration(t *testing.T) {
 	t.Setenv("KEEPER_TOKEN", "must-not-inherit")
 	t.Setenv("OPENCODE_API_KEY", "wrong-default-key")
+	t.Setenv("KEEPER_ZENCLI_TOKEN", "synthetic-parent-internal")
 	out := filepath.Join(t.TempDir(), "capture")
 	script := `test -z "$KEEPER_TOKEN" || exit 3
  test -z "$OPENCODE_API_KEY" || exit 4
- test -z "$ZENCLI_INTERNAL_TOKEN" || exit 5
+ test -z "$KEEPER_ZENCLI_TOKEN" || exit 5
  printf '%s\n' "$HOME" > "` + out + `"
  cat "$XDG_DATA_HOME/opencode/auth.json" >> "` + out + `"
  printf '\n%s\n' "$OPENCODE_CONFIG_CONTENT" >> "` + out + `"
@@ -200,7 +201,7 @@ func TestPinnedGenuineCLIRequiresApproval(t *testing.T) {
 	if json.Unmarshal(raw, &info) != nil || info.Steps != 0 {
 		t.Fatal("unexpected agent configuration")
 	}
-	for _, tool := range []string{"read", "edit", "bash", "task", "webfetch", "websearch", "skill", "external_directory", "glob", "grep", "list", "todowrite", "question", "plan_enter", "plan_exit", "lsp"} {
+	for _, tool := range []string{"read", "edit", "bash", "task", "webfetch", "websearch", "skill", "external_directory", "glob", "grep", "list", "todowrite", "question", "plan_enter", "plan_exit", "lsp", "write", "apply_patch", "invalid"} {
 		action := ""
 		for _, rule := range info.Permission {
 			if rule.Permission == "*" || rule.Permission == tool {

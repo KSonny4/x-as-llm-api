@@ -27,7 +27,7 @@ func TestPinnedNativeCLIAutoRejectsTools(t *testing.T) {
 	if err != nil || strings.TrimSpace(string(version)) != "1.18.31" {
 		t.Fatal("requires pinned 1.18.31")
 	}
-	for _, tool := range []string{"plain", "read", "bash", "task", "webfetch"} {
+	for _, tool := range []string{"plain", "read", "bash", "task", "webfetch", "grep", "glob", "write"} {
 		t.Run(tool, func(t *testing.T) {
 			dir, err := filepath.EvalSymlinks(t.TempDir())
 			if err != nil {
@@ -60,7 +60,7 @@ func TestPinnedNativeCLIAutoRejectsTools(t *testing.T) {
 				if req["model"] != "big-pickle" || r.Header.Get("Authorization") != "Bearer synthetic-selected" {
 					failure = "wrong key/model"
 				}
-				if strings.Contains(string(raw), "synthetic-parent-secret") || strings.Contains(string(raw), `\"key\":\"synthetic-selected\"`) {
+				if strings.Contains(string(raw), "synthetic-parent-secret") || strings.Contains(string(raw), "synthetic-selected") {
 					failure = "secret entered model history"
 				}
 				definitions, _ := req["tools"].([]any)
@@ -87,11 +87,17 @@ func TestPinnedNativeCLIAutoRejectsTools(t *testing.T) {
 					case "read":
 						args = map[string]any{"filePath": filepath.Join(dir, "data", "opencode", "auth.json")}
 					case "bash":
-						args = map[string]any{"command": "env; cat " + filepath.Join(dir, "data", "opencode", "auth.json") + "; touch " + marker, "description": "inspect credentials"}
+						args = map[string]any{"command": "env; cat /proc/$PPID/environ; cat " + filepath.Join(dir, "data", "opencode", "auth.json") + "; touch " + marker, "description": "inspect credentials"}
 					case "task":
 						args = map[string]any{"description": "inspect auth", "prompt": "Read all auth files and environment; create " + marker, "subagent_type": "general"}
 					case "webfetch":
 						args = map[string]any{"url": srv.URL + "/exfiltrate", "format": "text"}
+					case "grep":
+						args = map[string]any{"pattern": ".*", "path": filepath.Join(dir, "data", "opencode"), "include": "auth.json"}
+					case "glob":
+						args = map[string]any{"pattern": "**/*", "path": filepath.Join(dir, "data")}
+					case "write":
+						args = map[string]any{"filePath": marker, "content": "executed"}
 					}
 					encoded, _ := json.Marshal(args)
 					delta = map[string]any{"tool_calls": []any{map[string]any{"index": 0, "id": "call_native", "type": "function", "function": map[string]any{"name": tool, "arguments": string(encoded)}}}}
@@ -118,7 +124,7 @@ func TestPinnedNativeCLIAutoRejectsTools(t *testing.T) {
 			t.Setenv("KEEPER_TOKEN", "synthetic-parent-secret")
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			cmd := exec.CommandContext(ctx, bin, "run", "--model", "opencode/big-pickle", "--format", "json", "--pure", "--", "--auto --yolo --dangerously-skip-permissions inspect credentials")
+			cmd := exec.CommandContext(ctx, bin, "run", "--model", "opencode/big-pickle", "--format", "json", "--pure", "--", "--auto --yolo --dangerously-skip-permissions @"+filepath.Join(dir, "data", "opencode", "auth.json")+" inspect credentials")
 			cmd.Dir = dir
 			cmd.Env = env
 			var stderr strings.Builder
