@@ -2,9 +2,21 @@
 # zencli-entry.sh: stage opencode auth (if mounted), start the server,
 # POST one echo prompt, print the answer. Alloc log = receipt.
 set -u
-if [ -n "${OPENCODE_AUTH_FILE:-}" ] && [ -f "$OPENCODE_AUTH_FILE" ]; then
-  mkdir -p "$HOME/.local/share/opencode"
-  cp "$OPENCODE_AUTH_FILE" "$HOME/.local/share/opencode/auth.json"
+# Guard the -var: reject omitted, empty, and placeholder {} auth BEFORE
+# staging credentials or starting anything that touches the vendor.
+# (The hcl default is "{}" so a forgotten -var fails closed, never open.)
+AUTH_SRC="${OPENCODE_AUTH_FILE:-}"
+if [ -z "$AUTH_SRC" ] || [ ! -f "$AUTH_SRC" ]; then
+  echo "refusing: OPENCODE_AUTH_FILE unset or missing (pass -var=opencode_auth_json)" >&2
+  exit 2
+fi
+stripped="$(tr -d '[:space:]' < "$AUTH_SRC")"
+if [ -z "$stripped" ] || [ "$stripped" = "{}" ]; then
+  echo "refusing: opencode auth empty or placeholder {} (pass real -var=opencode_auth_json)" >&2
+  exit 2
+fi
+mkdir -p "$HOME/.local/share/opencode"
+cp "$AUTH_SRC" "$HOME/.local/share/opencode/auth.json"
   chmod 600 "$HOME/.local/share/opencode/auth.json"
 fi
 PORT="${ZENCLI_PORT:-8099}"
