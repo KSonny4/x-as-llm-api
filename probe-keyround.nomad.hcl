@@ -1,7 +1,7 @@
-# probe-keyround.nomad.hcl — pool heartbeat: one pool key + jitter per
-# firing, never a sweep. Manual dispatch pins a key (-meta key=NAME);
-# periodic hourly firings pick randomly from the pool (loose cadence;
-# the task sleeps KEYROUND_JITTER_SECS first so firings never burst).
+# probe-keyround.nomad.hcl — pool heartbeat: periodic hourly, one pool
+# key + jitter per firing, never a sweep. (Manual pins live in
+# probe-keyround-manual.nomad.hcl — periodic+parameterized in one file
+# breaks manual dispatch evaluation on this cluster.)
 #
 # Pool + values via -var (values NEVER in git — rendered from Bao):
 #   export NOMAD_ADDR=https://nomad.pkubelka.cz  # or loopback :4647
@@ -34,14 +34,9 @@ variable "keys_json" {
   default = "[]"
 }
 
-job "keyround" {
+job "keyround-periodic" {
   datacenters = ["ovh-vps"]
   type        = "batch"
-
-  parameterized {
-    payload = "optional"
-    meta_optional = ["key"]
-  }
 
   periodic {
     cron             = "0 * * * *"
@@ -60,13 +55,14 @@ job "keyround" {
           username = var.dr_user
           password = var.dr_pass
         }
-        command = "python3"
-        args    = ["/srv/probe/keyround.py"]
+        # Override the image ENTRYPOINT (zencli serve loop); the round
+        # is driven by keyround.py directly.
+        entrypoint = ["python3"]
+        args       = ["/srv/probe/keyround.py"]
       }
 
       env {
-        KEYS_JSON           = var.keys_json
-        KEYROUND_KEY        = "${NOMAD_META_key}"
+        KEYS_JSON            = var.keys_json
         KEYROUND_JITTER_SECS = "600"
       }
 
