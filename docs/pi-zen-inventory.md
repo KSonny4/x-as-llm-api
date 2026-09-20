@@ -32,9 +32,15 @@ credentials, not zen); paid models (CreditsError, no billing attached).
 
 ## Backing keys (names only, via GET /v1/route/:model)
 
-BOTH providers route opencode-zen @ `https://opencode.ai/zen/v1`
-(api=openai, features=chat/stream/tools, keeperPackVersion=v2),
-backed by the single Bao key name `OPENCODE_ZEN_API_KEY_PETR`.
+HISTORICAL (M2 Calls 1-2 ran against this): BOTH providers routed
+opencode-zen @ `https://opencode.ai/zen/v1` backed by the single Bao key
+name `OPENCODE_ZEN_API_KEY_PETR`.
+
+CURRENT (post seed-reorder, deployed + hash-verified 2026-09-20): BOTH
+providers resolve RETIRED_1-backed routes first
+(`zen/retired-1`, api=openai, features=chat/stream/tools,
+keeperPackVersion=v2). M2 Call 3 ran against this config and still 429d
+(see triage) — key verified identical to the CLI's working key.
 
 ## Notes
 
