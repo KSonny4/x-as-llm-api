@@ -55,9 +55,9 @@ a causal claim the receipts can't carry.
 
 | Call | Route/key at test time (hash-verified) | Contract leg + unblock (quota-wait vs key-action) | Residual uncertainty (not excluded) |
 |------|----------------------------------------|--------------------|--------------------------------------|
-| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | **vendor gate/quota** (quoted 429). UNBLOCK: quota-wait — ELAPSED, proven recovered (Call 4 + CLI 200s, same account, same hour); key-action: NONE required (no rekey — buckets serve 200s) | transient-429 vs relay-gate vs Petr-bucket-quota remain formally possible; Call 5 constrains but does not close Call 1 |
-| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | **vendor gate/quota** (quoted 429). UNBLOCK: quota-wait — ELAPSED (Call 4 same-key 200); key-action: NONE (RETIRED-1 serves 200s via two paths) | transient-429 not formally excludable; permanent exhaustion ruled out for this key only |
-| 2 (muse 503 keeper) | PETR (pre-reorder) | **vendor gate/quota** (503 endpoint). UNBLOCK: time — endpoint recovery, owner-none | key role undetermined; transient vs persistent undetermined |
+| 1 (big-pickle 429 keeper) | OPENCODE_ZEN_API_KEY_PETR | **vendor gate/quota** (quoted 429). RECOVERY OF THIS KEY/PATH: UNPROVEN — Call 4 (direct, RETIRED_1) is a workaround, not recovery of the Petr-keyed relay path. CONDITIONAL UNBLOCKS (both unattempted): quota-wait → owner: time; key-action (replace/repair Petr key or its route) → owner: key ops | transient-429 vs relay-gate vs Petr-bucket-quota remain open; Call 5 constrains but does not close Call 1 |
+| 3 (big-pickle 429 keeper retry) | OPENCODE_ZEN_RETIRED_1 | **vendor gate/quota** (quoted 429). RECOVERY OF THIS RELAY PATH: UNPROVEN — Call 4 proves the direct path serves this key, nothing about the keeper path's future behavior. CONDITIONAL UNBLOCKS (both unattempted): quota-wait → owner: time; keeper-route repair → OUT of this goal's scope | transient-429 not formally excludable; permanent exhaustion ruled out for this key only |
+| 2 (muse 503 keeper) | PETR (pre-reorder) | **vendor gate/quota** (503 endpoint). RECOVERY OF THIS MODEL/PATH: UNPROVEN — Call 4 (big-pickle direct) is a workaround on a different model, not recovery of muse. CONDITIONAL UNBLOCKS (both unattempted): endpoint wait → owner: time; model/key-route change → owner: key ops | key role undetermined; transient vs persistent undetermined |
 | 4 (big-pickle 200 DIRECT) | RETIRED_1 (pi stored credential) | GREEN — blessed path recorded (no keeper hop) | none for the objective |
 | 5 (Petr direct shape) | PETR | diagnostic: gate-403 | mechanism of the gate undetermined |
 
@@ -70,18 +70,20 @@ for future keeper work (OUT of this goal's scope).
 Leg status (contract legs): pi config NOT IMPLICATED (resolves,
 dispatches, surfaces vendor JSON); keeper route NOT IMPLICATED as
 misconfiguration (resolves pack v2, forwards); failures assigned to
-**vendor gate/quota** per the quoted 429/503s, with quota-wait ELAPSED
-and key-action NONE — both proven by same-key same-hour 200s. Blessed
-path (Call 4) works now; no waiting, no rekeying.
+**vendor gate/quota** per the quoted 429/503s. Recovery of each failed
+key/model/path is UNPROVEN (see table) — the blessed direct path (Call 4)
+is the proven workaround, not a recovery proof.
 
-## Recovery actions (one per failed leg, works under all residuals)
+## Recovery actions (conditional, per failed key/model/path — all unattempted)
 
-- FAILED vendor-gate/quota leg (Calls 1/3/2): quota-wait ELAPSED +
-key-action NONE (both proven by Call 4 + CLI 200s) → USE the blessed
-direct path, which works now. This is the failed leg's evidence-based
-recovery action with owner (agent documents; owner-none for time).
-Keeper relay itself left unfixed (keeper serving changes OUT of scope;
-seed reorder stays as deployed hygiene).
+- Petr-keyed keeper routes (Call 1): IF quota → wait (owner: time);
+IF key action needed → replace/repair key or route (owner: key ops).
+Neither attempted; objective covered meanwhile by the proven direct
+workaround. Owner of this disposition: agent (this document).
+- RETIRED_1 keeper route (Call 3): IF quota → wait (owner: time);
+keeper-route repair → OUT of this goal's scope. Unattempted.
+- muse keeper route (Call 2): endpoint wait (owner: time) or model/key
+change (owner: key ops). Unattempted; tracked separately.
 - muse endpoint (Call 2, within the failed path): no independent recovery
 beyond the supersede above; a future direct-model retry is owner-none
 (time-gated), tracked separately from the big-pickle gate.

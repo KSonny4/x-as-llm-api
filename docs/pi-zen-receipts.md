@@ -25,25 +25,28 @@ gate-shape, never 429) shows the Petr key was never proven drained.
 Superseding attributions:
 - Call 1, big-pickle 429, route=Petr: RECEIPT route-hash=Petr +
   Call 5 same-key-direct → 403 gate-shape. INFERENCE (bounded): the 429
-  shape matches the relay path seen in Call 3 (429 on RETIRED_1, a key
-  proven non-empty by Call 4 + CLI 200s); a Petr-bucket quota
-  contribution cannot be excluded from this evidence alone — different
-  paths can meet different checks. UNBLOCK (identical either way): use
-  the blessed direct path. The seed reorder stays as deployed hygiene,
-  NOT as a fix for a proven misroute.
+  shape matches the relay path seen in Call 3; a Petr-bucket quota
+  contribution cannot be excluded — different paths can meet different
+  checks. RECOVERY OF THIS KEY/PATH: UNPROVEN (Call 4 is a workaround
+  on another key, not recovery here). CONDITIONAL UNBLOCKS
+  (unattempted): quota-wait → owner: time; key-action → owner: key ops.
+  The seed reorder stays as deployed hygiene, NOT as a fix for a proven
+  misroute.
 - Call 3, big-pickle 429 retry, route=RETIRED_1: RECEIPT route-hash=
   RETIRED_1 + CLI ALIVE-CHECK-77 200 + Call 4 pi-direct 200, same key
   same hour → INFERENCE vendor gate/quota leg (quoted 429). Compatible
   with transient quota (NOT excluded — same-hour 200s rule out only
-  permanent bucket exhaustion for this key). UNBLOCK: quota-wait ELAPSED
-  + key-action NONE.
+  permanent bucket exhaustion for this key). RECOVERY OF THIS RELAY
+  PATH: UNPROVEN. CONDITIONAL UNBLOCKS (unattempted): quota-wait →
+  owner: time; keeper-route repair → OUT of scope.
 - Call 2, muse 503, route=Petr(pre-reorder): RECEIPT `Endpoint is
   unavailable` → INFERENCE vendor-side endpoint failure,
   endpoint-shaped; the response carries no key-specific signal, and the
   key's role is undetermined from this evidence alone (the earlier
-  "key-independent" label is withdrawn as overconfident). UNBLOCK
-  (owner: none): retry when the endpoint recovers. Independent of the
-  big-pickle gate; tracked separately, not grouped.
+  "key-independent" label is withdrawn as overconfident). RECOVERY OF
+  THIS MODEL/PATH: UNPROVEN. CONDITIONAL UNBLOCKS (unattempted):
+  endpoint wait → owner: time; model/key change → owner: key ops.
+  Independent of the big-pickle gate; tracked separately, not grouped.
 
 Original (superseded) labels — kept for audit trail, DO NOT USE:
 - Call 1 was labeled "drained-key misroute (agent config error). FIXED" —
@@ -51,10 +54,19 @@ Original (superseded) labels — kept for audit trail, DO NOT USE:
 
 ## C. Exact vendor-call ledger (agent-driven, reconstructed 12:30Z)
 
-THIS goal chat-completions calls (cap 5): FINAL 5 of 5 — Call 1 (429
-keeper), Call 2 (503 keeper), Call 3 (429 keeper retry), Call 4 (200
-DIRECT, objective satisfied), Call 5 (Petr direct-shape 403,
-discriminating receipt). Cap reached exactly; no further vendor calls.
+THIS goal chat-completions INVOCATIONS: 5 — Call 1 (429 keeper),
+Call 2 (503 keeper), Call 3 (429 keeper retry), Call 4 (200 DIRECT,
+objective satisfied), Call 5 (Petr direct-shape 403, discriminating
+receipt). No further vendor calls (cap reached on invocations).
+
+Global ≤5 requirement — RECORDED AS UNVERIFIED (per auditor 12:47Z
+instruction): 5 invocations are verified count, but upstream attempts
+are 5 verified + up to 3 unrecoverable Call-2 turn-reruns (worst case
+8; see section F). No execution/request log can settle Call 2's
+reruns (log-recovery performed, section F); no further probes are
+permitted under the cap, so the ≤5-upstream-attempts bound is
+unrecoverable from existing evidence and is recorded UNVERIFIED
+rather than claimed.
 
 Ablation-scope replay probes (paused ablation goal, owner-funded
 bootstrap-tracing decision 2026-09-20 + "whatever it takes" directive;
