@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import aa
+import api_v2
 import inventory as inventory_mod
 import matrix as matrix_mod
 import translate as translate_mod
@@ -192,7 +193,7 @@ def freeze(state, inventory=None):
                     "provider dashboard" % (provider, model),
                 ]},
             })
-    return {"keeperPackVersion": KEEPER_PACK_VERSION, "packs": packs}
+    return {"keeperPackVersion": KEEPER_PACK_VERSION, "verification": "unverified_raw_configuration", "packs": packs}
 
 
 def etag_for(doc):
@@ -437,7 +438,7 @@ def route_view(state, model):
     route = find_route(state, model)
     if route is None:
         return None
-    return {"model": model, "baseURL": route.get("base_url", ""),
+    return {"model": model, "verification": "unverified_raw_configuration", "baseURL": route.get("base_url", ""),
             "api": "openai",
             "auth": {"scheme": "bearer",
                      "value": route.get("api_key", "")},
@@ -1348,8 +1349,13 @@ def route(method, path, headers, token, body=None, query="", state=None):
     # read pages, never mutate state.
     cookie_ok = (state is not None
                  and _valid_session(state, _session_raw(headers)))
-    via_cookie = cookie_ok and (
-        method == "GET" or (method == "POST"
+    bearer_ok = accepted(auth, token)
+    if cookie_ok and not bearer_ok and method == "POST" and clean_path in api_v2.MUTATIONS:
+        if not api_v2.browser_mutation_ok(state, headers, _session_raw(headers)):
+            return api_v2.response(403, {"error": "csrf_required"})
+    secret_get = clean_path == "/packs" or clean_path.startswith("/v1/route/")
+    via_cookie = cookie_ok and not secret_get and (
+        method == "GET" or (method == "POST" and clean_path in api_v2.MUTATIONS) or (method == "POST"
                               and clean_path == "/api/v1/session/logout"))
     if not accepted(auth, token) and not via_cookie:
         return 401, b"unauthorized", [("Content-Type", "text/plain")]
@@ -1369,6 +1375,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
             state.get("sessions", {}).pop(
                 hashlib.sha256(raw.encode()).hexdigest(), None)
         return json_resp(200, {"ok": True}, [_clear_session_cookie()])
+    if clean_path.startswith("/api/v2/"):
+        return api_v2.handle(state, method, clean_path, body, _session_raw(headers) if cookie_ok else "")
     params = urllib.parse.parse_qs(query)
 
     if method == "GET" and clean_path == "/packs":
@@ -1380,7 +1388,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return 304, b"", [("ETag", tag)]
         return 200, json.dumps(doc).encode(), [
             ("Content-Type", "application/json"),
-            ("ETag", tag), ("Cache-Control", "max-age=600")]
+            ("ETag", tag), ("Cache-Control", "no-store, private")]
 
     if method == "POST" and clean_path == "/feedback":
         try:
@@ -1438,7 +1446,7 @@ def route(method, path, headers, token, body=None, query="", state=None):
         view = route_view(state, clean_path[len("/v1/route/"):])
         if view is None:
             return 404, b"not found", [("Content-Type", "text/plain")]
-        return json_resp(200, view)
+        return json_resp(200, view, api_v2.NO_STORE)
 
     if method == "GET" and clean_path == "/api/v1/matrix":
         refresh = params.get("refresh", ["0"])[0] == "1"
@@ -1494,8 +1502,7 @@ class H(BaseHTTPRequestHandler):
     state = None
 
     def log_message(self, *a):
-        sys.stderr.write("%s %s %s\n" % (self.log_date_time_string(),
-                                         self.command, self.path))
+        sys.stderr.write("%s request\n" % self.log_date_time_string())
 
     def _send(self, code, body=b"", headers=()):
         self.send_response(code)

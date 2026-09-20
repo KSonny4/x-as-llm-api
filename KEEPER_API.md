@@ -44,3 +44,37 @@ else `signin: {steps[]}`.
 Feedback fields (all required): `provider`, `model`, `errorClass`
 (`auth|upstream_5xx|unknown|limited|misconfigured|denied|timeout`),
 `httpStatus`, `keeperPackVersion`. Any report flips the route to `suspect`.
+
+## Authoritative v2 availability API (2026-09-20)
+
+Legacy packs and `/v1/route/*` are **raw, unverified configuration**, not
+verified credentials. They require an administrator bearer, never a browser
+cookie, and are non-cacheable. Legacy probe/CLI results are not v2 proof.
+
+All v2 requests require the administrator bearer or a private login session.
+Browser POSTs additionally require `Origin` equal to configured `PUBLIC_ORIGIN`
+and `X-Keeper-CSRF` from `GET /api/v2/session`. The Keeper bearer is not stored
+in browser storage or page source. The session cookie is Secure/HttpOnly.
+
+- `GET /api/v2/catalog`: local-only models, exact connections, keys/owners,
+  coverage, latest sweep, discovery errors, Coding Index freshness. No secrets.
+- `POST /api/v2/checks`: `{}` checks all; optional `credential_id` and/or
+  `model_id` scope the persisted paced queue. Returns 202 progress.
+- `POST /api/v2/credentials`: `{"model_id":"<catalog id>"}` returns an actual
+  verified upstream `api_key`, `headers`, `base_url`, `endpoint`, `protocol`,
+  exact `model`, `provider`, `connection_id`, `model_id`, `verified_at`.
+  Freshest success wins; older than five minutes is reverified. Up to three
+  attempts, each bounded by upstream timeout; cooldown/pacing cannot be bypassed.
+- `POST /api/v2/feedback`: `{"connection_id":"<returned id>","reason":"client_failure"}`
+  excludes only that connection and queues verification. Returns a freshly
+  verified alternative for the **same model identity**, never another model.
+  Reasons are a fixed classification, not arbitrary diagnostic text.
+
+Selection/replacement returns 409 with `no_working_connection` or
+`verification_pending` when no verified candidate can be returned. Unknown
+identities return 404; malformed/unrecognized fields return 422. Responses are
+`Cache-Control: no-store, private`. No user-supplied upstream endpoints accepted.
+
+Coding Index uses exact AA slugs only (no Intelligence Index or guessed suffix
+match). Missing scores remain unmatched. Daily refresh retains the last usable
+snapshot on failure, marked stale; catalog polling never fetches providers/AA.

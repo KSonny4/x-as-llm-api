@@ -123,7 +123,7 @@ class PacksTest(RouteCase):
         self.assertIn("k1", creds)
         waiting = [m for m in doc["packs"] if m["model"] == "acme-waiting"]
         self.assertTrue(waiting[0]["signin"]["steps"])
-        self.assertEqual(dict(headers).get("Cache-Control"), "max-age=600")
+        self.assertEqual(dict(headers).get("Cache-Control"), "no-store, private")
 
     def test_etag_304(self):
         _, _, headers = self.call("GET", "/packs")
@@ -249,6 +249,7 @@ class RouteEndpointTest(RouteCase):
         doc = json.loads(raw)
         self.assertEqual(doc, {
             "model": "acme-chat", "baseURL": "https://acme.example/v1",
+            "verification": "unverified_raw_configuration",
             "api": "openai", "auth": {"scheme": "bearer", "value": "k1"},
             "features": ["chat", "stream", "tools"],
             "keeperPackVersion": "v2"})

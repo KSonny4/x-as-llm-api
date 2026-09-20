@@ -20,9 +20,9 @@ FIXTURE = {"data": [
 
 
 class ParseTest(unittest.TestCase):
-    def test_prefers_coding_then_intelligence(self):
+    def test_coding_only(self):
         scores = parse_scores(FIXTURE)
-        self.assertEqual(scores, {"m-high": 90.0, "m-low": 50.0, "m-brain": 80.0})
+        self.assertEqual(scores, {"m-high": 90.0, "m-low": 50.0})
 
     def test_prefers_slug_over_uuid_id(self):
         scores = parse_scores({"data": [
@@ -42,7 +42,7 @@ class ParseTest(unittest.TestCase):
                  "artificial_analysis_coding_index": None,
                  "artificial_analysis_intelligence_index": 53.4}},
         ]})
-        self.assertEqual(scores, {"m-v2": 81.6, "m-intel": 53.4})
+        self.assertEqual(scores, {"m-v2": 81.6})
 
 
 class FetchTest(unittest.TestCase):
@@ -104,3 +104,30 @@ class FetchTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_conservative_matching_and_rank():
+    from aa import rank_models, score_for
+    assert score_for({'a': 99}, 'p', 'vendor/a') is None
+    assert score_for({'a': float('nan')}, 'p', 'a') is None
+    assert score_for({'a': True}, 'p', 'a') is None
+    rows = [{'id': 'p-a', 'provider': 'p', 'model': 'a', 'working_keys': 0},
+            {'id': 'q-a', 'provider': 'q', 'model': 'a', 'working_keys': 1},
+            {'id': 'p-b', 'provider': 'p', 'model': 'b', 'working_keys': 1}]
+    assert [r['id'] for r in rank_models(rows, {'a': 90})] == ['q-a', 'p-b', 'p-a']
+
+
+def test_daily_cache_no_refresh_from_catalog(tmp_path):
+    import aa
+    from test_api_v2 import state_for, call
+    state, _ = state_for(tmp_path)
+    state['aa_api_key'] = 'synthetic-aa'
+    state['aa_cache'] = str(tmp_path / 'aa.json')
+    with patch('aa.urlopen', return_value=FetchTest.Resp(FIXTURE)) as fetch:
+        aa.refresh_state(state, now=1800000000)
+        aa.refresh_state(state, now=1800000001)
+        call(state, 'GET', '/api/v2/catalog')
+        assert fetch.call_count == 1
+    with patch('aa.urlopen', side_effect=OSError('secret-must-not-leak')):
+        aa.refresh_state(state, now=1800086401)
+    assert state['aa_stale'] and state['aa_scores']['m-high'] == 90
