@@ -1,26 +1,49 @@
 #!/bin/bash
-# tripwire: refuse secret-looking literals in tracked repo files.
+# tripwire v3: refuse secret-looking literals in the deliverable tree.
 #
-# v2 (2026-09-20): whole-repo scope (was keeper+probe py only) + bare
-# sk- pattern (zen keys are sk- + ~64 chars; the old pattern missed
-# them). Proves "no secret values anywhere" in git, not just code.
+# Scope: tracked working tree EXCLUDING orchestration scratch
+# (.pi-glla/, wt/) — scratch is machine-generated transcripts, scrubbed
+# separately (2026-09-20: 12 sk- values redacted) and too noisy for
+# exact matching. What ships (git) is fully covered, tracked or not.
 #
-# Matches real key FORMATS only (long, high-entropy). The suite's named
-# fixture stubs ("k", "k1", "k2", "test-key", "test-token", "wrong",
-# "uitest", "m2test", "Bearer t", "sekret", "bogus", "va/vb") are
-# structurally excluded: none matches the length/charset floors below,
-# so no name-allowlist is needed and none exists.
+# Two rule classes, NO whole-line suppression (field lesson 2026-09-20:
+# an `abcdef` word-exclusion silently ate a planted sk- tripwire):
+#  1. prefixed formats (sk-, service prefixes, 3-segment JWT, bearer /
+#     token assignments) — always fire, zero exclusions.
+#  2. bare hex 40/64 runs — fire UNLESS the exact value is a git object
+#     (repo SHAs, resolved dynamically) or listed in tripwire.allowlist
+#     (doc digests/snapshots, verified digest-context 2026-09-20; a hex
+#     KEY on a sha256-labelled line still fires because only the exact
+#     known value is suppressed, never the line).
+#
+# Negative controls live in keeper/test_tripwire.py (TRIPWIRE_ROOT).
 # Exit 0 = clean, 1 = hit (prints file:line, never values).
 set -u
-cd "$(dirname "$0")/.." || exit 2
-hits=$(grep -rEn "sk-[A-Za-z0-9]{20,}|sk-or-v1-[A-Za-z0-9]{8,}|AIza[A-Za-z0-9_-]{10,}|enc:v1:[A-Za-z0-9+/=]{16,}|xox[bpas]-[A-Za-z0-9-]+|glpat-[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|[Bb][Ee][Aa][Rr][Ee][Rr] +[A-Za-z0-9_.-]{20,}|[Tt][Oo][Kk][Ee][Nn][\"']? *: *[A-Za-z0-9_.-]{20,}" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.png" --exclude=package-lock.json 2>/dev/null || true)
-hits=$(printf "%s" "$hits" | grep -vE "sha512-|sha256:|[0-9a-f]{40,}|[0-9A-F]{40,}|hexdigest|token_urlsafe|sha256|Max-Age|uuid|abcdef" || true)
-# NOTE: eyJ requires 3-segment JWT structure 2026-09-20 (bare eyJ runs
-# matched base64 blobs in .pi-glla transcripts; verified non-JWT).
-# NOTE: bare-base64 class dropped 2026-09-20 (matched model slugs like
-# openrouter/.../dolphin-...-edition). Prefixed formats + bearer/token
-# assignments cover our real key shapes (sk-, eyJ, service tokens); pure-hex
-# 40/64-char tokens are git/sha digests (reviewed: only SHAs match).
+ROOT="${TRIPWIRE_ROOT:-$(dirname "$0")/..}"
+cd "$ROOT" || exit 2
+ALLOW="$(dirname "$0")/tripwire.allowlist"
+SCAN_EXCLUDES=(--exclude-dir=.git --exclude-dir=node_modules
+  --exclude-dir=.pi-glla --exclude-dir=wt
+  --exclude="*.png" --exclude=package-lock.json)
+
+hits=$(grep -rEn "sk-[A-Za-z0-9]{20,}|sk-or-v1-[A-Za-z0-9]{8,}|AIza[A-Za-z0-9_-]{10,}|enc:v1:[A-Za-z0-9+/=]{16,}|xox[bpas]-[A-Za-z0-9-]+|glpat-[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|[Bb][Ee][Aa][Rr][Ee][Rr] +[A-Za-z0-9_.-]{20,}|[Tt][Oo][Kk][Ee][Nn][\"']? *: *[A-Za-z0-9_.-]{20,}" . "${SCAN_EXCLUDES[@]}" -I 2>/dev/null || true)
+
+hexhits=""
+while IFS= read -r val; do
+  [ -n "$val" ] || continue
+  if [ "${#val}" = 40 ] && git cat-file -e "$val" 2>/dev/null; then
+    continue
+  fi
+  if [ -f "$ALLOW" ] && grep -Fxq "$val" "$ALLOW"; then
+    continue
+  fi
+  locs=$(grep -rEnF "$val" . "${SCAN_EXCLUDES[@]}" -I 2>/dev/null | cut -c1-100 || true)
+  hexhits=$(printf "%s\n%s" "$hexhits" "$locs")
+done <<EOF
+$(grep -rEho "[0-9a-f]{64}|[0-9A-F]{64}|[0-9a-f]{40}|[0-9A-F]{40}" . "${SCAN_EXCLUDES[@]}" -I 2>/dev/null | sort -u)
+EOF
+
+hits=$(printf "%s\n%s" "$hits" "$hexhits" | grep -v '^$' || true)
 if [ -n "$hits" ]; then
   printf "%s\n" "$hits" | cut -c1-120
   echo "TRIPWIRE DIRTY"

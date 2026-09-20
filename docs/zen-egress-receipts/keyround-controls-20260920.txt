@@ -1,0 +1,9 @@
+# Deployed auth controls 2026-09-20 (main-8/9, staged-HOME fix live)
+## valid: keyround-manual/dispatch-1789920667 RETIRED_1 alloc=822388e1
+{"key_name": "OPENCODE_ZEN_RETIRED_1", "model": "big-pickle", "zencli": {"ok": true, "text": "KEYROUND-ALIVE"}, "opencode": null, "mismatch": false, "working": true, "retry_hint_secs": null, "checked_at": "2026-09-20T16:11:20Z"}
+## bogus: keyround-bogus/dispatch-1789922666 BOGUS alloc=6098c507
+{"key_name": "BOGUS", "model": "big-pickle", "zencli": {"ok": false, "text": "zencli upstream: HTTP Error 502: Bad Gateway"}, "opencode": {"ok": false, "text": "stderr: \u001b[0m\n> build \u00b7 big-pickle\n\u001b[0m\n\u001b[91m\u001b[1mError: \u001b[0mInvalid API key. rc=1"}, "mismatch": false, "working": false, "retry_hint_secs": null, "checked_at": "2026-09-20T16:44:42Z"}
+## missing: keyround-empty/dispatch-1789922711 EMPTY alloc=ff39671c exit=2
+keyround refusing: picked key EMPTY has no usable value
+## mismatch drill: POST mismatch=true 16:50Z -> rule firing (poll 4) -> cleared 16:11Z repost
+## stale drill: temp clone threshold 60s -> firing (poll 2) -> deleted same day
