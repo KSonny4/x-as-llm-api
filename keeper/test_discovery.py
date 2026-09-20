@@ -25,11 +25,11 @@ class HTTP:
 def test_priced_catalog_paginated_each_key_no_cap_and_missing_price(tmp_path):
     routes = [seed('openrouter', 'K1'), seed('openrouter', 'K2')]
     s, _ = setup(tmp_path, routes)
-    page = {'data': [{'id': 'm' + str(i), 'pricing': {'prompt': '0', 'completion': '0'}} for i in range(25)],
+    page = {'data': [{'id': 'm' + str(i), 'architecture': {'input_modalities':['text'], 'output_modalities':['text']}, 'pricing': {'prompt': '0', 'completion': '0'}} for i in range(25)],
             'next_page_token': 'page2'}
-    tail = {'data': [{'id': 'paid', 'pricing': {'prompt': '0.001', 'completion': '0'}},
-                     {'id': 'unknown'}, {'id': 'fee', 'pricing': {'prompt': '0', 'completion': '0', 'request': '0.1'}}]}
-    http = HTTP([response(page), response(tail), response({'data': [{'id': 'key2-only', 'pricing': {'prompt': '0', 'completion': '0'}}]})])
+    tail = {'data': [{'id': 'paid', 'architecture': {'input_modalities':['text'], 'output_modalities':['text']}, 'pricing': {'prompt': '0.001', 'completion': '0'}},
+                     {'id': 'unknown'}, {'id': 'fee', 'architecture': {'input_modalities':['text'], 'output_modalities':['text']}, 'pricing': {'prompt': '0', 'completion': '0', 'request': '0.1'}}]}
+    http = HTTP([response(page), response(tail), response({'data': [{'id': 'key2-only', 'architecture': {'input_modalities':['text'], 'output_modalities':['text']}, 'pricing': {'prompt': '0', 'completion': '0'}}]})])
     CatalogDiscovery(s, http).refresh(routes)
     rows = s.connections()
     assert len([c for c in rows if not c['blocked_reason']]) == 52
@@ -42,7 +42,7 @@ def test_priced_catalog_paginated_each_key_no_cap_and_missing_price(tmp_path):
 def test_failure_preserves_catalog_with_error_and_original_freshness(tmp_path):
     routes = [seed('openrouter')]
     s, clock = setup(tmp_path, routes)
-    good = {'data': [{'id': 'free', 'pricing': {'prompt': '0', 'completion': '0'}}]}
+    good = {'data': [{'id': 'free', 'architecture': {'input_modalities':['text'], 'output_modalities':['text']}, 'pricing': {'prompt': '0', 'completion': '0'}}]}
     discovery = CatalogDiscovery(s, HTTP([response(good), RuntimeError('synthetic-secret-KEY1')]))
     discovery.refresh(routes)
     timestamp = next(c['catalog_checked_at'] for c in s.connections() if c['model'] == 'free')
@@ -124,3 +124,31 @@ def test_catalog_cannot_reflect_credentials_into_sqlite_or_status(tmp_path):
     CatalogDiscovery(s, http).refresh(routes)
     assert 'synthetic-secret' not in json.dumps(s.catalog())
     assert 'synthetic-secret' not in '\n'.join(s.store.db.iterdump())
+
+
+def test_zero_token_prices_do_not_authorize_audio_or_mixed_output_spend(tmp_path):
+    from sweeps import Sweeps
+    routes=[seed('openrouter')]
+    s,_=setup(tmp_path,routes)
+    entries=[{'id':name,'pricing':{'prompt':'0','completion':'0'},
+              'architecture':{'input_modalities':['text'],'output_modalities':outputs}}
+             for name,outputs in [('audio-only',['audio']),('lyria-priced-song',['text','audio']),('text-safe',['text'])]]
+    entries.append({'id':'missing-modalities','pricing':{'prompt':'0','completion':'0'}})
+    CatalogDiscovery(s,HTTP([response({'data':entries})])).refresh(routes)
+    cells={c['model']:c for c in s.connections()}
+    assert cells['text-safe']['blocked_reason'] is None
+    for name in ['audio-only','lyria-priced-song','missing-modalities']:
+        assert cells[name]['eligibility']=='unknown' and cells[name]['blocked_reason']=='eligibility_unknown'
+    worker=Sweeps(s)
+    assert worker.progress(worker.schedule())['total']==1
+
+
+def test_modality_uncertainty_supersedes_old_free_even_partial_or_explicit(tmp_path):
+    from availability import Model
+    routes=[seed('openrouter','K1',model='lyria',free_eligibility={'kind':'zero_price','provenance':'old-proof','verified_at':1800000000}),seed('openrouter','K2')]
+    for route in routes: route['base_url']='https://openrouter.ai/api/v1'
+    s,clock=setup(tmp_path,routes)
+    row={'id':'lyria','pricing':{'prompt':'0','completion':'0'},'architecture':{'input_modalities':['text'],'output_modalities':['text','audio']}}
+    http=HTTP([response({'data':[row]}),RuntimeError('provider unavailable')])
+    CatalogDiscovery(s,http).refresh(routes)
+    assert all(c['eligibility']=='unknown' for c in s.connections() if c['model']=='lyria' and c['base_url']=='https://openrouter.ai/api/v1')

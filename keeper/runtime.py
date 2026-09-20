@@ -12,7 +12,7 @@ from store import Store
 from sweeps import Sweeps
 
 
-def initialize(state, db_path, public_origin, service_token='', admin_tokens=()):
+def initialize(state, db_path, public_origin, service_token='', admin_tokens=(), zencli_token=''):
     origin = urlsplit(public_origin)
     if (not db_path or db_path == ':memory:' or not os.path.isabs(db_path)
             or origin.scheme != 'https' or not origin.netloc or origin.path
@@ -20,13 +20,26 @@ def initialize(state, db_path, public_origin, service_token='', admin_tokens=())
         raise ValueError('explicit durable database path and HTTPS PUBLIC_ORIGIN required')
     if service_token and service_token in (state['token'], *admin_tokens):
         raise ValueError('service principal must be separate from administrator')
+    if zencli_token and zencli_token in (state['token'], service_token, *admin_tokens):
+        raise ValueError('internal bridge principal must be separate')
     runtime = RuntimeCredentials(state['routes'])
     os.makedirs(os.path.dirname(db_path), mode=0o700, exist_ok=True)
     service = Availability(Store(db_path))
     service.sync_seeds(state['routes'])
-    sweeps = Sweeps(service)
+    options = {}
+    if zencli_token:
+        from zencli_bridge import ZenCLI
+        state['zencli'] = ZenCLI(service, zencli_token)
+        options = {'verifier': state['zencli'].verify}
+    else:
+        # A disabled sidecar cannot inherit working evidence from a prior run.
+        with service.store.transaction() as db:
+            db.execute("UPDATE av_models SET present=0 WHERE protocol='zencli'")
+    sweeps = Sweeps(service, lease_seconds=150 if zencli_token else 90, **options)
+    if zencli_token:
+        options['config_builder'] = state['zencli'].config
     state.update(availability=service, sweeps=sweeps,
-                 selector=Selector(service, sweeps, runtime.resolve),
+                 selector=Selector(service, sweeps, runtime.resolve, **options),
                  public_origin=public_origin, service_token=service_token,
                  build=os.environ.get('BUILD_ID', 'development'), aa_stale=True)
     return state
@@ -38,7 +51,13 @@ def start_worker(state):
     stop = threading.Event()
     def refresh():
         aa.refresh_state(state)
-        CatalogDiscovery(state['availability']).refresh(state['routes'])
+        CatalogDiscovery(state['availability'], bridge_enabled=bool(state.get('zencli'))).refresh(state['routes'])
+        if state.get('zencli'):
+            try:
+                state['zencli'].sync()
+                state['bridge_error'] = None
+            except Exception:
+                state['bridge_error'] = 'bridge_unavailable'
     def run():
         try:
             aa.refresh_state(state)

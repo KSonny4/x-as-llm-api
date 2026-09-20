@@ -6,6 +6,7 @@ import stat
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import keyround
@@ -452,8 +453,9 @@ class EligibilityTest(unittest.TestCase):
                         KEYROUND_KEEPER_URL="http://127.0.0.1:%d"
                         % ports[0])
         try:
-            # A due (past next_test); B backed off; C mid-round.
-            self.assertEqual(keyround.eligible_names(), ["A"])
+            # Fixture time must not become a real-world expiry boundary.
+            with patch("keyround.time.strftime", return_value="2026-09-20T16:00:00Z"):
+                self.assertEqual(keyround.eligible_names(), ["A"])
         finally:
             self._restore(old)
             srv.shutdown()

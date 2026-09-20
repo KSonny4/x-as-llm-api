@@ -3,7 +3,7 @@
 // One binary, zero dependencies (stdlib only). Serves GET /v1/models +
 // POST /v1/chat/completions (non-stream + SSE) by driving the genuine
 // `opencode` CLI subprocess per request — the only client the vendor
-// gate passes. No server-side key: the CLI uses its own auth.
+// gate passes. Selected keys are isolated per request; no default CLI auth.
 //
 // Usage:
 //
@@ -11,15 +11,12 @@
 package main
 
 import (
-	"context"
 	"crypto/rand"
-	"encoding/json"
+	"crypto/subtle"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -102,155 +99,16 @@ func buildPrompt(msgs []Msg) string {
 	return strings.TrimSpace(sb.String())
 }
 
-// writeSSE emits format-exact SSE (word chunks + DONE). Format parity:
-// clients parsing event-streams work unchanged. NOT token-realtime —
-// the completion is produced by one subprocess run, then chunked.
-func writeSSE(w http.ResponseWriter, id, model, text string, fl http.Flusher) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	chunk := func(content string, finish any) string {
-		d, _ := json.Marshal(map[string]any{
-			"id":      id,
-			"object":  "chat.completion.chunk",
-			"created": time.Now().Unix(),
-			"model":   model,
-			"choices": []any{map[string]any{
-				"index":         0,
-				"delta":         map[string]string{"content": content},
-				"finish_reason": finish,
-			}},
-		})
-		return "data: " + string(d) + "\n\n"
-	}
-	fmt.Fprint(w, chunk("", nil))
-	if fl != nil {
-		fl.Flush()
-	}
-	for _, word := range strings.SplitAfter(text, " ") {
-		if word == "" {
-			continue
-		}
-		fmt.Fprint(w, chunk(word, nil))
-		if fl != nil {
-			fl.Flush()
-		}
-	}
-	fmt.Fprint(w, chunk("", "stop"))
-	fmt.Fprint(w, "data: [DONE]\n\n")
-}
-
-// serveExec implements POST /v1/chat/completions by driving the genuine
-// opencode CLI subprocess (the only client proven to pass the gate).
-// No ZEN_API_KEY needed: the CLI uses its own auth. Minimal mapping:
-// last user message -> prompt, model "X" -> "opencode/X" (unless already
-// prefixed); CLI stdout -> chat.completion JSON. Per-request temp cwd.
-func serveExec(bin string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-		if err != nil || len(body) == 0 {
-			http.Error(w, "bad body", http.StatusBadRequest)
-			return
-		}
-		var req ChatReq
-		if err := json.Unmarshal(body, &req); err != nil || req.Model == "" {
-			http.Error(w, "bad chat body", http.StatusBadRequest)
-			return
-		}
-		prompt := buildPrompt(req.Messages)
-		if prompt == "" {
-			http.Error(w, "no prompt content", http.StatusBadRequest)
-			return
-		}
-		model := req.Model
-		if !strings.Contains(model, "/") {
-			model = "opencode/" + model
-		}
-		dir, err := os.MkdirTemp("", "zencli-exec-")
-		if err != nil {
-			http.Error(w, "tmpdir", http.StatusInternalServerError)
-			return
-		}
-		defer os.RemoveAll(dir)
-		ctx, cancel := context.WithTimeout(r.Context(), 110*time.Second)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, bin, "run", "--model", model, "--pure", prompt)
-		cmd.Dir = dir
-		out, err := cmd.Output()
-		if err != nil {
-			http.Error(w, "opencode: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		text := strings.TrimSpace(string(out))
-		id := "chatcmpl-" + rid("", 12)
-		if req.Stream {
-			fl, _ := w.(http.Flusher)
-			writeSSE(w, id, req.Model, text, fl)
-			return
-		}
-		resp := map[string]any{
-			"id":      id,
-			"object":  "chat.completion",
-			"created": time.Now().Unix(),
-			"model":   req.Model,
-			"choices": []any{map[string]any{
-				"index": 0,
-				"message": map[string]string{
-					"role":    "assistant",
-					"content": text,
-				},
-				"finish_reason": "stop",
-			}},
-			"usage": map[string]int{},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	}
-}
-
-// zenModels is the served catalog: free models observed working via the
-// CLI backend (2026-09-20). No vendor touch to list.
-var zenModels = []struct {
-	id, name string
-	ctx      int
-}{
-	{"big-pickle", "Big Pickle", 200000},
-	{"mimo-v2.5-free", "Mimo (free)", 200000},
-	{"muse-spark-1.2-contributor-free", "Muse Spark 1.2 (free)", 1000000},
-	{"muse-spark-1.3-contributor-free", "Muse Spark 1.3 (free)", 1000000},
-	{"nemotron-3-ultra-free", "Nemotron Ultra (free)", 1000000},
-	{"nemotron-3.5-lightning-free", "Nemotron Lightning (free)", 262144},
-	{"ling-3.0-flash-fin-free", "Ling Flash (free)", 262144},
-}
-
-func serveModels(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	data := make([]any, 0, len(zenModels))
-	for _, m := range zenModels {
-		data = append(data, map[string]any{
-			"id": m.id, "object": "model", "owned_by": "opencode-zen",
-			"context_window": m.ctx,
-		})
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"object": "list", "data": data})
-}
-
-// requireAuth wraps a handler with optional bearer auth (flag -auth).
+// requireAuth never permits an unauthenticated bridge, including loopback.
 func requireAuth(token string, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if token != "" && r.Header.Get("Authorization") != "Bearer "+token {
+		w.Header().Set("Cache-Control", "no-store, private")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if token == "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte("Bearer "+token)) != 1 {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		h.ServeHTTP(w, r)
+		h(w, r)
 	}
 }
 
@@ -268,23 +126,24 @@ func rid(prefix string, n int) string {
 	return sb.String()
 }
 
-// Observed genuine-CLI profile (captured 2026-09-20 via CONNECT proxy):
-// 17 ciphers, no GREASE; 14 extensions in fixed order; ALPN http/1.1;
-// groups X25519/secp256r1/secp384r1; sigalgs Chrome-order + SHA1-RSA;
-// BoringSSL padding last; NO compress-cert, NO ALPS, NO ECH.
 func main() {
-	port := flag.String("port", "8099", "listen port")
-	execBin := flag.String("opencode-bin", "opencode", "opencode binary backing chat requests")
-	bindAddr := flag.String("bind", "127.0.0.1", "listen address")
-	authToken := flag.String("auth", "", "optional bearer token clients must present (empty = localhost trust)")
+	port := flag.String("port", "8099", "private loopback port")
+	bin := flag.String("opencode-bin", "/usr/local/bin/opencode", "pinned genuine CLI binary")
 	flag.Parse()
-
+	token := os.Getenv("KEEPER_ZENCLI_TOKEN")
+	if token == "" {
+		fmt.Fprintln(os.Stderr, "internal bridge token required")
+		os.Exit(2)
+	}
+	b := newBridge(*bin)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/chat/completions", requireAuth(*authToken, serveExec(*execBin)))
-	mux.HandleFunc("/v1/models", requireAuth(*authToken, serveModels))
-	fmt.Fprintf(os.Stderr, "zencli serve on %s:%s backend=%s\n", *bindAddr, *port, *execBin)
-	if err := http.ListenAndServe(*bindAddr+":"+*port, mux); err != nil {
-		fmt.Fprintln(os.Stderr, "serve:", err)
+	mux.HandleFunc("/v1/chat/completions", requireAuth(token, b.chat))
+	mux.HandleFunc("/v1/models", requireAuth(token, b.list))
+	mux.HandleFunc("/internal/catalog", requireAuth(token, b.catalog))
+	server := &http.Server{Addr: "127.0.0.1:" + *port, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 120 * time.Second}
+	fmt.Fprintln(os.Stderr, "zencli private loopback ready")
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Fprintln(os.Stderr, "zencli stopped")
 		os.Exit(1)
 	}
 }

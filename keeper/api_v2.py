@@ -37,6 +37,7 @@ def catalog(state):
     doc['now'] = s.clock()
     doc['build'] = state.get('build', 'development')
     doc['worker_error'] = state.get('worker_error')
+    doc['bridge_error'] = state.get('bridge_error')
     return doc
 
 

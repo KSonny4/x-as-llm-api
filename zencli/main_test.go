@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -39,55 +37,6 @@ func TestBuildPromptPartsArray(t *testing.T) {
 	}
 }
 
-func TestWriteSSEFormat(t *testing.T) {
-	w := httptest.NewRecorder()
-	writeSSE(w, "chatcmpl-1", "big-pickle", "hi there", nil)
-	body := w.Body.String()
-	if w.Header().Get("Content-Type") != "text/event-stream" {
-		t.Fatal("wrong content type")
-	}
-	if !strings.Contains(body, `"content":"hi "`) {
-		t.Fatalf("missing word chunk: %q", body[:200])
-	}
-	// strict OpenAI shape: unfinished chunks carry finish_reason null
-	lines := strings.Split(strings.TrimSpace(body), "\n\n")
-	if len(lines) < 3 {
-		t.Fatalf("want >=3 SSE frames, got %d", len(lines))
-	}
-	var first struct {
-		Choices []struct {
-			Delta        map[string]string `json:"delta"`
-			FinishReason *string           `json:"finish_reason"`
-		} `json:"choices"`
-	}
-	if err := json.Unmarshal([]byte(strings.TrimPrefix(lines[0], "data: ")), &first); err != nil {
-		t.Fatal(err)
-	}
-	if first.Choices[0].FinishReason != nil {
-		t.Fatalf("delta chunk finish_reason must be null, got %q", *first.Choices[0].FinishReason)
-	}
-	if !strings.Contains(body, `"finish_reason":"stop"`) {
-		t.Fatal("missing stop chunk")
-	}
-	if !strings.HasSuffix(strings.TrimSpace(body), "data: [DONE]") {
-		t.Fatal("missing DONE terminator")
-	}
-}
-
-func TestServeModels(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
-	w := httptest.NewRecorder()
-	serveModels(w, req)
-	if w.Code != 200 {
-		t.Fatalf("code %d", w.Code)
-	}
-	for _, want := range []string{`"big-pickle"`, `"object":"list"`} {
-		if !strings.Contains(w.Body.String(), want) {
-			t.Fatalf("missing %s", want)
-		}
-	}
-}
-
 func TestRequireAuth(t *testing.T) {
 	ok := requireAuth("s3cret", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -104,77 +53,13 @@ func TestRequireAuth(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatalf("want 200, got %d", w.Code)
 	}
-	// empty token = open (localhost trust)
+	// Even loopback requires an internal bearer.
 	open := requireAuth("", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	})
 	w = httptest.NewRecorder()
 	open(w, httptest.NewRequest(http.MethodGet, "/", nil))
-	if w.Code != 200 {
-		t.Fatalf("want 200 open, got %d", w.Code)
-	}
-}
-
-func TestServeExecRelay(t *testing.T) {
-	// fake opencode binary: echoes canned text regardless of args
-	dir := t.TempDir()
-	fake := dir + "/opencode"
-	script := "#!/bin/sh\necho \"hello from fake\"\n"
-	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	h := serveExec(fake)
-	body := `{"model":"big-pickle","messages":[{"role":"user","content":"hi"}]}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions",
-		strings.NewReader(body))
-	w := httptest.NewRecorder()
-	h(w, req)
-	if w.Code != 200 {
-		t.Fatalf("code %d body %q", w.Code, w.Body.String())
-	}
-	var doc struct {
-		Object  string `json:"object"`
-		Model   string `json:"model"`
-		Choices []struct {
-			Message struct {
-				Role    string `json:"role"`
-				Content string `json:"content"`
-			} `json:"message"`
-			FinishReason string `json:"finish_reason"`
-		} `json:"choices"`
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &doc); err != nil {
-		t.Fatal(err)
-	}
-	if doc.Object != "chat.completion" || doc.Model != "big-pickle" {
-		t.Fatalf("bad envelope: %+v", doc)
-	}
-	if len(doc.Choices) != 1 || doc.Choices[0].Message.Content != "hello from fake" {
-		t.Fatalf("bad choices: %+v", doc.Choices)
-	}
-	if doc.Choices[0].FinishReason != "stop" {
-		t.Fatal("missing stop reason")
-	}
-}
-
-func TestServeExecModelPrefix(t *testing.T) {
-	dir := t.TempDir()
-	fake := dir + "/opencode"
-	// echo argv so we can assert the model mapping
-	script := "#!/bin/sh\necho \"ARGS:$*\"\n"
-	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	h := serveExec(fake)
-	body := `{"model":"mimo-v2.5-free","messages":[{"role":"user","content":"hi"}]}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions",
-		strings.NewReader(body))
-	w := httptest.NewRecorder()
-	h(w, req)
-	if w.Code != 200 {
-		t.Fatalf("code %d", w.Code)
-	}
-	if !strings.Contains(w.Body.String(), "opencode/mimo-v2.5-free") {
-		t.Fatalf("model not prefixed: %q", w.Body.String()[:200])
+	if w.Code != 401 {
+		t.Fatalf("want 401 closed, got %d", w.Code)
 	}
 }

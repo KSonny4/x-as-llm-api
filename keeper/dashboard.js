@@ -64,8 +64,10 @@
     else snapshot.models.filter(m=>matches(m.provider,[m.model,m.provider])).forEach(m=>{
       count++;const title=el('span',undefined,'row');title.append(el('strong',m.model+' / '+m.provider),badge(m.eligibility==='free'?m.state:m.eligibility),el('span','Coding '+(m.coding_index??'— unmatched')+' · '+m.working_keys+' / '+m.total_keys+' keys','muted'));
       const d=details(m.id,title), inner=el('div',undefined,'detail'), actions=el('div',undefined,'actions');
-      actions.append(button('Check model',()=>check({model_id:m.id})),button('Get verified token',()=>getToken(m.id)));
-      inner.append(el('p',m.protocol+' · '+m.base_url,'muted'),el('p','Eligibility: '+m.eligibility+' · '+(m.provenance||'No pricing proof')+' · '+stamp(m.checked_at),'muted'),actions,cellsTable(m.connections));d.append(inner);fragment.append(d);
+      actions.append(button('Check model',()=>check({model_id:m.id})));
+      if(m.exportable)actions.append(button('Get verified token',()=>getToken(m.id)));
+      else actions.append(el('span','Service-only backend · provider key export unavailable','muted'));
+      inner.append(el('p',m.protocol+' · '+m.base_url,'muted'),el('p',m.transport_note,'muted'),el('p','Eligibility: '+m.eligibility+' · '+(m.provenance||'No pricing proof')+' · '+stamp(m.checked_at),'muted'),actions,cellsTable(m.connections));d.append(inner);fragment.append(d);
     });
     if(!count)fragment.append(el('p','No matching results. Try another filter; unknown and disabled entries remain accounted for.','muted'));
     content.replaceChildren(fragment);

@@ -104,3 +104,54 @@ no-store. New browser/API selection uses only exact observations. Legacy matrix
 shape is preserved in production but its columns now have exact route IDs and
 only v2 direct evidence. Unmatched AA IDs stay unscored; a stale cached Coding
 Index is labelled as such. Protocol feature limitations are in `KEEPER_API.md`.
+
+## Approved genuine-CLI sidecar integration (latest topology)
+
+The user explicitly required reuse of the repository's proven genuine OpenCode
+bridge as a distinct service backend; direct HTTP rejection must not erase that
+option. New root README and engineering guidance describe its text-only limits.
+Historical main-1 proof is not a hardened-image live receipt.
+
+Parent's isolated preflight proved CNI bridge **unavailable** (missing
+`${attr.plugins.cni.version.bridge}`), then proved Docker `network_mode=host`
+shared loopback with two tasks; allocation `e81d43b1-a586-0131-6ec5-12a1a9f79743`
+completed with neither task failed. The preflight job was stopped; no provider
+calls were involved. Do not install host CNI as part of this rollout.
+
+Final job therefore reserves host ports 8102 and 8099, uses Docker host networking
+for both tasks, and explicitly binds Keeper **127.0.0.1:8102** and sidecar
+**127.0.0.1:8099**. The public tunnel still targets only Keeper at 8102. A fixed
+node constraint keeps the durable bind on `ovh-nomad-fresh`. Releasing the old
+allocation's static 8102 reservation makes this a destructive update, not a
+zero-downtime canary; account for the short interruption.
+
+Supply new required `zencli_image` and `keeper_zencli_token` variables. Parent's
+internal bearer source is Bao
+`secret/projects/pi-infinity-llm/KEEPER_ZENCLI_TOKEN`, field `token`.
+It must differ from both admin and public service tokens; startup checks this.
+Only Keeper + sidecar receive it. The sidecar receives no seed/admin/service
+secret, host DB or auth-volume mount; Keeper sends one selected key per private
+request. Ephemeral catalog/auth are rebuilt, not treated as durable evidence.
+
+Build and inspect **both** images as linux/amd64:
+
+```sh
+docker build --platform linux/amd64 --build-arg BUILD_ID="$(git rev-parse HEAD)" \
+  -f zencli/Dockerfile -t keeper-zencli:all-models-check .
+docker image inspect --format '{{.Architecture}}' keeper-zencli:all-models-check
+```
+
+Sidecar uses 1024 MiB / 500 MHz based on the existing measured Nomad proof
+(256 MiB caused SIGKILL); node capacity was verified by parent. Keeper remains
+128 MiB / 200 MHz. Test readonly-rootfs/tmpfs/no-new-privileges/cap-drop settings
+with the actual pinned CLI before rollout; don't assume build-only proof is enough.
+CLI inference has a 110s deadline and Keeper's internal request timeout is 120s;
+long requests may also encounter external tunnel timeout. No user quota/cap is
+introduced. All tools are denied; streaming/tools require a compatible direct
+backend and must not be silently downgraded.
+
+The complete matrix now contains separate direct and CLI routes. Require actual
+postdeploy CLI receipts with exact selected key/model and separate direct-route
+results; do not count old CLI records as new checks. Parent must run a minimal
+plain-text alias request **without generation controls** for bridge eligibility.
+Never activate the historical default-auth `zencli/entry.sh` in this service job.

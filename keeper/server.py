@@ -1698,12 +1698,12 @@ def main():
     from runtime import initialize, start_worker
     initialize(H.state, os.environ.get("AVAILABILITY_DB", ""),
                os.environ.get("PUBLIC_ORIGIN", ""), os.environ.get("KEEPER_SERVICE_TOKEN", ""),
-               (H.token_next,))
+               (H.token_next,), os.environ.get("KEEPER_ZENCLI_TOKEN", ""))
     start_worker(H.state)
     n = hydrate_probe_state(H.state)
-    print("keeper v2 on 0.0.0.0:%d probe_hydrated=%d" % (PORT, n),
+    print("keeper v2 port=%d probe_hydrated=%d" % (PORT, n),
           flush=True)
-    KeeperHTTPServer(("0.0.0.0", PORT), H).serve_forever()
+    KeeperHTTPServer((os.environ.get("BIND", "127.0.0.1"), PORT), H).serve_forever()
 
 
 if __name__ == "__main__":

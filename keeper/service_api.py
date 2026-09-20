@@ -73,7 +73,7 @@ def _safe_doc(doc, config):
     # Keep response content/semantics, not provider diagnostics. Do not leak a
     # credential if a malicious upstream reflects its Authorization header.
     raw = json.dumps(doc)
-    if config['api_key'] and config['api_key'] in raw:
+    if any(secret and secret in raw for secret in config.get('secret_values', [config['api_key']])):
         raise UpstreamFailure('invalid_response')
     return raw.encode()
 
@@ -190,7 +190,7 @@ def chat(state, body, allow_exact=False):
                        for c in s.connections()):
                 break
             attempts += 1
-            config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1)
+            config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
             if 'error' in config: break
             excluded.add(config['connection_id'])
             try:
@@ -212,7 +212,8 @@ def chat(state, body, allow_exact=False):
                     return 200, _stream_body(first, chunks, state, config, ticket), [
                         ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
                         ('X-Accel-Buffering', 'no')]
-                res = state.get('inference_transport', request)('POST', config['endpoint'], config['headers'], payload)
+                res = (state['zencli'].infer(config, payload) if config['protocol'] == 'zencli' else
+                       state.get('inference_transport', request)('POST', config['endpoint'], config['headers'], payload))
                 if res.status != 200: raise classify(res.status, res.headers, s.clock())
                 doc = wire.normalize(res.json(), config)
                 if not _usable(doc): raise UpstreamFailure('invalid_response')

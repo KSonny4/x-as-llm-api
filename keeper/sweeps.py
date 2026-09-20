@@ -10,7 +10,7 @@ from inference import verify
 
 class Sweeps:
     def __init__(self, service, provider_interval=2, key_interval=5,
-                 lease_seconds=90, max_attempts=3):
+                 lease_seconds=90, max_attempts=3, verifier=verify):
         self.service = service
         self.store = service.store
         self.clock = service.clock
@@ -20,6 +20,7 @@ class Sweeps:
         self.key_interval = key_interval
         self.lease_seconds = lease_seconds
         self.max_attempts = max_attempts
+        self.verifier = verifier
 
     def schedule(self, kind='manual', credential_id=None, model_id=None):
         """Schedule EVERY eligible pair; active jobs are shared across sweeps.
@@ -137,7 +138,7 @@ class Sweeps:
             kwargs = {'clock': self.clock}
             if transport is not None:
                 kwargs['transport'] = transport
-            result = verify(job, secret, **kwargs)
+            result = self.verifier(job, secret, **kwargs)
         except Exception:
             result = Result('transient_error')
         self.complete(job, result)

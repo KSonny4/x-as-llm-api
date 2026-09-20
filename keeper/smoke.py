@@ -13,7 +13,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 
-BASE = os.environ.get('BASE', 'http://127.0.0.1:8080').rstrip('/')
+BASE = os.environ.get('BASE', 'http://127.0.0.1:' + os.environ.get('PORT', '8080')).rstrip('/')
 
 
 def req(path, token='', method='GET', doc=None):
@@ -85,7 +85,7 @@ def main():
         for path in ('/packs','/api/v2/catalog','/'):
             check('service isolation', req(path,service)[0] == 403)
         if os.environ.get('SMOKE_INFERENCE') == '1':
-            code, body, _ = req('/v1/chat/completions',service,'POST',{'model':'keeper-coder','messages':[{'role':'user','content':'Reply Hello.'}],'max_tokens':64})
+            code, body, _ = req('/v1/chat/completions',service,'POST',{'model':'keeper-coder','messages':[{'role':'user','content':'Reply Hello.'}]})
             try: usable = bool(json.loads(body)['choices'][0]['message']['content'])
             except Exception: usable = False
             check('service real inference',code == 200 and usable)

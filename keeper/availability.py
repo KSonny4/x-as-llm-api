@@ -14,7 +14,8 @@ from typing import Optional
 
 STALE_AFTER = 30 * 3600
 CATALOG_TTL = 24 * 3600
-PROTOCOLS = {'openai', 'responses', 'anthropic', 'gemini'}
+PROTOCOLS = {'openai', 'responses', 'anthropic', 'gemini', 'zencli'}
+BRIDGE_BASE = 'http://127.0.0.1:8099/v1'
 RESULT_STATES = {'working', 'access_denied', 'auth_invalid', 'rate_limited',
                  'transient_error', 'invalid_response', 'model_mismatch', 'unsupported'}
 
@@ -28,6 +29,12 @@ def safe_base(value):
     if p.scheme != 'https' or not p.hostname or p.username or p.password or p.query or p.fragment:
         return ''
     return value.rstrip('/')
+
+
+def safe_connection_base(value, protocol):
+    if protocol == 'zencli':
+        return value if value == BRIDGE_BASE else ''
+    return safe_base(value)
 
 
 @dataclass(frozen=True)
@@ -91,7 +98,7 @@ def blocked_reason(c, now):
         return 'disabled'
     if c['revoked']:
         return 'revoked'
-    if not c['supported'] or c['protocol'] not in PROTOCOLS or not safe_base(c['base_url']):
+    if not c['supported'] or c['protocol'] not in PROTOCOLS or not safe_connection_base(c['base_url'], c['protocol']):
         return 'unsupported'
     if not c['has_secret']:
         return 'signin_required'
@@ -176,7 +183,7 @@ class Availability:
     def _put_model(self, db, m, replace=True):
         if m.eligibility not in {'free', 'paid', 'unknown'}:
             raise ValueError('invalid eligibility')
-        if m.eligibility == 'free' and (not m.provenance or not safe_base(m.base_url)):
+        if m.eligibility == 'free' and (not m.provenance or not safe_connection_base(m.base_url, m.protocol)):
             raise ValueError('free model requires pricing provenance and safe endpoint')
         checked_at = self.clock() if m.verified_at is None else m.verified_at
         if not math.isfinite(checked_at):
@@ -255,6 +262,8 @@ class Availability:
             model['checked'] = sum(c['checked_at'] is not None for c in cells)
             model['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
             model['state'] = aggregate_health(c['state'] for c in cells)
+            model['exportable'] = model['protocol'] != 'zencli'
+            model['transport_note'] = 'Genuine CLI · flattened text history · no tools/stream/controls · service only' if model['protocol'] == 'zencli' else 'Direct provider API'
         return {'models': models, 'discovery': self.store.rows('SELECT * FROM av_discovery ORDER BY credential_id')}
 
     def accounts(self):

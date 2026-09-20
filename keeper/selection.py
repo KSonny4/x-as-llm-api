@@ -9,14 +9,18 @@ from inference import connection_config, request, verify
 
 
 class Selector:
-    def __init__(self, service, sweeps, resolve_secret, transport=request):
+    def __init__(self, service, sweeps, resolve_secret, transport=request, verifier=verify, config_builder=connection_config):
         self.service = service
         self.sweeps = sweeps
         self.resolve_secret = resolve_secret
         self.transport = transport
+        self.verifier = verifier
+        self.config_builder = config_builder
 
-    def select(self, model_id, exclude=(), force_verify=False, max_attempts=3):
+    def select(self, model_id, exclude=(), force_verify=False, max_attempts=3, export=True):
         s = self.service
+        if export and s.store.rows("SELECT 1 FROM av_models WHERE id=? AND protocol='zencli'", (model_id,)):
+            return {'error':'not_exportable', 'model_id':model_id}
         rows = [c for c in s.connections() if c['model_id'] == model_id
                 and c['id'] not in exclude and not c['excluded'] and not c['blocked_reason']
                 and c['retry_at'] <= s.clock()]
@@ -31,7 +35,7 @@ class Selector:
                     pending = True
                     continue
                 try:
-                    result = verify(job, self.resolve_secret(c['provider'], c['reference']),
+                    result = self.verifier(job, self.resolve_secret(c['provider'], c['reference']),
                                     self.transport, s.clock)
                 except Exception:
                     result = Result('transient_error')
@@ -47,7 +51,7 @@ class Selector:
                 secret = self.resolve_secret(current['provider'], current['reference'])
                 if not secret:
                     continue
-                config = connection_config(current, secret)
+                config = self.config_builder(current, secret)
                 db.execute('INSERT INTO av_selections(connection_id,created_at) VALUES (?,?)',
                            (c['id'], s.clock()))
                 return {**config, 'connection_id': c['id'], 'model_id': model_id,

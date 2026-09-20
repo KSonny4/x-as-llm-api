@@ -125,3 +125,26 @@ Keeper transport identity (no OpenCode CLI impersonation). A unique exact model
 name or catalog `model_id` selects that route only; ambiguous names require the
 catalog ID. Explicit requests can retry keys for that route, never another model.
 An upstream free-tier rule restricting use to its own CLI remains access denied.
+
+### Genuine Zen CLI backend (latest user-approved correction)
+
+The existing proven `zencli` bridge is reused as a distinct service backend.
+Its `protocol: zencli` connection identities are derived dynamically from the
+same fresh authoritative free catalog and checked with the exact selected key
+and model. CLI success is never imported into a direct HTTP connection.
+`/api/v2/credentials` returns 409 `not_exportable` for these identities; catalog
+labels them service-only. Actual-key export remains direct-verification-only.
+
+This backend accepts plain string system/user/assistant messages via the existing
+flattened prompt mapping. It rejects tools, generation controls (including
+`max_tokens`), multimodal input and `stream:true`; no buffered SSE masquerades as
+real streaming. `keeper-coder` includes it only for compatible text requests.
+The authenticated private bridge has no static model cap/default account and is
+never accessible to the public service bearer. Execution isolation and pinned
+CLI configuration proof are documented in `zencli/README.md`.
+
+Priced OpenRouter/Kilo catalogs require authoritative **text-only output** plus
+text input modalities before zero token rates establish free eligibility. Mixed
+text+audio Lyria entries remain visible with unknown eligibility: their zero
+text-token rates do not cover documented per-song/clip charges. Missing modality
+evidence is also blocked, including on partial discovery refreshes.

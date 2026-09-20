@@ -31,6 +31,24 @@ def pricing_eligibility(pricing):
         return 'unknown'
 
 
+def priced_text_eligibility(row):
+    """Zero text-token prices do not cover audio/image generation charges.
+
+    Lyria catalogs, for example, expose text+audio outputs with zero text rates
+    but per-song pricing outside those rates. Require authoritative text-only
+    output and text input; missing/mixed modality evidence stays unknown.
+    Keep the same API identity so new uncertainty supersedes old free metadata
+    even during an incomplete provider refresh.
+    """
+    architecture = row.get('architecture')
+    if not isinstance(architecture, dict):
+        return 'unknown'
+    outputs, inputs = architecture.get('output_modalities'), architecture.get('input_modalities')
+    if outputs != ['text'] or not isinstance(inputs, list) or 'text' not in inputs:
+        return 'unknown'
+    return pricing_eligibility(row.get('pricing'))
+
+
 def parse_zen(text):
     endpoints, prices = {}, {}
     section = ''
@@ -85,9 +103,10 @@ def parse_gemini_pricing(text):
 
 
 class CatalogDiscovery:
-    def __init__(self, service, transport=request):
+    def __init__(self, service, transport=request, bridge_enabled=False):
         self.service = service
         self.transport = transport
+        self.bridge_enabled = bridge_enabled
 
     def _get(self, url, headers=None, text=False):
         res = self.transport('GET', url, {'User-Agent': USER_AGENT, **(headers or {})})
@@ -138,7 +157,7 @@ class CatalogDiscovery:
         secret = route.get('api_key', '')
         if provider in PRICED_BASES:
             base = PRICED_BASES[provider]
-            return [Model(provider, r['id'], base, 'openai', pricing_eligibility(r.get('pricing')), base + '/models')
+            return [Model(provider, r['id'], base, 'openai', priced_text_eligibility(r), base + '/models')
                     for r in self._pages(base + '/models', {'Authorization': 'Bearer ' + secret})
                     if isinstance(r, dict) and isinstance(r.get('id'), str) and r['id']]
         if provider == 'opencode-zen':
@@ -208,7 +227,7 @@ class CatalogDiscovery:
                         raise ValueError('unsafe catalog metadata')
                     union = unions.setdefault(provider, {})
                     for m in models:
-                        if m.eligibility == 'unknown' and m.id in explicit:
+                        if m.eligibility == 'unknown' and m.id in explicit and provider not in PRICED_BASES:
                             m = explicit[m.id]
                         old = union.get(m.id)
                         # Conflicting per-key prices fail closed for the provider union.
@@ -225,5 +244,9 @@ class CatalogDiscovery:
                     succeeded_at=COALESCE(excluded.succeeded_at,av_discovery.succeeded_at), error=excluded.error''',
                     (k['id'], self.service.clock(), None if error else self.service.clock(), error))
         for provider, models in unions.items():
-            self.service.update_catalog(provider, models.values(), complete=complete[provider])
+            published = list(models.values())
+            if self.bridge_enabled and provider == 'opencode-zen':
+                from zencli_bridge import bridge_models
+                published += bridge_models(published)
+            self.service.update_catalog(provider, published, complete=complete[provider])
         return self.service.store.rows('SELECT * FROM av_discovery')

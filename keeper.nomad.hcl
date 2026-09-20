@@ -85,6 +85,14 @@ variable "keeper_service_token" {
   type = string
 }
 
+variable "zencli_image" {
+  type = string
+}
+
+variable "keeper_zencli_token" {
+  type = string
+}
+
 job "keeper" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -92,13 +100,25 @@ job "keeper" {
   group "keeper" {
     count = 1
 
+    # Durable bind is on this verified node. Moving nodes requires data migration.
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "ovh-nomad-fresh"
+    }
+
     network {
+      mode = "host"
       # Static loopback port: the Cloudflare tunnel ingress for
       # keeper.pkubelka.cz targets http://localhost:8102 on the node.
       # (Cluster pattern: dump-dev/dev-prod use 8100/8101 the same way.)
       port "http" {
         static       = 8102
-        to           = 8080
+        to           = 8102
+        host_network = "loopback"
+      }
+      port "zencli" {
+        static       = 8099
+        to           = 8099
         host_network = "loopback"
       }
     }
@@ -116,10 +136,11 @@ job "keeper" {
     task "server" {
       driver = "docker"
       config {
-        image      = var.keeper_image
-        volumes    = ["${var.keeper_data_path}:/var/lib/keeper"]
-        ports      = ["http"]
-        force_pull = true
+        network_mode = "host"
+        image        = var.keeper_image
+        volumes      = ["${var.keeper_data_path}:/var/lib/keeper"]
+        ports        = ["http"]
+        force_pull   = true
         auth {
           username = var.dr_user
           password = var.dr_pass
@@ -127,7 +148,8 @@ job "keeper" {
       }
 
       env {
-        PORT                       = "8080"
+        PORT                       = "8102"
+        BIND                       = "127.0.0.1"
         KEEPER_TOKEN               = var.keeper_token
         KEEPER_TOKEN_NEXT          = var.keeper_token_next
         ARTIFICIALANALYSIS_API_KEY = var.aa_api_key
@@ -138,6 +160,7 @@ job "keeper" {
         FEEDBACK_LOG               = "/var/lib/keeper/legacy-feedback.jsonl"
         PUBLIC_ORIGIN              = var.public_origin
         KEEPER_SERVICE_TOKEN       = var.keeper_service_token
+        KEEPER_ZENCLI_TOKEN        = var.keeper_zencli_token
       }
 
       template {
@@ -161,6 +184,31 @@ job "keeper" {
           interval = "30s"
           timeout  = "5s"
         }
+      }
+    }
+    # Parent proved shared loopback with Docker host networking; node lacks CNI.
+    # No host volumes, seed files, admin/service tokens or Keeper database here.
+    task "zencli" {
+      driver = "docker"
+      config {
+        image           = var.zencli_image
+        network_mode    = "host"
+        force_pull      = true
+        readonly_rootfs = true
+        cap_drop        = ["ALL"]
+        security_opt    = ["no-new-privileges"]
+        tmpfs           = ["/tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777"]
+        auth {
+          username = var.dr_user
+          password = var.dr_pass
+        }
+      }
+      env {
+        KEEPER_ZENCLI_TOKEN = var.keeper_zencli_token
+      }
+      resources {
+        cpu    = 500
+        memory = 1024
       }
     }
   }

@@ -56,6 +56,10 @@ def safe_request(req):
 def compatible(protocol, req):
     if not safe_request(req):
         return False
+    if protocol == 'zencli':
+        return (not (set(req) - {'model','messages','stream'}) and not req.get('stream')
+                and all(set(m) <= {'role','content'} and m.get('role') in ('system','user','assistant')
+                        and isinstance(m.get('content'), str) for m in req['messages']))
     if protocol == 'openai':
         return True
     if protocol not in ('anthropic', 'gemini', 'responses') or set(req) - COMMON:
@@ -94,7 +98,7 @@ def prepare(config, req):
     p = config['protocol']
     body = {**req, 'model': config['model']}
     limit = req.get('max_completion_tokens', req.get('max_tokens'))
-    if p == 'openai':
+    if p in ('openai', 'zencli'):
         return body
     if p == 'anthropic':
         body = translate.openai_to_anthropic({**body, 'max_tokens': limit or 1024})
@@ -192,7 +196,7 @@ def gemini_message(doc):
 def normalize(doc, config):
     exact(doc, config)
     p, model = config['protocol'], config['model']
-    if p == 'openai': return doc
+    if p in ('openai', 'zencli'): return doc
     if p == 'anthropic': return translate.anthropic_to_openai(doc, model)
     if p == 'gemini':
         msg, finish = gemini_message(doc)
