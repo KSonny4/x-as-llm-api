@@ -5,7 +5,7 @@
 Keeper-relayed rows:
 ```text
 keeper-big-pickle                       big-pickle                       128K  16.4K  no  no
-keeper-muse-spark-1.3-contributor-free  muse-spark-1.3-contributor-free  128K  16.4K  no  no
+keeper-muse-spark-1-3-contributor-free  muse-spark-1.3-contributor-free  128K  16.4K  no  no
 ```
 
 Direct rows (pi-opencode-direct@0.1.6, pure-HTTP CLI-identity provider):
