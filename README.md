@@ -8,10 +8,20 @@ Private free-model availability and an inference API for another service.
 > **Preserve original zencli and use it as the control.**
 > [Exact receipt and reproduction](docs/zencli-sanity-check.md).
 >
-> **New Keeper API not yet deployed:** the modified candidate failed its earlier
-> tests; those failures do not invalidate the successful original control.
-> Production is unchanged. Instructions below describe the candidate contract,
-> not a working public rollout. [Staging evidence](docs/keeper-staging-2026-09-20.md).
+> **LIVE since 2026-09-21 (Nomad job `keeper` v12, images below):** the service API
+> below is verified working on `https://keeper.pkubelka.cz` — service-bearer
+> `keeper-coder` chat returned HTTP 200 on production. The original zencli
+> control still passes alongside it and remains preserved.
+> [Canary receipts](docs/keeper-uds-clock-repair.md) · [rollout/rollback](docs/keeper-all-models-rollout.md).
+>
+> Images (immutable, amd64):
+> `registry.pkubelka.cz/keeper@sha256:84cbc9d5264066f193567fe12e6039336aa49b09877c159bdc2195f22a169cef`
+> `registry.pkubelka.cz/zencli@sha256:521fd0aef081a57d0d01c54cb6fa6566c7dc1ad68777cff153251ccd90e52113`
+>
+> Transitional note: the genuine-CLI route is proven on frozen bits (canary:
+> exact RETIRED_1/big-pickle/date HTTP 200s via private Unix IPC) but production
+> CLI rows are still converging after the next scheduled discovery refresh;
+> `keeper-coder` currently serves verified working direct-provider free routes.
 
 - **Target base URL:** `https://keeper.pkubelka.cz/v1`
 - **Model:** `keeper-coder`
@@ -60,10 +70,12 @@ It does not pretend its historical buffered SSE is real streaming. Requests are
 never silently weakened to fit a backend. Paid search/plugins and routing/model
 fallback overrides are rejected.
 
-**Public rollout still requires successful Keeper integration and acceptance.**
-The [fresh original zencli Nomad HTTP control](docs/zencli-sanity-check.md) passed;
-its working path must be preserved. Earlier proofs are in `zencli/TRANSCRIPT.md`.
-Neither the control nor those historical proofs establish the modified deployment. See [engineering guidance](docs/engineering-guidance.md),
+**Production v12 is live and verified.** The [fresh original zencli Nomad HTTP control](docs/zencli-sanity-check.md)
+still passes; its working path is preserved. Earlier proofs are in `zencli/TRANSCRIPT.md`.
+Live receipts: service `keeper-coder` chat HTTP 200 on production (selected
+`inclusionai/ling-3.0-flash-vl:free`); canary exact-CLI observation WORKING +
+admin exact chat HTTP 200 (`big-pickle`, `Monday, September 21, 2026.`).
+See [engineering guidance](docs/engineering-guidance.md),
 [API contract](KEEPER_API.md), and [rollout/rollback](docs/keeper-all-models-rollout.md).
 
 The private dashboard is at `/login`; it uses the administrator credential,
@@ -79,8 +91,10 @@ Transport-scoped cooldowns preserve actual CLI limits without importing direct
 failures. Public rollout and real coding-agent compatibility need parent receipts.
 
 
-Latest continuation: [Unix IPC and exact native clock repair](docs/keeper-uds-clock-repair.md).
-CLI Docker bridge preserves the controlled egress path; private authenticated
-Unix HTTP replaces host-loopback IPC. Native ask-only shell bypass is closed by
-an immutable exact-date gate. Parent live same-question canary remains mandatory
-before readiness/review; no public deployment is implied.
+Latest continuation: [Unix IPC and exact native clock repair](docs/keeper-uds-clock-repair.md) —
+**deployed as v12 and canary-verified live.** CLI Docker bridge preserves the
+controlled egress path; private authenticated Unix HTTP replaces host-loopback
+IPC. Native ask-only shell bypass is closed by an immutable exact-date gate.
+Remaining follow-ups (not deployment blockers): redacted bridge failure
+classification for flaky fast-502s, upstream-stall characterization, paced
+initial sweep to avoid pool-key thundering herd, and a nicer public landing page.

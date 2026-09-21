@@ -5,10 +5,11 @@ wrapper returned **200** for `big-pickle` using the successful local-login key.
 Read [the control receipt](zencli-sanity-check.md) before changing integration.
 Preserve the original; use it as the sanity check, not a replacement profile.
 
-**Candidate contract, not yet live:** the earlier modified OVH candidate failed
-and was stopped. That is separate from the later successful original control.
-Production is unchanged; see [staging evidence](keeper-staging-2026-09-20.md).
-Do not switch consumers yet.
+**LIVE since 2026-09-21 (Nomad job `keeper` v12):** the contract below is
+verified on `https://keeper.pkubelka.cz` — service `keeper-coder` chat HTTP 200
+on production; canary exact-CLI observation WORKING + admin exact chat HTTP 200.
+The original control still passes alongside. Consumers may point OpenAI clients
+at the service API per "Other-service configuration".
 
 ## Other-service configuration
 
@@ -70,21 +71,26 @@ config/default account, exact provider/model whitelist and same free small model
 Only raw generated-text JSON events with a successful finish count as proof.
 No host data mounts; internal loopback bearer mandatory; timeout/process-group
 cleanup; unprivileged read-only sidecar container. `--pure` alone is not a sandbox.
-This candidate configuration failed live checks and must not be called a verified
-working CLI profile. The successful original had no custom agent, tool/permission
-overrides, or forced step limit. Compare against that control while preserving
-production security boundaries; the cause of the difference is not yet isolated.
+This deployed profile is live-verified: canary exact RETIRED_1/big-pickle/date
+HTTP 200s via the native build agent with ask policy plus the immutable
+exact-date gate (no custom agent, tool/permission overrides, or forced step
+limit — same shape as the successful original, plus the proven egress and IPC
+changes). Flaky fast-502s (~30%) and 110s upstream stalls remain under
+characterization; see the README follow-ups.
 
 ## Verification status
 
-Fresh integrated live proof is **pending parent rollout**, not established by
-local tests. Parent must record reviewed build IDs, successful authenticated
-public API inference, actual selected transport, safe stream/tool results where
-supported, full key/model coverage including failures/cooldowns, and durable DB
-survival across allocation replacement. Never store credential values in that
-receipt. The fresh original zencli control establishes an actual Nomad HTTP pass
-for its exact key/model/configuration, not public Keeper rollout. Preserve that
-positive evidence separately from candidate failures and direct HTTP results.
+Integrated live proof **established 2026-09-21 on production v12** (frozen
+`83444b2`; keeper image `sha256:84cbc9d5…`, zencli image `sha256:521fd0ae…`):
+service-bearer `keeper-coder` chat HTTP 200 (`PROD-SVC-OK` via
+`inclusionai/ling-3.0-flash-vl:free`); canary exact-CLI observation WORKING +
+admin exact chat HTTP 200 (`big-pickle`, `Monday, September 21, 2026.`);
+principal isolation 403/401s as specified; canary DB leak scan 0 hits;
+pre-cutover availability backup retained (schema-1 snapshot); migration to
+schema 3 applied cleanly on production. Still pending: production CLI rows
+(next scheduled discovery refresh + check convergence), allocation-replacement
+durability proof, and the parser/stall follow-ups in the README. Never store
+credential values in receipts.
 
 The dashboard distinguishes failed/pending inventory discovery from an empty
 inventory, and shows per-key attempt/last-success timestamps and bridge failures.
