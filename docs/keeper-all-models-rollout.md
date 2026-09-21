@@ -132,12 +132,14 @@ shared loopback with two tasks; allocation `e81d43b1-a586-0131-6ec5-12a1a9f79743
 completed with neither task failed. The preflight job was stopped; no provider
 calls were involved. Do not install host CNI as part of this rollout.
 
-Final job therefore reserves host ports 8102 and 8099, uses Docker host networking
-for both tasks, and explicitly binds Keeper **127.0.0.1:8102** and sidecar
-**127.0.0.1:8099**. The public tunnel still targets only Keeper at 8102. A fixed
-node constraint keeps the durable bind on `ovh-nomad-fresh`. Releasing the old
-allocation's static 8102 reservation makes this a destructive update, not a
-zero-downtime canary; account for the short interruption.
+Latest controlled parent comparison isolates CLI host-network egress failure for
+the tested key/model/input. The current job retains Keeper host-loopback 8102 but
+moves CLI to Docker bridge with authenticated HTTP over private Unix socket
+`/alloc/data/keeper-zencli/http.sock`. No internal TCP reservation/publication,
+CNI or node-wide changes. See [latest topology/security/migration gate](keeper-uds-clock-repair.md).
+The fixed node/durable Keeper bind and destructive static-8102 update remain;
+account for the short interruption. Earlier shared-loopback preflight above
+proved connectivity only, not suitability for genuine CLI upstream egress.
 
 Supply new required `zencli_image` and `keeper_zencli_token` variables. Parent's
 internal bearer source is Bao
@@ -161,8 +163,9 @@ Sidecar uses 1024 MiB / 500 MHz based on the existing measured Nomad proof
 with the actual pinned CLI before rollout; don't assume build-only proof is enough.
 CLI inference has a 110s deadline and Keeper's internal request timeout is 120s;
 long requests may also encounter external tunnel timeout. No user quota/cap is
-introduced. Native tool definitions remain; permission requests are auto-rejected by pinned
-noninteractive CLI (no custom agent or step limit). Streaming/tools require a compatible direct
+introduced. Native tool definitions remain; permission requests are auto-rejected except
+exact native clock execution through the immutable no-shell gate (no custom
+agent or step limit). Streaming/tools require a compatible direct
 backend and must not be silently downgraded.
 
 The complete matrix now contains separate direct and CLI routes. Require actual
@@ -179,3 +182,10 @@ for the replacement candidate. Direct free Zen inference checks are now blocked
 by explicit `cli_required` policy, not needed as a prerequisite for CLI checks.
 Only actual new exact CLI evidence counts; do not import the protected receipt.
 Rollback to schema-1 code requires the pre-upgrade availability DB backup.
+
+
+Current candidate requires schema 3. Preserve pre-upgrade DB backup for rollback;
+only evidenced active prior CLI limits carry to UDS, explicitly attributed and
+never as success. Parent must return the same-question live canary result before
+writer readiness or final review. The single-variable evidence does not justify
+changing noexec/nonroot protections or ignoring real provider limits.

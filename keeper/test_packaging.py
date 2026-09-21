@@ -40,6 +40,9 @@ def test_sidecar_nomad_uses_supported_tmpfs_mount():
     assert config['readonly_rootfs'] and config['cap_drop'] == ['ALL']
     assert config['security_opt'] == ['no-new-privileges']
     assert not config.get('volumes')
+    assert config['network_mode']=='bridge' and not config.get('ports')
+    assert task['Env']['KEEPER_ZENCLI_SOCKET']=='/alloc/data/keeper-zencli/http.sock'
+    assert all(p['Label']!='zencli' for n in job['TaskGroups'][0]['Networks'] for p in n.get('ReservedPorts',[]))
 
 
 def test_fake_provider_smoke_end_to_end_redacts_and_never_feedbacks_live_by_default(tmp_path):

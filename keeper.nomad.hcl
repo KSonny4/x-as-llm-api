@@ -116,11 +116,6 @@ job "keeper" {
         to           = 8102
         host_network = "loopback"
       }
-      port "zencli" {
-        static       = 8099
-        to           = 8099
-        host_network = "loopback"
-      }
     }
 
     update {
@@ -161,6 +156,7 @@ job "keeper" {
         PUBLIC_ORIGIN              = var.public_origin
         KEEPER_SERVICE_TOKEN       = var.keeper_service_token
         KEEPER_ZENCLI_TOKEN        = var.keeper_zencli_token
+        KEEPER_ZENCLI_SOCKET       = "/alloc/data/keeper-zencli/http.sock"
       }
 
       template {
@@ -186,13 +182,13 @@ job "keeper" {
         }
       }
     }
-    # Parent proved shared loopback with Docker host networking; node lacks CNI.
-    # No host volumes, seed files, admin/service tokens or Keeper database here.
+    # Docker bridge restores the controlled CLI egress path; no CNI/internal TCP.
+    # Only private HTTP IPC under shared /alloc/data, no host/seed/DB mounts.
     task "zencli" {
       driver = "docker"
       config {
         image           = var.zencli_image
-        network_mode    = "host"
+        network_mode    = "bridge"
         force_pull      = true
         readonly_rootfs = true
         cap_drop        = ["ALL"]
@@ -213,7 +209,8 @@ job "keeper" {
         }
       }
       env {
-        KEEPER_ZENCLI_TOKEN = var.keeper_zencli_token
+        KEEPER_ZENCLI_TOKEN  = var.keeper_zencli_token
+        KEEPER_ZENCLI_SOCKET = "/alloc/data/keeper-zencli/http.sock"
       }
       resources {
         cpu    = 500

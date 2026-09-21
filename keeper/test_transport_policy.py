@@ -22,7 +22,7 @@ def test_direct_free_zen_is_visible_but_never_probed_or_selected(tmp_path):
     assert selector.sweeps.schedule(model_id=direct['model_id'])
     assert s.catalog()['models'] and len(s.connections()) == 4
     assert selector.select(cli['model_id'], export=False)['protocol'] == 'zencli'
-    assert all(url.startswith('http://127.0.0.1:8099/') for _, url, _, _ in calls)
+    assert all(url.startswith('http://keeper-zencli/') for _, url, _, _ in calls)
     assert s.accounts()['owners'][0]['state'] == 'working'
 
 
@@ -114,7 +114,7 @@ def test_v1_attributed_direct_limits_do_not_disqualify_cli_and_preserve_history(
     s.store.close()
     reopened=Availability(Store(tmp_path/'availability.db'),clock)
     assert next(c for c in reopened.connections() if c['id']==cli['id'])['retry_at']==0
-    assert reopened.store.rows('SELECT version FROM av_schema')==[{'version':2}]
+    assert reopened.store.rows('SELECT version FROM av_schema')==[{'version':3}]
 
 
 def test_v1_mixed_evidence_preserves_cli_limit_and_ambiguous_global(tmp_path):
@@ -193,4 +193,4 @@ def test_schema_upgrade_rolls_back_atomically_and_can_retry(tmp_path,monkeypatch
     assert not db.execute("SELECT 1 FROM sqlite_master WHERE name='av_transport_limits'").fetchone()
     db.close()
     s=Availability(Store(tmp_path/'availability.db'),clock)
-    assert s.store.rows('SELECT version FROM av_schema')==[{'version':2}]
+    assert s.store.rows('SELECT version FROM av_schema')==[{'version':3}]

@@ -1,16 +1,17 @@
 """Private genuine-CLI transport, never a direct-provider credential export.
 
-Only a fixed authenticated loopback sidecar is reachable. Discovery supplies
+Only a fixed authenticated Unix-socket sidecar is reachable. Discovery supplies
 fresh authoritative zero-price eligibility; each execution receives the exact
 selected key/model. Sidecar has no default account or durable secret store.
 """
 import json
 import time
-import urllib.error
-import urllib.request
+import http.client
+import os
+import socket
 
 from availability import BRIDGE_BASE, CATALOG_TTL, Model, Result, evidence_age
-from inference import HttpResponse, NoRedirect, connection_config, verify as direct_verify, request, retry_after
+from inference import HttpResponse, connection_config, verify as direct_verify, request, retry_after
 
 
 def bridge_models(models):
@@ -20,23 +21,46 @@ def bridge_models(models):
             and m.protocol in ('openai','responses','anthropic','gemini')]
 
 
-def loopback_request(method, url, headers, payload):
+DEFAULT_SOCKET = '/alloc/data/keeper-zencli/http.sock'
+
+
+class UnixHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, socket_path):
+        super().__init__('keeper-zencli', timeout=120)
+        self.socket_path = socket_path
+
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        try:
+            self.sock.connect(self.socket_path)
+        except Exception:
+            self.sock.close()
+            raise
+
+
+def unix_request(method, url, headers, payload, *, socket_path=None):
+    # The authority is a logical identity, never a DNS/TCP destination. There
+    # is no HTTP redirect/proxy handling and no caller-supplied IPC destination.
     if url not in (BRIDGE_BASE + '/chat/completions', BRIDGE_BASE.removesuffix('/v1') + '/internal/catalog'):
         raise ValueError('fixed bridge endpoint required')
-    req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method=method)
+    socket_path = socket_path or os.environ.get('KEEPER_ZENCLI_SOCKET', DEFAULT_SOCKET)
+    if not os.path.isabs(socket_path):
+        raise ValueError('absolute bridge socket required')
+    conn = UnixHTTPConnection(socket_path)
     try:
-        res = urllib.request.build_opener(NoRedirect()).open(req, timeout=120)
-    except urllib.error.HTTPError as exc:
-        res = exc
-    with res:
+        conn.request(method, url.removeprefix('http://keeper-zencli'), body=json.dumps(payload).encode(), headers=headers)
+        res = conn.getresponse()
         body = res.read(1024 * 1024 + 1)
         if len(body) > 1024 * 1024:
             raise ValueError('bridge response too large')
-        return HttpResponse(res.code, dict(res.headers), body)
+        return HttpResponse(res.status, dict(res.headers), body)
+    finally:
+        conn.close()
 
 
 class ZenCLI:
-    def __init__(self, service, internal_token, transport=loopback_request):
+    def __init__(self, service, internal_token, transport=unix_request):
         if not internal_token:
             raise ValueError('internal bridge token required')
         self.service = service

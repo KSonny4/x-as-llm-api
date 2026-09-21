@@ -7,7 +7,7 @@
 //
 // Usage:
 //
-//	./zencli -port 8099   # serves on 127.0.0.1:8099
+//	./zencli -socket /alloc/data/keeper-zencli/http.sock
 package main
 
 import (
@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -127,9 +128,22 @@ func rid(prefix string, n int) string {
 }
 
 func main() {
-	port := flag.String("port", "8099", "private loopback port")
+	if filepath.Base(os.Args[0]) == "sh" {
+		os.Exit(clockShell(os.Args[1:]))
+	}
+	socketPath := os.Getenv("KEEPER_ZENCLI_SOCKET")
+	if socketPath == "" {
+		socketPath = defaultSocket
+	}
+	socket := flag.String("socket", socketPath, "private Unix HTTP socket")
 	bin := flag.String("opencode-bin", "/usr/local/bin/opencode", "pinned genuine CLI binary")
 	flag.Parse()
+	// OpenCode can fall back to a real shell if its configured shell is absent.
+	// Refuse startup instead; the raw-command gate is a security boundary.
+	if err := validateClockShell(clockShellPath); err != nil {
+		fmt.Fprintln(os.Stderr, "immutable clock shell unavailable")
+		os.Exit(2)
+	}
 	token := os.Getenv("KEEPER_ZENCLI_TOKEN")
 	if token == "" {
 		fmt.Fprintln(os.Stderr, "internal bridge token required")
@@ -140,9 +154,15 @@ func main() {
 	mux.HandleFunc("/v1/chat/completions", requireAuth(token, b.chat))
 	mux.HandleFunc("/v1/models", requireAuth(token, b.list))
 	mux.HandleFunc("/internal/catalog", requireAuth(token, b.catalog))
-	server := &http.Server{Addr: "127.0.0.1:" + *port, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 120 * time.Second}
-	fmt.Fprintln(os.Stderr, "zencli private loopback ready")
-	if err := server.ListenAndServe(); err != nil {
+	listener, err := listenPrivateUnix(*socket)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "private socket setup failed")
+		os.Exit(2)
+	}
+	defer listener.Close()
+	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 120 * time.Second}
+	fmt.Fprintln(os.Stderr, "zencli private Unix socket ready")
+	if err := server.Serve(listener); err != nil {
 		fmt.Fprintln(os.Stderr, "zencli stopped")
 		os.Exit(1)
 	}

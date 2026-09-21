@@ -7,7 +7,7 @@ The historical direct CLI/Nomad proofs remain in `TRANSCRIPT.md` and
 ## Private interface
 
 `KEEPER_ZENCLI_TOKEN` is mandatory. The listener is always
-`127.0.0.1:8099` (port flag allowed); there is no anonymous/default-account mode.
+the private Unix HTTP socket `/alloc/data/keeper-zencli/http.sock`; there is no anonymous/default-account mode.
 All endpoints require the internal bearer, not the public service/admin bearer.
 
 - `POST /internal/catalog`: Keeper supplies `{"models":[{"model":"exact-id",
@@ -35,20 +35,22 @@ silently ignored. Historical word-chunked SSE is **not** used in this build.
 - Scrubbed environment: no inherited provider/default credentials, Keeper
   bearers, proxy settings, project plugins or shell startup.
 - Native built-in build agent and genuine tool definitions, no forced step limit.
-  Global `permission: {"*":"ask"}` uses pinned noninteractive run auto-rejection;
-  no approval flags, project config/external plugins or MCP. Tools cannot execute.
+  Global ask policy uses pinned noninteractive run auto-rejection, except exact
+  bash `date` backed by an immutable raw-command gate;
+  no approval flags, project config/external plugins or MCP. Only exact clock
+  execution is allowed; no arbitrary shell interpretation.
 - Exact `opencode/<model>` plus provider model whitelist. `small_model` is the
   same free model, preventing an auxiliary paid-model choice.
 - `run --format json --pure -- <prompt>`; the separator stops
   a prompt from becoming flags. `--pure` alone only disables external plugins.
 - 110-second wall timeout, bounded output, process-group kill, temp cleanup.
-  Accept only usable raw text events with stop/length finish; errors, completed tools,
+  Accept only usable raw text events with stop/length finish; errors, unauthorized completed tools,
   malformed/empty output and credential reflection are failures. Native rejected
   tool events are not assistant text. A tool-only rejected run has no final
   answer and returns 502; the bridge never fabricates continuation.
 - Non-root read-only sidecar, no host data/secret mounts, all Linux capabilities
-  dropped and no-new-privileges. Shared host network only for private loopback;
-  authenticated requests remain mandatory even from the same node.
+  dropped and no-new-privileges. CLI Docker bridge restores tested egress; private
+  Unix HTTP under shared /alloc/data keeps the internal service off TCP.
 
 Source checked at tag `v1.18.31`: `agent/agent.ts` merges user ask permissions
 after native build defaults; `cli/cmd/run.ts` rejects permission requests unless
@@ -72,3 +74,15 @@ docker build --platform linux/amd64 -f zencli/Dockerfile -t keeper-zencli:check 
 Historical `entry.sh` / `zencli-nomad.hcl` are old batch-proof artifacts, not the
 new service entrypoint. Do not stage a shared default auth file for this service.
 Parent owns live deployment and internal token provisioning; see root rollout doc.
+
+
+## Required clock/IPC security correction
+
+Native ask-only is not a raw-shell sandbox: a genuine pinned-CLI regression
+executed redirect-only input without a permission ask. The immutable gate now
+accepts only exact argv `-c`, `date`, directly execs `/bin/date` with fixed UTC/C
+locale and scrubbed environment, and rejects everything else. Missing/foreign
+gate is fatal at startup; no fallback to a real shell is allowed. Native bash
+schema/build remain unchanged. Only successful exact-clock events followed by
+actual final generated text can succeed. Full evidence and parent canary gate:
+[Unix IPC / clock repair](../docs/keeper-uds-clock-repair.md).

@@ -6,6 +6,7 @@ must put the file on durable storage and keep errors visible.
 """
 import sqlite3
 import threading
+import time
 from contextlib import contextmanager
 
 
@@ -21,6 +22,11 @@ CREATE TABLE IF NOT EXISTS av_credentials (
 CREATE TABLE IF NOT EXISTS av_transport_limits (
  credential_id TEXT NOT NULL REFERENCES av_credentials(id),
  base_url TEXT NOT NULL, protocol TEXT NOT NULL,
+ cooldown REAL NOT NULL DEFAULT 0, auth_invalid INTEGER NOT NULL DEFAULT 0,
+ PRIMARY KEY(credential_id, base_url, protocol));
+CREATE TABLE IF NOT EXISTS av_transport_inheritance (
+ credential_id TEXT NOT NULL REFERENCES av_credentials(id),
+ base_url TEXT NOT NULL, protocol TEXT NOT NULL, source_base_url TEXT NOT NULL,
  cooldown REAL NOT NULL DEFAULT 0, auth_invalid INTEGER NOT NULL DEFAULT 0,
  PRIMARY KEY(credential_id, base_url, protocol));
 CREATE TABLE IF NOT EXISTS av_transport_provider_pacing (
@@ -84,14 +90,16 @@ class Store:
             self.db.executescript('BEGIN IMMEDIATE;\n' + SCHEMA)
             versions = self.db.execute('SELECT version FROM av_schema').fetchall()
             if not versions:
-                self.db.execute('INSERT INTO av_schema VALUES (2)')
-            elif len(versions) != 1 or versions[0][0] not in (1, 2):
+                self.db.execute('INSERT INTO av_schema VALUES (3)')
+            elif len(versions) != 1 or versions[0][0] not in (1, 2, 3):
                 raise ValueError('unsupported availability schema')
             if 'feedback_id' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}:
                 self.db.execute('ALTER TABLE av_checks ADD COLUMN feedback_id INTEGER NOT NULL DEFAULT 0')
             if versions and versions[0][0] == 1:
                 self._migrate_transport_limits()
-                self.db.execute('UPDATE av_schema SET version=2')
+            if versions and versions[0][0] < 3:
+                self._migrate_cli_ipc_policy()
+                self.db.execute('UPDATE av_schema SET version=3')
             self.db.commit()
         except Exception:
             self.db.rollback()
@@ -118,6 +126,28 @@ class Store:
                     (key['id'], scope['base_url'], scope['protocol'], key['cooldown']))
             if scopes:
                 self.db.execute('UPDATE av_credentials SET cooldown=0 WHERE id=?', (key['id'],))
+
+    def _migrate_cli_ipc_policy(self):
+        # IPC is a new identity requiring fresh checks. Preserve only evidenced
+        # active prior CLI policy, separately attributed, never success/direct
+        # limits. Copy absolute deadlines once; restarting cannot renew them.
+        from availability import BRIDGE_BASE
+        old_base = 'http://127.0.0.1:8099/v1'
+        for limit in self.db.execute('''SELECT t.* FROM av_transport_limits t
+            JOIN av_credentials k ON k.id=t.credential_id
+            WHERE k.provider='opencode-zen' AND t.protocol='zencli' AND t.base_url=?''', (old_base,)).fetchall():
+            states = {row[0] for row in self.db.execute('''SELECT DISTINCT h.state
+                FROM av_checks h JOIN av_connections c ON c.id=h.connection_id
+                JOIN av_models m ON m.id=c.model_id WHERE c.credential_id=?
+                AND m.base_url=? AND m.protocol='zencli' AND h.applied=1
+                AND h.finished_at IS NOT NULL''', (limit['credential_id'], old_base))}
+            cooldown = limit['cooldown'] if limit['cooldown'] > time.time() and 'rate_limited' in states else 0
+            auth_invalid = int(bool(limit['auth_invalid'] and 'auth_invalid' in states))
+            if cooldown or auth_invalid:
+                self.db.execute('''INSERT OR IGNORE INTO av_transport_inheritance
+                    (credential_id,base_url,protocol,source_base_url,cooldown,auth_invalid)
+                    VALUES (?,?,'zencli',?,?,?)''',
+                    (limit['credential_id'], BRIDGE_BASE, old_base, cooldown, auth_invalid))
 
     @contextmanager
     def transaction(self):

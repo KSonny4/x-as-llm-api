@@ -168,3 +168,20 @@ Native build tools remain defined but permission requests are auto-rejected by
 pinned noninteractive OpenCode (never approval flags). No custom agent or forced
 step count. Tool-required runs without final text fail honestly. This does **not**
 make CLI-only routes compatible with ordinary tool-using or streaming agents.
+
+
+### Current Unix IPC / exact native clock correction (schema 3)
+
+CLI connections use logical authority `http://keeper-zencli/v1` over authenticated
+private Unix HTTP, not DNS/TCP. Historical loopback IDs are not selectable and do
+not confer success on new IDs. Active evidenced prior CLI policy may be retained
+with `policy_source: "inherited prior CLI endpoint"` and its source base URL;
+`cooldown_scope: "inherited_prior_cli_endpoint"` is a scheduling policy, not a
+new observation. Direct HTTP limits are never copied to this CLI policy.
+
+Native ask-only was insufficient for raw shell syntax. An immutable gate now
+permits only exact internal `date`, executing `/bin/date` without an interpreter,
+with scrubbed UTC/C environment. Missing gate is fatal. Actual successful clock
+execution plus subsequent model final text is required; no tool output or
+continuation is fabricated. Consumer capabilities stay plain-history-only, not
+generic tools/streaming. See [security/canary gate](docs/keeper-uds-clock-repair.md).

@@ -1,3 +1,7 @@
+> Latest correction: [Unix IPC / exact-clock security repair](keeper-uds-clock-repair.md)
+> supersedes this document's original host-network/ask-only profile. Schema is now
+> 3; actual CLI clock execution is narrowly gated, never arbitrary bash.
+
 # Native CLI / exact transport repair — deployable candidate, not rollout proof
 
 Protected control: [original HTTP 200 receipt](zencli-sanity-check.md). The parent
@@ -60,7 +64,7 @@ are rejected with 400. Private CLI rejects unsupported fields with 400.
 2. Let fresh authoritative inventory/pricing create the `big-pickle` CLI identity.
    Authenticated `GET /api/v2/catalog`: find key `id` by exact `reference`, and
    model `id` where provider=`opencode-zen`, model=`big-pickle`, protocol=`zencli`,
-   base_url=`http://127.0.0.1:8099/v1`. Verify active/not revoked, free/fresh pricing,
+   base_url=`http://keeper-zencli/v1`. Verify active/not revoked, free/fresh pricing,
    no future retry_at. The corresponding direct row must be `cli_required`.
 3. Administrator `POST /api/v2/checks` with
    `{"credential_id":"<exact key id>","model_id":"<CLI model id>"}`.

@@ -21,7 +21,8 @@ import (
 
 // Bridge only executes an immutable genuine CLI binary. The authenticated Keeper
 // supplies exact-key requests and a fresh authoritative free model catalog.
-// No default login, static model list, exported provider keys, or tool execution.
+// No default login, static model list or exported provider keys. The only
+// executable model-facing command is exact date through the immutable gate.
 type Bridge struct {
 	bin     string
 	mu      sync.RWMutex
@@ -100,10 +101,13 @@ func (b *Bridge) list(w http.ResponseWriter, r *http.Request) {
 
 // Preserve the native build agent and genuine tool definitions. Pinned run's
 // noninteractive permission handler rejects ask requests (never pass --auto).
+// Exact date additionally requires the raw-command gate: native AST checks alone
+// miss shell syntax such as redirect-only input.
 // Whitelisting + explicit small_model prevents paid auxiliary model selection.
 func apiConfig(model string) map[string]any {
 	return map[string]any{
-		"permission":        map[string]string{"*": "ask"},
+		"permission":        map[string]any{"*": "ask", "bash": map[string]string{"*": "ask", "date": "allow"}},
+		"shell":             clockShellPath,
 		"enabled_providers": []string{"opencode"}, "provider": map[string]any{"opencode": map[string]any{"whitelist": []string{model}}},
 		"model": "opencode/" + model, "small_model": "opencode/" + model,
 		"autoupdate": false, "share": "disabled", "snapshot": false, "plugin": []string{}, "mcp": map[string]any{},
@@ -147,9 +151,16 @@ func parseText(raw []byte, key string) (string, string, error) {
 			Part struct {
 				Text   string `json:"text"`
 				Reason string `json:"reason"`
+				Tool   string `json:"tool"`
 				State  struct {
 					Status string `json:"status"`
 					Error  string `json:"error"`
+					Input  struct {
+						Command string `json:"command"`
+					} `json:"input"`
+					Metadata struct {
+						Exit *int `json:"exit"`
+					} `json:"metadata"`
 				} `json:"state"`
 			} `json:"part"`
 		}
@@ -160,11 +171,15 @@ func parseText(raw []byte, key string) (string, string, error) {
 		case "error":
 			return "", "", errors.New("failed generation")
 		case "tool_use":
-			// Only the pinned CLI's native permission rejection may continue.
-			// Completed tools and unrelated execution errors are never accepted.
-			if event.Part.State.Status != "error" || event.Part.State.Error != "The user rejected permission to use this specific tool call." {
+			clock := event.Part.Tool == "bash" && event.Part.State.Status == "completed" &&
+				event.Part.State.Input.Command == "date" && event.Part.State.Metadata.Exit != nil && *event.Part.State.Metadata.Exit == 0
+			denied := event.Part.State.Status == "error" && event.Part.State.Error == "The user rejected permission to use this specific tool call."
+			if !clock && !denied {
 				return "", "", errors.New("unsafe tool execution")
 			}
+			// Neither tool output nor text preceding the tool is a final answer.
+			// Require actual subsequent generated text and a terminal step.
+			text.Reset()
 			finish = ""
 		case "text":
 			text.WriteString(event.Part.Text)

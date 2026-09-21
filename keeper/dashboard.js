@@ -37,7 +37,8 @@
     cells.forEach(c=>{const row=el('tr'), name=el('td'), state=el('td'), time=el('td');
       name.append(el('strong',c.model),el('p',c.protocol+' · '+c.base_url,'muted'));
       state.append(badge(c.state));if(c.blocked_reason) state.append(el('p',label(c.blocked_reason),'muted'));
-      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)),el('p',c.cooldown_scope==='legacy_scope_unknown'?'Legacy cooldown scope unknown':'Applicable cooldown · same credential / endpoint / protocol','muted'));
+      if(c.policy_source)state.append(el('p',c.policy_source+' · '+c.inherited_cli_base_url,'muted'));
+      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)),el('p',c.cooldown_scope==='legacy_scope_unknown'?'Legacy cooldown scope unknown':c.cooldown_scope==='inherited_prior_cli_endpoint'?'Inherited prior CLI endpoint cooldown':'Applicable cooldown · same credential / endpoint / protocol','muted'));
       if(c.checked_at===null)state.append(el('p','No observation yet','muted'));
       else if(c.observation_state && c.observation_state!==c.state)state.append(el('p','Last observation: '+label(c.observation_state),'muted'));
       row.append(name,state,time);body.append(row);});table.append(body);wrap.append(table);return wrap;

@@ -15,7 +15,7 @@ from typing import Optional
 STALE_AFTER = 30 * 3600
 CATALOG_TTL = 24 * 3600
 PROTOCOLS = {'openai', 'responses', 'anthropic', 'gemini', 'zencli'}
-BRIDGE_BASE = 'http://127.0.0.1:8099/v1'
+BRIDGE_BASE = 'http://keeper-zencli/v1'
 RESULT_STATES = {'working', 'access_denied', 'auth_invalid', 'rate_limited',
                  'transient_error', 'invalid_response', 'model_mismatch', 'unsupported'}
 
@@ -81,15 +81,20 @@ class Result:
 CONNECTION_SQL = """SELECT c.*, k.provider, k.reference, k.owner, k.active,
  k.supported, k.has_secret, k.free_tier, k.revoked,
  k.cooldown AS legacy_cooldown,
- MAX(k.cooldown,COALESCE(t.cooldown,0)) AS cooldown,
- COALESCE(t.auth_invalid,0) AS transport_auth_invalid,
+ MAX(k.cooldown,COALESCE(t.cooldown,0),COALESCE(i.cooldown,0)) AS cooldown,
+ MAX(COALESCE(t.auth_invalid,0),COALESCE(i.auth_invalid,0)) AS transport_auth_invalid,
+ COALESCE(i.cooldown,0) AS inherited_cli_cooldown,
+ COALESCE(i.auth_invalid,0) AS inherited_cli_auth_invalid,
+ i.source_base_url AS inherited_cli_base_url,
  k.revision AS key_revision, m.model, m.base_url, m.protocol,
  m.eligibility, m.provenance, m.requires_free_tier, m.present,
  m.checked_at AS catalog_checked_at
  FROM av_connections c JOIN av_credentials k ON k.id=c.credential_id
  JOIN av_models m ON m.id=c.model_id
  LEFT JOIN av_transport_limits t ON t.credential_id=k.id
- AND t.base_url=m.base_url AND t.protocol=m.protocol"""
+ AND t.base_url=m.base_url AND t.protocol=m.protocol
+ LEFT JOIN av_transport_inheritance i ON i.credential_id=k.id
+ AND i.base_url=m.base_url AND i.protocol=m.protocol"""
 
 
 def evidence_age(stamp, now):
@@ -265,7 +270,10 @@ class Availability:
             c['blocked_reason'] = blocked_reason(c, now)
             c['retry_at'] = max(c['retry_at'], c['cooldown'])
             c['cooldown_scope'] = ('legacy_scope_unknown' if c['legacy_cooldown'] > now
+                                   else 'inherited_prior_cli_endpoint' if c['inherited_cli_cooldown'] > now
                                    else 'exact_transport')
+            c['policy_source'] = ('inherited prior CLI endpoint'
+                if c['inherited_cli_cooldown'] > now or c['inherited_cli_auth_invalid'] else None)
             age = evidence_age(c['checked_at'], now)
             if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale':
                 c['state'] = c['blocked_reason']
@@ -295,7 +303,9 @@ class Availability:
                               and model['protocol'] != 'zencli' and model['eligibility'] == 'free'
                               else aggregate_health(c['state'] for c in cells))
             model['exportable'] = model['protocol'] != 'zencli'
-            model['transport_note'] = ('Genuine CLI · flattened text history · no tools/stream/controls · service only'
+            model['transport_note'] = ('Historical CLI endpoint · not selectable · fresh Unix IPC verification required'
+                if model['protocol'] == 'zencli' and model['base_url'] != BRIDGE_BASE else
+                'Genuine CLI · private Unix HTTP · flattened text history · no client tools/stream/controls · service only'
                 if model['protocol'] == 'zencli' else 'CLI required · direct free Zen inference disabled by policy'
                 if model['provider'] == 'opencode-zen' and model['eligibility'] == 'free'
                 else 'Direct provider API')
@@ -313,7 +323,9 @@ class Availability:
             k['admission_reason'] = ('disabled' if not k['active'] else 'revoked' if k['revoked']
                                      else 'unsupported' if not k['supported']
                                      else 'signin_required' if not k['has_secret'] else None)
-            k['cooldown_scope'] = 'legacy_scope_unknown' if k['cooldown'] > self.clock() else 'exact_transport'
+            k['cooldown_scope'] = ('legacy_scope_unknown' if k['cooldown'] > self.clock()
+                else 'inherited_prior_cli_endpoint' if any(c['cooldown_scope'] == 'inherited_prior_cli_endpoint' for c in cells)
+                else 'exact_transport')
             k['cooldown'] = max((c['retry_at'] for c in cells), default=0)
             k['working'] = sum(c['state'] == 'working' for c in cells)
             k['total'] = len(cells)

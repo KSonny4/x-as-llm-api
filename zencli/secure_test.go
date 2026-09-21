@@ -62,7 +62,7 @@ func TestExactIsolatedKeyAndNativeConfiguration(t *testing.T) {
 	if !strings.Contains(string(raw), `"key":"synthetic-selected"`) {
 		t.Fatal("wrong auth identity")
 	}
-	if !strings.Contains(string(raw), `"permission":{"*":"ask"}`) || strings.Contains(string(raw), `"steps"`) || strings.Contains(string(raw), `"agent"`) || strings.Contains(string(raw), `"tools"`) {
+	if !strings.Contains(string(raw), `"permission":{"*":"ask","bash":{"*":"ask","date":"allow"}}`) || strings.Contains(string(raw), `"steps"`) || strings.Contains(string(raw), `"agent"`) || strings.Contains(string(raw), `"tools"`) {
 		t.Fatal("native approval policy changed")
 	}
 	if !strings.Contains(string(raw), "--model\nopencode/dynamic-free-model\n--format\njson\n--pure\n--\n--help") {
@@ -205,6 +205,9 @@ func TestPinnedGenuineCLIRequiresApproval(t *testing.T) {
 		action := ""
 		for _, rule := range info.Permission {
 			if rule.Permission == "*" || rule.Permission == tool {
+				if tool == "bash" && rule.Pattern == "date" && rule.Action == "allow" {
+					continue
+				}
 				// Native truncation-directory traversal is allowed, but read
 				// itself must still ask. No other post-policy allow is safe.
 				if tool == "external_directory" && rule.Action == "allow" && strings.HasSuffix(rule.Pattern, "/data/opencode/tool-output/*") {

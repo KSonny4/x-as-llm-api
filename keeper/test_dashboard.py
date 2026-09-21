@@ -72,8 +72,16 @@ def review_snapshot(directory):
     assert ticket  # Direct rate history must not block a never-checked CLI.
     service.finish_check(ticket, Result('rate_limited', 120))
     after = catalog(state)
+    # A separate snapshot exercises the attributed migration-policy display;
+    # test_cli_ipc_migration independently verifies when this row may be created.
+    with service.store.transaction() as db:
+        db.execute('''INSERT INTO av_transport_inheritance
+            (credential_id,base_url,protocol,source_base_url,cooldown)
+            VALUES (?,?,'zencli','http://127.0.0.1:8099/v1',?)''',
+            (kid, cli['base_url'], clock()+300))
+    prior_cli = catalog(state)
     service.store.close()
-    return {'before': before, 'after': after, 'key_id': kid}
+    return {'before': before, 'after': after, 'prior_cli': prior_cli, 'key_id': kid}
 
 
 def test_key_admission_explains_model_less_keys_without_changing_health(tmp_path):

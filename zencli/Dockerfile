@@ -18,6 +18,8 @@ RUN test "$TARGETARCH" = amd64 \
     && rm -rf /var/lib/apt/lists/* \
     && /usr/local/bin/opencode --version
 COPY --from=build /out/zencli /usr/local/bin/zencli
+RUN mkdir -p /usr/local/libexec/keeper-clock \
+    && ln -s /usr/local/bin/zencli /usr/local/libexec/keeper-clock/sh
 ENV BUILD_ID=${BUILD_ID} HOME=/tmp
 USER 65532:65532
 WORKDIR /tmp

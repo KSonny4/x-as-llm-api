@@ -77,20 +77,20 @@ def test_real_go_sidecar_fake_cli_service_end_to_end(tmp_path):
     if not shutil.which('go'):pytest.skip('Go compiler unavailable')
     repo=Path(__file__).resolve().parent.parent
     binary=tmp_path/'zencli'
-    subprocess.run(['go','build','-o',str(binary),'.'],cwd=repo/'zencli',check=True,capture_output=True)
+    gate=tmp_path/'sh'
+    subprocess.run(['go','build','-ldflags=-X main.clockShellPath='+str(gate),'-o',str(binary),'.'],cwd=repo/'zencli',check=True,capture_output=True)
+    gate.symlink_to(binary)
     fake=tmp_path/'opencode'
     fake.write_text("#!/bin/sh\nprintf '%s\\n' '{\"type\":\"text\",\"part\":{\"text\":\"Hello from isolated CLI\"}}' '{\"type\":\"step_finish\",\"part\":{\"reason\":\"stop\"}}'\n")
     fake.chmod(0o700)
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-    process=subprocess.Popen([str(binary),'-port',str(port),'-opencode-bin',str(fake)],env={'KEEPER_ZENCLI_TOKEN':'synthetic-internal'},stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    import tempfile
+    import functools
+    import zencli_bridge
+    ipc_dir=tempfile.TemporaryDirectory(prefix='keeper-ipc-',dir='/tmp')
+    socket_path=ipc_dir.name+'/private/http.sock'
+    process=subprocess.Popen([str(binary),'-socket',socket_path,'-opencode-bin',str(fake)],env={'KEEPER_ZENCLI_TOKEN':'synthetic-internal'},stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     try:
-        def http(method,url,headers,payload):
-            from urllib.parse import urlsplit
-            req=urllib.request.Request('http://127.0.0.1:'+str(port)+urlsplit(url).path,headers=headers,data=json.dumps(payload).encode(),method=method)
-            try:res=urllib.request.urlopen(req,timeout=5)
-            except urllib.error.HTTPError as exc:res=exc
-            with res:return HttpResponse(res.code,dict(res.headers),res.read())
+        http=functools.partial(zencli_bridge.unix_request,socket_path=socket_path)
         for _ in range(50):
             try:
                 if http('POST',BRIDGE_BASE.removesuffix('/v1')+'/internal/catalog',{},{}).status==401:break
@@ -111,4 +111,61 @@ def test_real_go_sidecar_fake_cli_service_end_to_end(tmp_path):
         assert call(state,'POST','/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'Hi'}],'stream':True},{'Authorization':'Bearer service'})[0]==503
         assert all(c['state']!='working' for c in s.connections() if c['protocol']!='zencli')
     finally:
-        process.terminate();process.wait(timeout=5)
+        process.terminate();process.wait(timeout=5);ipc_dir.cleanup()
+
+
+def test_unix_logical_authority_and_no_old_loopback_success(tmp_path):
+    import time
+    from availability import blocked_reason
+    s,clock,bridge,selector,calls=fixture(tmp_path)
+    assert BRIDGE_BASE=='http://keeper-zencli/v1'
+    old=Model('opencode-zen','a','http://127.0.0.1:8099/v1','zencli','unknown','old')
+    with s.store.transaction() as db:
+        s._put_model(db,old)
+        s._expand(db)
+        db.execute("UPDATE av_models SET eligibility='free' WHERE id=?",(old.id,))
+        db.execute("UPDATE av_connections SET state='working',checked_at=? WHERE model_id=?",(clock(),old.id))
+    rows=s.connections()
+    assert all(c['blocked_reason'] for c in rows if c['model_id']==old.id)
+    assert all(c['state']=='unknown' and c['checked_at'] is None for c in rows if c['protocol']=='zencli' and c['model_id']!=old.id)
+    assert selector.select(old.id,export=False)['error']=='no_working_connection'
+    assert 'Historical CLI endpoint' in next(m for m in s.catalog()['models'] if m['id']==old.id)['transport_note']
+
+
+def test_unix_http_client_no_dns_redirect_proxy_or_unbounded_body(monkeypatch):
+    import http.server
+    import socket
+    import socketserver
+    import tempfile
+    import threading
+    import pytest
+    from zencli_bridge import unix_request
+    calls=[]
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self,*args): pass
+        def do_POST(self):
+            calls.append((self.path,self.headers.get('Authorization')))
+            self.rfile.read(int(self.headers.get('Content-Length',0)))
+            self.send_response(302 if len(calls)==1 else 200)
+            self.send_header('Location','https://must-not-follow.invalid/')
+            self.end_headers()
+            self.wfile.write(b'redirect' if len(calls)==1 else b'x'*(1024*1024+1))
+    def no_dns(*args): raise AssertionError('Unix IPC performed DNS lookup')
+    monkeypatch.setattr(socket,'getaddrinfo',no_dns)
+    monkeypatch.setenv('HTTP_PROXY','http://must-not-proxy.invalid')
+    with tempfile.TemporaryDirectory(prefix='keeper-unix-',dir='/tmp') as directory:
+        path=directory+'/http.sock'
+        server=socketserver.UnixStreamServer(path,Handler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            url=BRIDGE_BASE+'/chat/completions'
+            response=unix_request('POST',url,{'Authorization':'Bearer synthetic-internal'},{},socket_path=path)
+            assert response.status==302 and len(calls)==1
+            with pytest.raises(ValueError,match='too large'):
+                unix_request('POST',url,{}, {},socket_path=path)
+            with pytest.raises(ValueError,match='fixed bridge endpoint'):
+                unix_request('POST','http://127.0.0.1:8099/v1/chat/completions',{}, {},socket_path=path)
+            assert calls[0]==('/v1/chat/completions','Bearer synthetic-internal')
+            assert len(calls)==2
+        finally:
+            server.shutdown();server.server_close();thread.join()
