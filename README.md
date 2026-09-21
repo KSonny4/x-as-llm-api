@@ -97,6 +97,9 @@ controlled egress path; private authenticated Unix HTTP replaces host-loopback
 IPC. Native ask-only shell bypass is closed by an immutable exact-date gate.
 Update: daily per-key verification budgets shipped (5 inference checks/key/day,
 oldest-first rotation, on-demand serving checks exempt) so verification stops
-eating the quotas it measures. Remaining follow-ups: redacted bridge failure
-classification for flaky fast-502s, upstream-stall characterization, and a nicer
-public landing page.
+eating the quotas it measures. Operator-forced discovery refresh shipped
+(admin-only `POST /api/v2/discovery/refresh`, at most one per hour, plus a
+`Refresh inventory` dashboard button) — used on production to publish the
+Unix-IPC CLI rows the same day instead of waiting for the daily cadence.
+Remaining follow-ups: redacted bridge failure classification for flaky
+fast-502s, upstream-stall characterization, and a nicer public landing page.
