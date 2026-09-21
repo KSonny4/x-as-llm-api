@@ -90,6 +90,9 @@ ALIASES = {
     ('kilocode', 'cohere/north-mini-code:free'): 'north-mini-code',
     ('kilocode', 'liquid/lfm-2.5-2.6b:free'): 'lfm2-5-2-6b',
     ('kilocode', 'stepfun/step-3.7-flash:free'): 'step-3-7-flash',
+    # Muse Spark 1.3 contributor-free has no effort label; map to the lower
+    # (max, 75.8) rather than xhigh (76.5) so the rank never over-promises.
+    ('opencode-zen', 'muse-spark-1.3-contributor-free'): 'muse-spark-1-3',
 }
 
 

@@ -143,7 +143,7 @@ def test_reviewed_exact_provider_aliases_without_family_or_setting_guesses():
         assert score_for(scores,provider,'inclusionai/ling-3.0-flash-fin:free')==55.6
         assert score_for(scores,provider,'nvidia/nemotron-3.5-lightning:free')==26.8
     assert score_for(scores,'other','ling-3.0-flash-fin-free') is None
-    assert score_for(scores,'opencode-zen','muse-spark-1.3-contributor-free') is None
+    assert score_for(scores,'opencode-zen','muse-spark-1.3-contributor-free')==75.8
     assert score_for(scores,'opencode-zen','mimo-v2.5-free') is None
 
 

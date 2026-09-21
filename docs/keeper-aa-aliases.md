@@ -19,11 +19,17 @@ Both direct and genuine-CLI transports use this provider/model identity, but
 retain independent availability evidence. Code contains **no scores** in the
 alias table: the daily cached Coding Index remains the score source.
 
-Explicitly **unmatched**: Muse Spark contributor routes (AA has distinct max and
-xhigh scores; no proven configuration equivalence), MiMo-V2.5 free (AA slug names
-0424; exact dated version not established), Nemotron Ultra reasoning variants
-without verified setting equivalence, Big Pickle, and other unknowns. No generic
-suffix stripping, slash removal, family matching or Intelligence Index fallback.
+Explicitly **unmatched**: MiMo-V2.5 free (AA slug names 0424; exact dated
+version not established), Nemotron Ultra reasoning variants without verified
+setting equivalence, Big Pickle, and other unknowns. No generic suffix
+stripping, slash removal, family matching or Intelligence Index fallback.
+
+Mapped 2026-09-21 with live AA verification: `muse-spark-1.3-contributor-free`
+→ slug `muse-spark-1-3` (Muse Spark 1.3 max, Coding Index 75.8). AA also lists
+`muse-spark-1-3-xhigh` at 76.5; the free contributor endpoint carries no effort
+label, so the mapping takes the lower score and never over-promises. Either
+variant tops current free ranking, so the choice does not affect selection
+order today.
 
 A new mapping requires source-named evidence and regression tests. Provider
 namespaces stay distinct; one provider mapping does not authorize another.
