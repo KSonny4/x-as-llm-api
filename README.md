@@ -66,10 +66,10 @@ It does not pretend its historical buffered SSE is real streaming. Requests are
 never silently weakened to fit a backend. Paid search/plugins and routing/model
 fallback overrides are rejected.
 
-**Production v12 is live and verified.** The [fresh original zencli Nomad HTTP control](docs/zencli-sanity-check.md)
+**Production v15 is live and verified.** The [fresh original zencli Nomad HTTP control](docs/zencli-sanity-check.md)
 still passes; its working path is preserved. Earlier proofs are in `zencli/TRANSCRIPT.md`.
-Live receipts: service `keeper-coder` chat HTTP 200 on production (selected
-`inclusionai/ling-3.0-flash-vl:free`); canary exact-CLI observation WORKING +
+Live receipts: service `keeper-coder` currently serves `muse-spark-1.3-contributor-free`
+(AA Coding 75.8) over the genuine-CLI route; canary exact-CLI observation WORKING +
 admin exact chat HTTP 200 (`big-pickle`, `Monday, September 21, 2026.`).
 See [engineering guidance](docs/engineering-guidance.md),
 [API contract](KEEPER_API.md), and [rollout/rollback](docs/keeper-all-models-rollout.md).
@@ -88,7 +88,7 @@ failures. Public rollout and real coding-agent compatibility need parent receipt
 
 
 Latest continuation: [Unix IPC and exact native clock repair](docs/keeper-uds-clock-repair.md) —
-**deployed as v12 and canary-verified live.** CLI Docker bridge preserves the
+**deployed as v12→v15 and live-verified.** CLI Docker bridge preserves the
 controlled egress path; private authenticated Unix HTTP replaces host-loopback
 IPC. Native ask-only shell bypass is closed by an immutable exact-date gate.
 Update: daily per-key verification budgets shipped (5 inference checks/key/day,
