@@ -118,9 +118,10 @@ gauges; the `keeper-alloy` Nomad job scrapes every 30s into Grafana Cloud
 route/down/stale alerts. Verified end to end.
 - **Logs**: live in Loki. The `keeper-alloy` job tails keeper containers via
   the Docker socket (`loki.source.docker`, matched on the task-first container
-  name, static `service`/`project` labels) and pushes with the RW2 `logs:write`
-  credential (`1476425` + Bao `secret/projects/nomad/GRAFANA_CLOUD_RW2` field
-  `token` — no separate escrow was needed). Verify: `{service="keeper-server"}`
+  name, static `service`/`project` labels) and pushes with the graph-engineering
+  logs credential (`1476425` + Bao `secret/projects/graph-engineering/LOKI_SECRET`;
+  the RW/RW2 tokens 401 on the push endpoint and ship nothing — verified live).
+  Verify: `{service="keeper-server"}`
   (or `keeper-probe`) in Explore/datasource `grafanacloud-logs` returns fresh
   entries. Hard lessons, do not regress: Alloy River rejects `#` comments
   (use `//`); never labeldrop `__meta_docker_container_id` (ships zero lines
