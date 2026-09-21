@@ -109,3 +109,16 @@ has no CNI bridge plugin; the approved, tested topology is Keeper on Docker host
 networking (`127.0.0.1:8102`) plus the CLI sidecar on Docker bridge with no
 published internal port, communicating over authenticated Unix HTTP IPC under
 shared `/alloc/data`. No 8099 loopback listener exists anymore.
+
+## Observability: metrics yes, logs not yet
+
+- **Metrics**: live. `GET /metrics` (admin bearer) exposes route health
+gauges; the `keeper-alloy` Nomad job scrapes every 30s into Grafana Cloud
+(`meowlabs.grafana.net`), where the `keeper` folder holds the dashboard and
+route/down/stale alerts. Verified end to end.
+- **Logs**: Nomad alloc logs only (ephemeral, host-local). No Loki pipeline
+exists: the Alloy job ships metrics alone, and no stored credential carries
+`logs:write` for the logs instance. To finish: escrow `user` + `token` at
+Bao `secret/projects/nomad/GRAFANA_CLOUD_LOKI`, then add a docker-socket log
+source filtered to keeper jobs plus `loki.write`, redeploy Alloy, and verify
+entries land before calling it done.
