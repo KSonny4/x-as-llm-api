@@ -1,0 +1,18 @@
+{
+ "_comment": "localhost probe_route vs live zen free route (PR1 proof). L1 yields suspect for auth-shaped denials (401 bad key and 403 FreeTierError are indistinguishable at L1 by design, hence no auth-denied state); L2 CLI passes; divergent=true.",
+ "probe": {
+  "state": "degraded",
+  "l1": "suspect",
+  "l2": "pass",
+  "l1_reason": "error code: 1010\n"
+ },
+ "matrix_cell": {
+  "state": "degraded",
+  "l1": "suspect",
+  "l2": "pass",
+  "divergent": true
+ },
+ "diagnostics_divergent": [
+  "zen/big-pickle"
+ ]
+}

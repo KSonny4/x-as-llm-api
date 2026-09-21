@@ -29,7 +29,7 @@ Nomad URL + identical OpenAI `choices` from stubbed openai/anthropic routes.
 ## Wave 3 — cutover (1 writer + owner dashboards)
 
 Rotate `KEEPER_TOKEN` (fix 403, parallel-accept first), cut hostname to Nomad
-job, remove Coolify keeper app, `llm-quota/DEPRECATED.md` + archive.
+job, remove retired keeper app, `llm-quota/DEPRECATED.md` + archive.
 Done when: public `curl https://keeper.pkubelka.cz/healthz` → 200,
 authed chat completion returns text, hostname smoke green.
 

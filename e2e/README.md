@@ -5,5 +5,5 @@
 
 Baseline 2026-09-17 (`https://keeper.pkubelka.cz`): `/healthz` 200; `/packs`
 no-bearer 401, garbage bearer 401, Bao-stored `KEEPER_TOKEN` **403** (OPEN —
-reconcile/rotate with deploy owner). Origin unproven (Coolify app deploy failed
+reconcile/rotate with deploy owner). Origin unproven (retired-app deploy failed
 on record; Cloudflare masks origin).
