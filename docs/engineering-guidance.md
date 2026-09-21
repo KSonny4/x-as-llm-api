@@ -116,9 +116,12 @@ shared `/alloc/data`. No 8099 loopback listener exists anymore.
 gauges; the `keeper-alloy` Nomad job scrapes every 30s into Grafana Cloud
 (`meowlabs.grafana.net`), where the `keeper` folder holds the dashboard and
 route/down/stale alerts. Verified end to end.
-- **Logs**: Nomad alloc logs only (ephemeral, host-local). No Loki pipeline
-exists: the Alloy job ships metrics alone, and no stored credential carries
-`logs:write` for the logs instance. To finish: escrow `user` + `token` at
-Bao `secret/projects/nomad/GRAFANA_CLOUD_LOKI`, then add a docker-socket log
-source filtered to keeper jobs plus `loki.write`, redeploy Alloy, and verify
-entries land before calling it done.
+- **Logs**: live in Loki. The `keeper-alloy` job tails keeper containers via
+  the Docker socket (`loki.source.docker`, matched on the task-first container
+  name, static `service`/`project` labels) and pushes with the RW2 `logs:write`
+  credential (`1476425` + Bao `secret/projects/nomad/GRAFANA_CLOUD_RW2` field
+  `token` — no separate escrow was needed). Verify: `{service="keeper-server"}`
+  (or `keeper-probe`) in Explore/datasource `grafanacloud-logs` returns fresh
+  entries. Hard lessons, do not regress: Alloy River rejects `#` comments
+  (use `//`); never labeldrop `__meta_docker_container_id` (ships zero lines
+  with zero errors); container names are task-first, not job-first.

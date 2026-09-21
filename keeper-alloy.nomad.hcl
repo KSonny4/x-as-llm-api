@@ -12,7 +12,12 @@
 #     -var=keeper_token="$(bao kv get -field=token secret/projects/pi-infinity-llm/KEEPER_TOKEN)" \
 #     -var=prom_user="<Cloud Prometheus basic-auth username (instance id)>" \
 #     -var=prom_token="$(bao kv get -field=token secret/projects/nomad/GRAFANA_CLOUD_RW)" \
+#     -var=loki_user="<Cloud Loki basic-auth username (instance id)>" \
+#     -var=loki_token="$(bao kv get -field=token secret/projects/nomad/GRAFANA_CLOUD_RW2)" \
 #     keeper-alloy.nomad.hcl
+#
+# Logs credential: GRAFANA_CLOUD_RW2 carries logs:write (proven live: Loki
+# push 204 + query-back). No separate escrow needed.
 #
 # Credential rotation (owner terminal ONLY — values never touch chat/logs):
 #   exposed alloy token => revoke in Cloud console, mint fresh under the
@@ -47,6 +52,19 @@ variable "prom_token" {
   type = string
 }
 
+variable "loki_url" {
+  type    = string
+  default = "https://logs-prod-035.grafana.net/loki/api/v1/push"
+}
+
+variable "loki_user" {
+  type = string
+}
+
+variable "loki_token" {
+  type = string
+}
+
 job "keeper-alloy" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -64,6 +82,7 @@ job "keeper-alloy" {
         image        = "grafana/alloy:v1.19.2"
         force_pull   = true
         network_mode = "host"
+        volumes      = ["/var/run/docker.sock:/var/run/docker.sock"]
         args = [
           "run",
           "${NOMAD_TASK_DIR}/config.alloy",
@@ -78,6 +97,9 @@ job "keeper-alloy" {
         # never carries the secret; the value itself still comes from
         # -var=prom_token at register time (Bao, owner terminal only).
         GRAFANA_TOKEN = var.prom_token
+        # Loki password, same treatment: value from -var=loki_token at
+        # register time (Bao, owner terminal only), never baked.
+        GRAFANA_CLOUD_LOKI = var.loki_token
       }
 
       template {
@@ -95,6 +117,54 @@ prometheus.remote_write "cloud" {
     basic_auth {
       username = "${var.prom_user}"
       password = env("GRAFANA_TOKEN")
+    }
+  }
+}
+
+discovery.docker "keeper" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "keeper" {
+  targets = discovery.docker.keeper.targets
+
+  // Container names are task-first (server-<alloc>, probe-<alloc>); match
+  // the stable task prefix. Never labeldrop __meta_docker_container_id —
+  // the source needs it to identify containers, and dropping it ships zero
+  // lines with zero errors. (__-prefixed labels never reach Loki streams.)
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "^/(server|probe)-.*"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "^/([a-z]+)-.*"
+    target_label  = "service"
+    replacement   = "keeper-$1"
+    action        = "replace"
+  }
+
+  rule {
+    target_label = "project"
+    replacement  = "x-as-llm-api"
+    action       = "replace"
+  }
+}
+
+loki.source.docker "keeper" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.keeper.output
+  forward_to = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+  endpoint {
+    url = "${var.loki_url}"
+    basic_auth {
+      username = "${var.loki_user}"
+      password = env("GRAFANA_CLOUD_LOKI")
     }
   }
 }
