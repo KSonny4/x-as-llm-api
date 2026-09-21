@@ -133,3 +133,22 @@ proc/auth attempt, task and webfetch rejection, auxiliary same-key/model checks.
 `secure_test.go` verifies merged native permission rules and scrubbed argv/env.
 `browser-smoke.cjs` red→green policy actions and legacy cooldown labels, retaining
 mobile overflow, XSS, discovery warnings and token lifecycle coverage.
+
+## Bounded dashboard review corrections
+
+Immutable-e1ecb50 findings D1/D2 were checked against the repaired candidate, not
+interpreted as provider evidence. Key snapshots now include `admission_reason`
+independently of aggregate health and model rows: disabled, revoked, unsupported,
+or signin_required. Model-less/Unassigned keys stay accounted for; their panels
+explain the admission block and disable the otherwise zero-work Check key action.
+
+`test_dashboard.py` supplies actual domain/API snapshots to the browser smoke.
+The direct-rate-history snapshot proves the never-checked CLI is unknown, has no
+retry timestamp and can begin checking. After an actual synthetic CLI rate-limit
+result, its same-transport unchecked sibling has an applicable cooldown but still
+no observation/timestamp. Browser labels distinguish “No observation yet” from
+“Last observation: rate limited” and name the same-credential/endpoint/protocol
+cooldown policy. The unrelated direct history remains unchanged. These tests do
+not bypass cli_required or induce provider quotas. D2's admission assertion and
+new browser explanations were red before the correction and green afterward.
+The existing layout, Unassigned accounting and any-success owner health remain.

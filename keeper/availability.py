@@ -308,6 +308,11 @@ class Availability:
         for k in keys:
             cells = [c for c in rows if c['credential_id'] == k['id']]
             k['connections'] = cells
+            # Credential admission remains visible even without model rows;
+            # it is not an inferred availability observation or owner health.
+            k['admission_reason'] = ('disabled' if not k['active'] else 'revoked' if k['revoked']
+                                     else 'unsupported' if not k['supported']
+                                     else 'signin_required' if not k['has_secret'] else None)
             k['cooldown_scope'] = 'legacy_scope_unknown' if k['cooldown'] > self.clock() else 'exact_transport'
             k['cooldown'] = max((c['retry_at'] for c in cells), default=0)
             k['working'] = sum(c['state'] == 'working' for c in cells)

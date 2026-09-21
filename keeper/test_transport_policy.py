@@ -77,7 +77,7 @@ def legacy_database(tmp_path, scopes, ambiguous=False):
         db.execute('UPDATE av_credentials SET cooldown=?,revoked=1 WHERE id=?',(clock()+600,kid))
         for protocol in scopes:
             c=next(c for c in rows if c['credential_id']==kid and c['protocol']==protocol)
-            db.execute("UPDATE av_connections SET state='rate_limited',retry_at=? WHERE id=?",(clock()+300,c['id']))
+            db.execute("UPDATE av_connections SET state='rate_limited',checked_at=?,retry_at=? WHERE id=?",(clock(),clock()+300,c['id']))
             db.execute("INSERT INTO av_checks(connection_id,revision,key_revision,started_at,finished_at,state,applied) VALUES (?,0,0,?,?,'rate_limited',1)",(c['id'],clock()-1,clock()))
     s.store.close()
     return clock,kid

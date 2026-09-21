@@ -37,8 +37,9 @@
     cells.forEach(c=>{const row=el('tr'), name=el('td'), state=el('td'), time=el('td');
       name.append(el('strong',c.model),el('p',c.protocol+' · '+c.base_url,'muted'));
       state.append(badge(c.state));if(c.blocked_reason) state.append(el('p',label(c.blocked_reason),'muted'));
-      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)),el('p',c.cooldown_scope==='legacy_scope_unknown'?'Legacy cooldown scope unknown':'Exact transport cooldown','muted'));
-      if(c.observation_state && c.observation_state!==c.state)state.append(el('p','Last observation: '+label(c.observation_state),'muted'));
+      time.append(el('span',stamp(c.checked_at)));if(c.retry_at > snapshot.now)time.append(el('p','Retry '+stamp(c.retry_at)),el('p',c.cooldown_scope==='legacy_scope_unknown'?'Legacy cooldown scope unknown':'Applicable cooldown · same credential / endpoint / protocol','muted'));
+      if(c.checked_at===null)state.append(el('p','No observation yet','muted'));
+      else if(c.observation_state && c.observation_state!==c.state)state.append(el('p','Last observation: '+label(c.observation_state),'muted'));
       row.append(name,state,time);body.append(row);});table.append(body);wrap.append(table);return wrap;
   }
   async function check(scope) {const p=await api('checks',scope);notice('Queued '+p.total+' eligible connections. Cooldowns remain in effect.');await refresh(false);}
@@ -68,10 +69,14 @@
       const title=el('span',undefined,'row');title.append(el('strong',owner.owner||'Unassigned'),badge(owner.state),el('span',owner.working_keys+' / '+owner.total_keys+' working keys','muted'));
       const d=details('owner:'+owner.owner,title), inner=el('div',undefined,'detail');
       keys.forEach(k=>{const title=el('span',undefined,'row');title.append(el('strong',k.provider+' · '+k.reference),badge(k.state),el('span',k.working+' / '+k.total+' working · '+k.checked+' checked','muted'));
+        if(k.admission_reason && k.admission_reason!==k.state)title.append(badge(k.admission_reason));
         const key=details(k.id,title), detail=el('div',undefined,'detail');
         const discovery=(snapshot.discovery||[]).find(d=>d.credential_id===k.id);
         detail.append(el('p',discovery?(discovery.error?'Discovery failed':'Inventory discovery succeeded')+' · Last attempt: '+stamp(discovery.checked_at)+' · Last success: '+stamp(discovery.succeeded_at):'Inventory discovery not yet attempted',discovery?.error?'discovery-error':'muted'));
-        detail.append(button('Check key',()=>check({credential_id:k.id})),cellsTable(k.connections));key.append(detail);inner.append(key);});d.append(inner);fragment.append(d);
+        const admission={disabled:'disabled inventory entry',revoked:'revoked credential; operator review required',unsupported:'unsupported credential transport',signin_required:'sign in required; no stored credential'};
+        const checkKey=button('Check key',()=>check({credential_id:k.id}));
+        if(k.admission_reason){checkKey.disabled=true;detail.append(el('p','Checking unavailable: '+(admission[k.admission_reason]||label(k.admission_reason))+'.','muted'));}
+        detail.append(checkKey,cellsTable(k.connections));key.append(detail);inner.append(key);});d.append(inner);fragment.append(d);
     });
     else snapshot.models.filter(m=>matches(m.provider,[m.model,m.provider])).forEach(m=>{
       count++;const title=el('span',undefined,'row');title.append(el('strong',m.model+' / '+m.provider),badge(m.eligibility==='free'?m.state:m.eligibility),el('span','Coding '+(m.coding_index??'— unmatched')+' · '+m.working_keys+' / '+m.total_keys+' keys','muted'));
