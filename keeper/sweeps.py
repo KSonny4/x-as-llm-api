@@ -9,6 +9,10 @@ from availability import (CONNECTION_SQL, DAILY_CHECK_BUDGET, Result,
                            utc_day_start)
 from inference import verify
 
+# Operator-forced discovery refreshes are rate-limited durably: discovery
+# costs provider calls on every key, so at most one forced refresh per hour.
+FORCED_REFRESH_MIN_INTERVAL = 3600
+
 
 class Sweeps:
     def __init__(self, service, provider_interval=2, key_interval=5,
@@ -28,20 +32,28 @@ class Sweeps:
         self.verifier = verifier
         self.daily_budget = daily_budget
 
-    def schedule(self, kind='manual', credential_id=None, model_id=None):
+    def schedule(self, kind='manual', credential_id=None, model_id=None, force=False):
         """Schedule EVERY eligible pair; active jobs are shared across sweeps.
 
         Optional IDs filter exact stored identities (never a model substring).
         Daily dedup is durable. Pricing must be refreshed before a daily sweep.
+        kind='forced' only records an operator discovery-refresh request (the
+        worker fulfills it); force=True skips daily dedup after a refresh.
         """
-        if kind not in ('manual', 'daily', 'verification'):
+        if kind not in ('manual', 'daily', 'verification', 'forced'):
             raise ValueError('invalid sweep kind')
         now = self.clock()
         with self.store.transaction() as db:
-            if kind == 'daily' and db.execute(
+            if kind == 'daily' and not force and db.execute(
                     "SELECT 1 FROM av_sweeps WHERE kind='daily' AND created_at>?", (now - 86400,)).fetchone():
                 return None
+            if kind == 'forced' and db.execute(
+                    "SELECT 1 FROM av_sweeps WHERE kind='forced' AND created_at>?",
+                    (now - FORCED_REFRESH_MIN_INTERVAL,)).fetchone():
+                raise ValueError('forced refresh too soon')
             sid = db.execute('INSERT INTO av_sweeps(kind,created_at) VALUES (?,?)', (kind, now)).lastrowid
+            if kind == 'forced':
+                return sid
             for c in db.execute(CONNECTION_SQL).fetchall():
                 if credential_id and c['credential_id'] != credential_id:
                     continue
@@ -155,17 +167,29 @@ class Sweeps:
         self.complete(job, result)
         return True
 
+    def refresh_due(self):
+        """(daily_due, forced_due): fulfillment inserts a daily row after the
+        forced row, so row-id order (not timestamps) tracks fulfillment
+        without extra state."""
+        latest = self.store.rows("SELECT MAX(created_at) AS at, MAX(id) AS id FROM av_sweeps WHERE kind='daily'")
+        forced = self.store.rows("SELECT MAX(id) AS id FROM av_sweeps WHERE kind='forced'")
+        daily_due = latest[0]['at'] is None or self.clock() - latest[0]['at'] >= 86400
+        forced_due = (forced[0]['id'] is not None
+                      and (latest[0]['id'] is None or forced[0]['id'] > latest[0]['id']))
+        return daily_due, forced_due
+
     def run(self, stop_event, resolve_secret, refresh_catalog, transport=None):
         """Blocking background loop; stop_event.wait supplies interruptible sleep.
 
         A failed persistence operation propagates to the supervisor instead of
         pretending the sweep completed. refresh_catalog itself records sanitized
-        provider failures. Persisted daily sweep time determines restart cadence.
+        provider failures. Persisted daily sweep time determines restart cadence;
+        a fulfilled forced refresh resets that cadence.
         """
         while not stop_event.is_set():
-            latest = self.store.rows("SELECT MAX(created_at) AS at FROM av_sweeps WHERE kind='daily'")
-            if latest[0]['at'] is None or self.clock() - latest[0]['at'] >= 86400:
+            daily_due, forced_due = self.refresh_due()
+            if daily_due or forced_due:
                 refresh_catalog()
-                self.schedule('daily')
+                self.schedule('daily', force=True)
             self.run_once(resolve_secret, transport)
             stop_event.wait(1)

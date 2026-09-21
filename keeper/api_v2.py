@@ -4,7 +4,8 @@ import hmac
 import json
 
 NO_STORE = [('Cache-Control', 'no-store, private'), ('X-Content-Type-Options', 'nosniff')]
-MUTATIONS = {'/api/v2/checks', '/api/v2/credentials', '/api/v2/feedback'}
+MUTATIONS = {'/api/v2/checks', '/api/v2/credentials', '/api/v2/feedback',
+             '/api/v2/discovery/refresh'}
 
 
 def csrf_token(state, raw_session):
@@ -54,10 +55,17 @@ def handle(state, method, path, body, raw_session):
         doc = json.loads(body or b'{}')
         fields = {'/api/v2/checks': {'credential_id', 'model_id'},
                   '/api/v2/credentials': {'model_id'},
-                  '/api/v2/feedback': {'connection_id', 'reason'}}[path]
+                  '/api/v2/feedback': {'connection_id', 'reason'},
+                  '/api/v2/discovery/refresh': set()}[path]
         if not isinstance(doc, dict) or set(doc) - fields or any(not isinstance(v, str) for v in doc.values()):
             raise ValueError()
         s = state['availability']
+        if path == '/api/v2/discovery/refresh':
+            try:
+                sid = state['sweeps'].schedule('forced')
+            except ValueError:
+                return response(409, {'error': 'forced_refresh_too_soon'})
+            return response(202, state['sweeps'].progress(sid))
         if path == '/api/v2/checks':
             for name, table in [('credential_id', 'av_credentials'), ('model_id', 'av_models')]:
                 if name in doc and not s.store.rows('SELECT id FROM ' + table + ' WHERE id=?', (doc[name],)):

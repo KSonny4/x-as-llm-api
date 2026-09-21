@@ -111,6 +111,7 @@
   $('search').oninput=render;$('provider').onchange=render;
   $('refresh').onclick=()=>refresh().catch(e=>notice(e.message,true));
   $('check-all').onclick=async()=>{const b=$('check-all');b.disabled=true;try{await check({});}catch(e){notice(e.message,true);}finally{b.disabled=false;}};
+  $('refresh-inventory').onclick=async()=>{const b=$('refresh-inventory');b.disabled=true;try{await api('discovery/refresh',{});notice('Inventory refresh requested. The worker runs it within a minute; at most one per hour.');await refresh(false);}catch(e){notice(e.message,true);}finally{b.disabled=false;}};
   $('copy-token').onclick=()=>navigator.clipboard.writeText(credential.api_key).then(()=>notice('Provider token copied.')).catch(()=>notice('Clipboard unavailable. Select the config manually.',true));
   $('copy-config').onclick=()=>navigator.clipboard.writeText($('config').value).then(()=>notice('Connection config copied.')).catch(()=>notice('Clipboard unavailable. Select the config manually.',true));
   $('clear-token').onclick=clearCredential;
