@@ -69,7 +69,7 @@
       if(!keys.length)return;count++;
       const title=el('span',undefined,'row');title.append(el('strong',owner.owner||'Unassigned'),badge(owner.state),el('span',owner.working_keys+' / '+owner.total_keys+' working keys','muted'));
       const d=details('owner:'+owner.owner,title), inner=el('div',undefined,'detail');
-      keys.forEach(k=>{const title=el('span',undefined,'row');title.append(el('strong',k.provider+' · '+k.reference),badge(k.state),el('span',k.working+' / '+k.total+' working · '+k.checked+' checked','muted'));
+      keys.forEach(k=>{const title=el('span',undefined,'row');title.append(el('strong',k.provider+' · '+k.reference),badge(k.state),el('span',k.working+' / '+k.total+' working · '+k.checked+' checked · '+(k.checks_today??0)+' / '+(k.check_budget??'—')+' checks today','muted'));
         if(k.admission_reason && k.admission_reason!==k.state)title.append(badge(k.admission_reason));
         const key=details(k.id,title), detail=el('div',undefined,'detail');
         const discovery=(snapshot.discovery||[]).find(d=>d.credential_id===k.id);

@@ -4,23 +4,29 @@ Multiple process claims serialize in SQLite. Lease expiry fences abandoned
 checks, provider/key pacing persists, and manual checks cannot clear cooldowns.
 run() belongs on one background thread, never in the HTTP request handler.
 """
-from availability import CONNECTION_SQL, Result, blocked_reason, identity
+from availability import (CONNECTION_SQL, DAILY_CHECK_BUDGET, Result,
+                           blocked_reason, checks_started_since, identity,
+                           utc_day_start)
 from inference import verify
 
 
 class Sweeps:
     def __init__(self, service, provider_interval=2, key_interval=5,
-                 lease_seconds=90, max_attempts=3, verifier=verify):
+                 lease_seconds=90, max_attempts=3, verifier=verify,
+                 daily_budget=DAILY_CHECK_BUDGET):
         self.service = service
         self.store = service.store
         self.clock = service.clock
         if min(provider_interval, key_interval) < 0 or lease_seconds <= 25 or max_attempts < 1:
             raise ValueError('invalid worker limits')
+        if daily_budget < 1:
+            raise ValueError('daily check budget must cover at least one verification')
         self.provider_interval = provider_interval
         self.key_interval = key_interval
         self.lease_seconds = lease_seconds
         self.max_attempts = max_attempts
         self.verifier = verifier
+        self.daily_budget = daily_budget
 
     def schedule(self, kind='manual', credential_id=None, model_id=None):
         """Schedule EVERY eligible pair; active jobs are shared across sweeps.
@@ -68,13 +74,16 @@ class Sweeps:
 
     def claim(self, connection_id=None):
         now = self.clock()
+        day = utc_day_start(now)
         with self.store.transaction() as db:
             self._recover(db)
-            jobs = db.execute("SELECT * FROM av_jobs WHERE state='queued' AND due_at<=? ORDER BY id", (now,)).fetchall()
+            jobs = db.execute("SELECT j.* FROM av_jobs j JOIN av_connections c ON c.id=j.connection_id WHERE j.state='queued' AND j.due_at<=? ORDER BY CASE WHEN j.attempts>0 THEN 0 ELSE 1 END, CASE WHEN c.checked_at IS NULL THEN 0 ELSE 1 END, c.checked_at, j.id", (now,)).fetchall()
             for job in jobs:
                 if connection_id and job['connection_id'] != connection_id:
                     continue
                 c = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (job['connection_id'],)).fetchone()
+                if connection_id is None and checks_started_since(db, c['credential_id'], day) >= self.daily_budget:
+                    continue
                 if blocked_reason(c, now):
                     db.execute("UPDATE av_jobs SET state='blocked' WHERE id=?", (job['id'],))
                     continue

@@ -5,6 +5,7 @@ clients. Runtime secret resolution belongs to the service's caller. Public
 snapshots are local SQLite reads and never trigger discovery or inference.
 """
 from dataclasses import dataclass
+import datetime
 import hashlib
 import json
 import math
@@ -14,6 +15,25 @@ from typing import Optional
 
 STALE_AFTER = 30 * 3600
 CATALOG_TTL = 24 * 3600
+# Verification spends the same per-key daily quota it measures. The background
+# worker never starts more than this many inference checks per credential per
+# UTC day; on-demand serving/manual checks bypass but still count. Unknown rows
+# stay unknown past budget — never assumed from a sibling row.
+DAILY_CHECK_BUDGET = 5
+
+
+def utc_day_start(now):
+    return datetime.datetime.fromtimestamp(now, datetime.timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+
+CHECKS_TODAY_SQL = '''SELECT COUNT(*) AS n FROM av_checks h
+    JOIN av_connections x ON x.id=h.connection_id
+    WHERE x.credential_id=? AND h.started_at>=?'''
+
+
+def checks_started_since(db, credential_id, day_start):
+    return db.execute(CHECKS_TODAY_SQL, (credential_id, day_start)).fetchone()[0]
 PROTOCOLS = {'openai', 'responses', 'anthropic', 'gemini', 'zencli'}
 BRIDGE_BASE = 'http://keeper-zencli/v1'
 RESULT_STATES = {'working', 'access_denied', 'auth_invalid', 'rate_limited',
@@ -328,6 +348,9 @@ class Availability:
                 else 'exact_transport')
             k['cooldown'] = max((c['retry_at'] for c in cells), default=0)
             k['working'] = sum(c['state'] == 'working' for c in cells)
+            k['checks_today'] = self.store.rows(
+                CHECKS_TODAY_SQL, (k['id'], utc_day_start(self.clock())))[0]['n']
+            k['check_budget'] = DAILY_CHECK_BUDGET
             k['total'] = len(cells)
             k['checked'] = sum(c['checked_at'] is not None for c in cells)
             k['blocked'] = sum(bool(c['blocked_reason']) for c in cells)

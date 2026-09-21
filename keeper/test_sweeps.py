@@ -7,7 +7,8 @@ from test_availability import setup, free, seed
 def test_complete_sweep_no_early_exit_overlap_pacing_and_daily(tmp_path):
     s, clock = setup(tmp_path)
     s.update_catalog('p', [free('m' + str(i)) for i in range(25)])
-    sweep = Sweeps(s, provider_interval=2, key_interval=3)
+    # Sweep mechanics under test; per-key daily budgets covered separately.
+    sweep = Sweeps(s, provider_interval=2, key_interval=3, daily_budget=10 ** 9)
     first = sweep.schedule()
     second = sweep.schedule()
     assert sweep.progress(first)['total'] == 50

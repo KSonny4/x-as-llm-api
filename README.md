@@ -95,6 +95,8 @@ Latest continuation: [Unix IPC and exact native clock repair](docs/keeper-uds-cl
 **deployed as v12 and canary-verified live.** CLI Docker bridge preserves the
 controlled egress path; private authenticated Unix HTTP replaces host-loopback
 IPC. Native ask-only shell bypass is closed by an immutable exact-date gate.
-Remaining follow-ups (not deployment blockers): redacted bridge failure
-classification for flaky fast-502s, upstream-stall characterization, paced
-initial sweep to avoid pool-key thundering herd, and a nicer public landing page.
+Update: daily per-key verification budgets shipped (5 inference checks/key/day,
+oldest-first rotation, on-demand serving checks exempt) so verification stops
+eating the quotas it measures. Remaining follow-ups: redacted bridge failure
+classification for flaky fast-502s, upstream-stall characterization, and a nicer
+public landing page.
