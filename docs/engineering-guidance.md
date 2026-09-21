@@ -5,7 +5,7 @@ wrapper returned **200** for `big-pickle` using the successful local-login key.
 Read [the control receipt](zencli-sanity-check.md) before changing integration.
 Preserve the original; use it as the sanity check, not a replacement profile.
 
-**LIVE since 2026-09-21 (Nomad job `keeper` v12):** the contract below is
+**LIVE (Nomad job `keeper` v15):** the contract below is
 verified on `https://keeper.pkubelka.cz` — service `keeper-coder` chat HTTP 200
 on production; canary exact-CLI observation WORKING + admin exact chat HTTP 200.
 The original control still passes alongside. Consumers may point OpenAI clients
@@ -87,10 +87,11 @@ service-bearer `keeper-coder` chat HTTP 200 (`PROD-SVC-OK` via
 admin exact chat HTTP 200 (`big-pickle`, `Monday, September 21, 2026.`);
 principal isolation 403/401s as specified; canary DB leak scan 0 hits;
 pre-cutover availability backup retained (schema-1 snapshot); migration to
-schema 3 applied cleanly on production. Still pending: production CLI rows
-(next scheduled discovery refresh + check convergence), allocation-replacement
-durability proof, and the parser/stall follow-ups in the README. Never store
-credential values in receipts.
+schema 3 applied cleanly on production. Production CLI rows verified working
+(big-pickle + ling-fin + muse-spark across keys; muse-spark ranked first at
+75.8 and served). Still pending: allocation-replacement durability proof and
+the parser/stall follow-ups in the README. Never store credential values in
+receipts.
 
 The dashboard distinguishes failed/pending inventory discovery from an empty
 inventory, and shows per-key attempt/last-success timestamps and bridge failures.

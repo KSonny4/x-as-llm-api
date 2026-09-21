@@ -8,20 +8,16 @@ Private free-model availability and an inference API for another service.
 > **Preserve original zencli and use it as the control.**
 > [Exact receipt and reproduction](docs/zencli-sanity-check.md).
 >
-> **LIVE since 2026-09-21 (Nomad job `keeper` v12, images below):** the service API
-> below is verified working on `https://keeper.pkubelka.cz` — service-bearer
-> `keeper-coder` chat returned HTTP 200 on production. The original zencli
-> control still passes alongside it and remains preserved.
-> [Canary receipts](docs/keeper-uds-clock-repair.md) · [rollout/rollback](docs/keeper-all-models-rollout.md).
+> **LIVE (Nomad job `keeper` v15, images below):** the service API is verified
+> working on `https://keeper.pkubelka.cz` — service-bearer `keeper-coder`
+> currently serves `muse-spark-1.3-contributor-free` (AA Coding 75.8) over the
+genuine-CLI route. The original zencli control still passes alongside it and
+> remains preserved. [Canary receipts](docs/keeper-uds-clock-repair.md) ·
+> [rollout/rollback](docs/keeper-all-models-rollout.md).
 >
 > Images (immutable, amd64):
-> `registry.pkubelka.cz/keeper@sha256:84cbc9d5264066f193567fe12e6039336aa49b09877c159bdc2195f22a169cef`
+> `registry.pkubelka.cz/keeper@sha256:79da0139dfd32ae8fb71a134f4974ba14399757cd87c5464b424d227bc84e097`
 > `registry.pkubelka.cz/zencli@sha256:521fd0aef081a57d0d01c54cb6fa6566c7dc1ad68777cff153251ccd90e52113`
->
-> Transitional note: the genuine-CLI route is proven on frozen bits (canary:
-> exact RETIRED_1/big-pickle/date HTTP 200s via private Unix IPC) but production
-> CLI rows are still converging after the next scheduled discovery refresh;
-> `keeper-coder` currently serves verified working direct-provider free routes.
 
 - **Target base URL:** `https://keeper.pkubelka.cz/v1`
 - **Model:** `keeper-coder`
