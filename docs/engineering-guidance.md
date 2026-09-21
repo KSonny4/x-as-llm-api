@@ -63,35 +63,36 @@ Direct credentials are private, no-store responses and are verified for the exac
 provider/key/model/route. Bridge-only success can make a key/owner working but is
 labelled service-only and cannot be exported as a direct provider connection.
 
-The **current modified candidate, not the successful original control**, isolates
+The **deployed CLI profile (frozen `83444b2`, not the original control)** isolates
 OpenCode per request: exact selected credential in a 0600
 private auth file, fresh HOME/XDG/config, scrubbed inherited environment, pinned
-CLI v1.18.31, dedicated agent with all tools denied, one step, no plugins/project
-config/default account, exact provider/model whitelist and same free small model.
-Only raw generated-text JSON events with a successful finish count as proof.
-No host data mounts; internal loopback bearer mandatory; timeout/process-group
-cleanup; unprivileged read-only sidecar container. `--pure` alone is not a sandbox.
-This deployed profile is live-verified: canary exact RETIRED_1/big-pickle/date
-HTTP 200s via the native build agent with ask policy plus the immutable
-exact-date gate (no custom agent, tool/permission overrides, or forced step
-limit — same shape as the successful original, plus the proven egress and IPC
-changes). Flaky fast-502s (~30%) and 110s upstream stalls remain under
-characterization; see the README follow-ups.
+CLI v1.18.31, native build agent (no custom agent, tool/permission overrides,
+or forced step limit), native ask policy with noninteractive auto-rejection,
+immutable exact-`date` shell gate, no plugins/project config/default account,
+exact provider/model whitelist and same free small model.
+Only raw generated-text JSON events with a successful finish count as proof;
+tool-only runs fail honestly without manufactured continuation.
+The CLI task has no host mounts; it runs on Docker bridge (proven egress path)
+with no published internal port, reaching Keeper only over authenticated Unix
+HTTP IPC; timeout/process-group cleanup; unprivileged read-only sidecar
+container. `--pure` alone is not a sandbox.
+This profile is live-verified on production. Flaky fast-502s (~30%) and 110s
+upstream stalls remain under characterization; see the README follow-ups.
 
 ## Verification status
 
-Integrated live proof **established 2026-09-21 on production v12** (frozen
-`83444b2`; keeper image `sha256:84cbc9d5…`, zencli image `sha256:521fd0ae…`):
-service-bearer `keeper-coder` chat HTTP 200 (`PROD-SVC-OK` via
-`inclusionai/ling-3.0-flash-vl:free`); canary exact-CLI observation WORKING +
-admin exact chat HTTP 200 (`big-pickle`, `Monday, September 21, 2026.`);
-principal isolation 403/401s as specified; canary DB leak scan 0 hits;
-pre-cutover availability backup retained (schema-1 snapshot); migration to
-schema 3 applied cleanly on production. Production CLI rows verified working
-(big-pickle + ling-fin + muse-spark across keys; muse-spark ranked first at
-75.8 and served). Still pending: allocation-replacement durability proof and
-the parser/stall follow-ups in the README. Never store credential values in
-receipts.
+Integrated live proof **established 2026-09-21, current production v15**
+(keeper image `sha256:79da0139…`, zencli image `sha256:521fd0ae…`):
+service-bearer `keeper-coder` currently serves `muse-spark-1.3-contributor-free`
+(AA Coding 75.8, conservative max-variant mapping) over the genuine-CLI route;
+canary exact-CLI observation WORKING + admin exact chat HTTP 200 (`big-pickle`,
+`Monday, September 21, 2026.`); principal isolation 403/401s as specified;
+canary DB leak scan 0 hits; pre-cutover availability backup retained;
+migration to schema 3 applied cleanly. Verification economy: daily per-key
+check budgets (5/day, oldest-first rotation) plus operator-forced discovery
+refresh (admin-only, 1/hour) keep quota for serving. Still pending:
+allocation-replacement durability proof and the parser/stall follow-ups in the
+README. Never store credential values in receipts.
 
 The dashboard distinguishes failed/pending inventory discovery from an empty
 inventory, and shows per-key attempt/last-success timestamps and bridge failures.
@@ -104,6 +105,7 @@ when using existing installations; screenshots/results go to a temporary folder
 or `KEEPER_BROWSER_OUT`. Only synthetic fixtures are used, never live secrets.
 
 See `docs/keeper-all-models-rollout.md` for topology, backup and rollback. The node
-has no CNI bridge plugin; the approved, tested topology is Docker host networking,
-with Keeper on `127.0.0.1:8102` and zencli on `127.0.0.1:8099`. Both are private
-loopback listeners. The latter is never exposed through the public tunnel.
+has no CNI bridge plugin; the approved, tested topology is Keeper on Docker host
+networking (`127.0.0.1:8102`) plus the CLI sidecar on Docker bridge with no
+published internal port, communicating over authenticated Unix HTTP IPC under
+shared `/alloc/data`. No 8099 loopback listener exists anymore.
