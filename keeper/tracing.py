@@ -1,11 +1,12 @@
 """Best-effort OTLP/HTTP+JSON span export to Grafana Cloud Tempo. Stdlib only.
 
-Env-gated: TEMPO_OTLP_USER + TEMPO_OTLP_TOKEN must both be set or every
-entry point is a silent no-op (local dev, unconfigured deploys). Endpoint
-defaults to the meowlabs stack; override with TEMPO_OTLP_ENDPOINT.
-Never raises, never blocks serving: the POST runs on a daemon thread and
-all failures are swallowed. No secret values, prompts, or bodies ever
-leave the process — only route/code/principal/error-code/duration.
+Env-gated: set TEMPO_OTLP_ENDPOINT (e.g. a local Alloy OTLP receiver) or
+TEMPO_OTLP_USER + TEMPO_OTLP_TOKEN for direct Cloud push; with neither,
+every entry point is a silent no-op (local dev, unconfigured deploys).
+Auth is sent only when user+token are both present (local receivers take
+none). Never raises, never blocks serving: the POST runs on a daemon
+thread and all failures are swallowed. No secret values, prompts, or
+bodies ever leave the process — only route/code/principal/error-code/duration.
 """
 import base64
 import json
@@ -22,13 +23,16 @@ SKIP_PREFIXES = ("/metrics",)
 
 
 def tempo_config():
-    """(endpoint, user, token) or None when unconfigured."""
+    """(endpoint, user, token) or None when unconfigured. An explicit
+    endpoint needs no credentials (local Alloy receiver); without one,
+    user+token are required for the default direct Cloud push."""
     user = os.environ.get("TEMPO_OTLP_USER", "")
     token = os.environ.get("TEMPO_OTLP_TOKEN", "")
+    if "TEMPO_OTLP_ENDPOINT" in os.environ:
+        return (os.environ["TEMPO_OTLP_ENDPOINT"], user, token)
     if not user or not token:
         return None
-    return (os.environ.get("TEMPO_OTLP_ENDPOINT", DEFAULT_ENDPOINT),
-            user, token)
+    return (DEFAULT_ENDPOINT, user, token)
 
 
 def fresh_trace_id():
@@ -59,12 +63,14 @@ def span_payload(trace_id, name, start_ns, end_ns, attrs):
 
 
 def _post(endpoint, user, token, payload):
-    cred = base64.b64encode(("%s:%s" % (user, token)).encode()).decode()
+    headers = {"Content-Type": "application/json",
+               "User-Agent": "keeper-verify/1.0"}
+    if user and token:
+        cred = base64.b64encode(("%s:%s" % (user, token)).encode()).decode()
+        headers["Authorization"] = "Basic " + cred
     req = urllib.request.Request(
         endpoint, data=json.dumps(payload).encode(), method="POST",
-        headers={"Authorization": "Basic " + cred,
-                 "Content-Type": "application/json",
-                 "User-Agent": "keeper-verify/1.0"})
+        headers=headers)
     with urllib.request.urlopen(req, timeout=10) as r:
         r.read(64)
 

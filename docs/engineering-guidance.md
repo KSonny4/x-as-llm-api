@@ -122,12 +122,12 @@ route/down/stale alerts. Verified end to end.
   `traces:write`, minted 2026-09-22). Keeper emits one stdlib OTLP span per
   non-health request (`keeper/tracing.py`, env-gated: `TEMPO_OTLP_USER` +
   `TEMPO_OTLP_TOKEN`, silent no-op when unset) and logs the W3C `trace-id`
-  per request, so spans join to Loki lines — but pushes 404
-  (`No gateway downstream URL ... /v1/traces`) on every known OTLP/Zipkin
-  path, and no escrowed token reaches the OTLP gateway. Check the Tempo
-  instance's connection details in the portal for the exact push URL before
-  touching code. Consumers: send a `traceparent` header and keeper joins
-  your trace instead of minting one.
+  per request, so spans join to Loki lines. LIVE since v21: keeper posts
+  spans to the local Alloy OTLP receiver (`127.0.0.1:14318`), Alloy exports
+  via gRPC to `tempo-prod-25...:443` — direct OTLP/HTTP push 404s on this
+  instance, the documented Alloy path is the one that works. Consumers:
+  send a `traceparent` header and keeper joins your trace instead of
+  minting one.
 - **Logs**: live in Loki. The `keeper-alloy` job tails keeper containers via
   the Docker socket (`loki.source.docker`, matched on the task-first container
   name, static `service`/`project` labels) and pushes with the graph-engineering
