@@ -23,6 +23,33 @@ credentials. Do not log request Authorization headers or dump environment/config
 There is no signup, billing, customer management, automatic token expiry, or
 Keeper per-token quota/rate/concurrency cap. Upstream provider limits remain real.
 
+## Secrets: where they live and how to set them up
+
+Every value below lives in Bao only — never in Git, logs, chat, URLs, or
+SQLite. Compare by length/`sha12`, never by value. Silent-entry helpers:
+`scripts/escrow-loki-creds.sh`, `scripts/escrow-tempo-creds.sh` (read blind
+from your terminal, write straight to Bao).
+
+| Purpose | Bao path | Field | Scope | How to mint/rotate |
+|---|---|---|---|---|
+| Admin token (dashboard, catalog, metrics) | `secret/projects/pi-infinity-llm/KEEPER_TOKEN` | `token` | full admin, operator only | generated at deploy, escrowed by operator |
+| Service token (consumers: `keeper-coder`) | `secret/projects/pi-infinity-llm/KEEPER_SERVICE_TOKEN` | `token` | inference-only (`/v1/models` + chat), non-expiring | same; this is the ONLY consumer credential |
+| Bridge token (keeper↔zencli IPC) | `secret/projects/pi-infinity-llm/KEEPER_ZENCLI_TOKEN` | `token` | internal Unix-socket HTTP | same; never a consumer credential |
+| Coding-Index ranking | `.../ARTIFICIALANALYSIS_API_KEY` | `key` | Artificial Analysis read | provider dashboard |
+| Nomad API | `secret/projects/nomad/NOMAD_BOOTSTRAP` | `acl_token` | deploy/operate jobs | Nomad bootstrap |
+| Loki push (instance `1476425`) | `secret/projects/graph-engineering/LOKI_USER` + `LOKI_SECRET` | `value` | logs push to `logs-prod-035` | graph-engineering owner; escrow helper above. NOTE: the `RW`/`RW2` tokens 401 here — do not substitute |
+| Tempo push (instance `1470731`) | `secret/projects/nomad/GRAFANA_CLOUD_TRACES` | `token` | `traces:write` | portal `access-policies` → escrow helper above. Pushes go keeper→Alloy OTLP `:14318`→Cloud gRPC `:443`; direct OTLP/HTTP 404s on this instance |
+| Grafana reads (rules, Explore) | `secret/projects/nomad/GRAFANA_SERVICE_ACCOUNT_TOKEN` | `value` | SA with alerting write | Grafana admin |
+| Cloud management API | `secret/projects/control-panel/GRAFANA_CLOUD_API_KEY` | (single value) | org read, no telemetry push | Grafana Cloud portal |
+
+Consumption: Nomad job specs take secrets as `Env` rendered from Bao at
+deploy time in memory (`prepare-rollout.py` / job `plan`+`submit`); the
+checked-in HCL/templates carry names only. Keeper env: `KEEPER_TOKEN`,
+`KEEPER_SERVICE_TOKEN`, `KEEPER_ZENCLI_TOKEN`, `TEMPO_OTLP_ENDPOINT`
+(no secret — points at local Alloy). Alloy env: `GRAFANA_CLOUD_LOKI`,
+`TEMPO_OTLP_TOKEN`. Rotating any value = update Bao + redeploy the
+consuming job; no code change.
+
 ## Request semantics
 
 - `/v1/models` advertises the alias. `/v1/chat/completions` accepts OpenAI-shaped
