@@ -110,12 +110,24 @@ networking (`127.0.0.1:8102`) plus the CLI sidecar on Docker bridge with no
 published internal port, communicating over authenticated Unix HTTP IPC under
 shared `/alloc/data`. No 8099 loopback listener exists anymore.
 
-## Observability: metrics yes, logs not yet
+## Observability: metrics yes, logs yes, traces pending
 
 - **Metrics**: live. `GET /metrics` (admin bearer) exposes route health
 gauges; the `keeper-alloy` Nomad job scrapes every 30s into Grafana Cloud
 (`meowlabs.grafana.net`), where the `keeper` folder holds the dashboard and
 route/down/stale alerts. Verified end to end.
+- **Traces**: half-wired. Instance `1470731`
+  (`https://tempo-prod-25-prod-gb-south-1.grafana.net`), user `1470731`, token
+  escrowed at Bao `secret/projects/nomad/GRAFANA_CLOUD_TRACES` (field `token`,
+  `traces:write`, minted 2026-09-22). Keeper emits one stdlib OTLP span per
+  non-health request (`keeper/tracing.py`, env-gated: `TEMPO_OTLP_USER` +
+  `TEMPO_OTLP_TOKEN`, silent no-op when unset) and logs the W3C `trace-id`
+  per request, so spans join to Loki lines — but pushes 404
+  (`No gateway downstream URL ... /v1/traces`) on every known OTLP/Zipkin
+  path, and no escrowed token reaches the OTLP gateway. Check the Tempo
+  instance's connection details in the portal for the exact push URL before
+  touching code. Consumers: send a `traceparent` header and keeper joins
+  your trace instead of minting one.
 - **Logs**: live in Loki. The `keeper-alloy` job tails keeper containers via
   the Docker socket (`loki.source.docker`, matched on the task-first container
   name, static `service`/`project` labels) and pushes with the graph-engineering
