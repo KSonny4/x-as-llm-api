@@ -11,6 +11,7 @@ import hashlib
 import html
 import json
 import os
+import resource
 import secrets
 import sys
 import threading
@@ -566,7 +567,59 @@ def metrics_view(state):
         if ts is not None:
             lines.append("keeper_probe_checked_at_seconds{%s} %d"
                          % (labels, ts))
+    try:
+        with state.get("_http_lock", threading.Lock()):
+            http_table = dict(state.get("_http") or {})
+    except Exception:
+        http_table = {}
+    if http_table:
+        lines += [
+            "# HELP keeper_http_responses_total HTTP responses by normalized route and status.",
+            "# TYPE keeper_http_responses_total counter",
+            "# HELP keeper_http_latency_ms_sum Total HTTP latency ms by route.",
+            "# TYPE keeper_http_latency_ms_sum counter",
+            "# HELP keeper_http_latency_ms_count HTTP response count by route.",
+            "# TYPE keeper_http_latency_ms_count counter",
+        ]
+        agg = {}
+        for key in sorted(http_table):
+            try:
+                route_cls, code = key.split("|", 1)
+                count, total = http_table[key]
+            except (ValueError, TypeError):
+                continue
+            lines.append('keeper_http_responses_total{route="%s",code="%s"} %d'
+                         % (prom_esc(route_cls), prom_esc(code), count))
+            row = agg.setdefault(route_cls, [0, 0])
+            row[0] += count
+            row[1] += total
+        for route_cls in sorted(agg):
+            count, total = agg[route_cls]
+            lines.append('keeper_http_latency_ms_sum{route="%s"} %d'
+                         % (prom_esc(route_cls), total))
+            lines.append('keeper_http_latency_ms_count{route="%s"} %d'
+                         % (prom_esc(route_cls), count))
+    lines += [
+        "# HELP keeper_process_rss_bytes Resident memory of the server process.",
+        "# TYPE keeper_process_rss_bytes gauge",
+        "# HELP keeper_process_cpu_seconds_total User+system CPU time of the server process.",
+        "# TYPE keeper_process_cpu_seconds_total counter",
+    ]
+    lines.extend(process_metrics_lines())
     return "\n".join(lines) + "\n"
+
+
+def process_metrics_lines():
+    """Stdlib-only process stats (no psutil). ru_maxrss is KiB on Linux
+    (production) but bytes on macOS (dev) — normalize by platform."""
+    try:
+        ru = resource.getrusage(resource.RUSAGE_SELF)
+        rss = ru.ru_maxrss * (1024 if sys.platform.startswith("linux") else 1)
+        cpu = ru.ru_utime + ru.ru_stime
+    except Exception:
+        return []
+    return ["keeper_process_rss_bytes %d" % rss,
+            "keeper_process_cpu_seconds_total %.2f" % cpu]
 
 
 def health_view(state):
@@ -1369,6 +1422,122 @@ def accepted(auth, token):
     return any(t and secrets.compare_digest(auth.encode(), ("Bearer " + t).encode()) for t in toks)
 
 
+# --- HTTP observability (request IDs, structured access log, counters) ---
+# Every request gets one JSON line on stderr (Alloy ships raw lines to Loki;
+# query with `| json`). No secret VALUES ever: only a sha12 credential
+# fingerprint, the principal class, and the machine-readable error code.
+# Contract-safe: route() is untouched; X-Request-ID is an additive response
+# header; /metrics gains additive series only.
+
+REQ_ID_HEADER = "X-Request-ID"
+MAX_LOG_FIELD = 200
+
+
+def http_req_id(headers):
+    """Honor a sane incoming X-Request-ID, else mint one."""
+    raw = ""
+    for key, value in headers.items():
+        if key.lower() == "x-request-id":
+            raw = (value or "")[:64]
+    clean = "".join(c for c in raw if c.isalnum() or c in "-_.")
+    return clean[:64] if len(clean) >= 4 else secrets.token_hex(8)
+
+
+def http_trace_id(headers):
+    """W3C traceparent -> 32-hex trace-id for Loki/Tempo correlation ("" if absent)."""
+    raw = ""
+    for key, value in headers.items():
+        if key.lower() == "traceparent":
+            raw = value or ""
+    parts = raw.strip().split("-")
+    if (len(parts) == 4 and len(parts[1]) == 32
+            and all(c in "0123456789abcdefABCDEF" for c in parts[1])):
+        return parts[1].lower()
+    return ""
+
+
+def norm_http_route(clean_path):
+    """Low-cardinality route class for metrics (never raw IDs)."""
+    if clean_path in ("/healthz", "/login", "/metrics"):
+        return clean_path[1:]
+    if clean_path in ("/v1/models", "/v1/chat/completions"):
+        return "inference"
+    if clean_path in ("/packs", "/report", "/guides", "/signin", "/"):
+        return "pages"
+    if clean_path in ("/api/v1/session", "/api/v1/session/logout"):
+        return "session"
+    if clean_path.startswith("/api/v2/"):
+        return "api_v2"
+    if clean_path.startswith("/api/v1/"):
+        return "api_v1"
+    if clean_path.startswith("/v1/route/") or clean_path.startswith("/v1/guide/"):
+        return "route_info"
+    return "other"
+
+
+def http_error_code(status, body):
+    """Machine-readable code from keeper JSON error envelopes, else ""."""
+    if status < 400 or not isinstance(body, (bytes, bytearray)):
+        return ""
+    try:
+        err = json.loads(bytes(body).decode("utf8", "replace")).get("error") or {}
+    except ValueError:
+        return ""
+    code = err.get("code", "")
+    return str(code)[:64] if isinstance(code, str) and code else ""
+
+
+def fp_cred(auth):
+    """sha12 fingerprint of a credential header (never the value)."""
+    if not auth:
+        return ""
+    return hashlib.sha256(auth.encode()).hexdigest()[:12]
+
+
+def classify_caller(headers, token, service_token, state):
+    """(principal, cred_fp): none | service | admin | session. Fingerprint only."""
+    auth = ""
+    for key, value in headers.items():
+        if key.lower() == "authorization":
+            auth = value
+    if service_token and secrets.compare_digest(auth, "Bearer " + service_token):
+        return "service", fp_cred(auth)
+    if accepted(auth, token):
+        return "admin", fp_cred(auth)
+    try:
+        if state is not None and _valid_session(state, _session_raw(headers)):
+            return "session", fp_cred("cookie")
+    except Exception:
+        pass
+    return "none", (fp_cred(auth) if auth else "")
+
+
+def http_observe(state, route_cls, code, ms):
+    """Prometheus counters for HTTP responses (thread-safe; never raises)."""
+    if state is None:
+        return
+    try:
+        lock = state.setdefault("_http_lock", threading.Lock())
+        with lock:
+            table = state.setdefault("_http", {})
+            key = "%s|%d" % (route_cls, code)
+            row = table.get(key) or [0, 0]
+            row[0] += 1
+            row[1] += int(ms)
+            table[key] = row
+    except Exception:
+        pass
+
+
+def http_access_record(ts, req_id, trace_id, method, path, status, ms,
+                       principal, cred_fp, err, ua):
+    """Whitelisted-field access record — secret values cannot be represented."""
+    return {"ts": ts, "req": req_id, "trace": trace_id, "method": method,
+            "path": path[:MAX_LOG_FIELD], "status": status, "ms": int(ms),
+            "principal": principal, "cred": cred_fp, "err": err,
+            "ua": (ua or "")[:80]}
+
+
 def route(method, path, headers, token, body=None, query="", state=None):
     """Pure routing: (status, body_bytes, extra_headers). No sockets.
 
@@ -1377,6 +1546,16 @@ def route(method, path, headers, token, body=None, query="", state=None):
     parsed = urllib.parse.urlparse(path)
     clean_path = parsed.path or "/"
     query = parsed.query or query
+    # Edge tolerance (2026-09-21, field-proven via access logs): the public
+    # edge concatenates its /v1 service-URL base with the full request path,
+    # so /v1/models arrives as /v1/v1/models (principal=service log lines).
+    # Collapse the doubled prefix — no legit route starts with /v1/v1 — so
+    # public clients work regardless of edge config. Loopback clients send
+    # correct paths and never hit this branch.
+    if clean_path == "/v1/v1":
+        clean_path = "/"
+    elif clean_path.startswith("/v1/v1/"):
+        clean_path = clean_path[3:]
     if method == "GET" and clean_path == "/healthz":
         return 200, b"ok", [("Content-Type", "text/plain")]
     if method == "GET" and clean_path == "/login":
@@ -1391,6 +1570,9 @@ def route(method, path, headers, token, body=None, query="", state=None):
             return service_api.models()
         if method == "POST" and clean_path == "/v1/chat/completions":
             return service_api.chat(state, body)
+        # Scope refusal: principal IS the service token but the path is not
+        # an inference endpoint. Debuggable via this request's stderr
+        # access-log line (principal=service, err=inference_only_token).
         return service_api.error(403, "inference_only_token")
     # Sessions may read private non-value views. Only the enumerated v2
     # mutations accept cookies, and require same-origin + session-bound CSRF.
@@ -1566,7 +1748,51 @@ class H(BaseHTTPRequestHandler):
     state = None
 
     def log_message(self, *a):
-        sys.stderr.write("%s request\n" % self.log_date_time_string())
+        pass  # replaced by structured per-request JSON (see _serve)
+
+    def _serve(self, method):
+        t0 = time.time()
+        headers = dict(self.headers)
+        req_id = http_req_id(headers)
+        trace_id = http_trace_id(headers)
+        if method == "GET":
+            code, body, resp_headers = route(
+                "GET", self.path, headers,
+                (self.token, self.token_next), state=self.state)
+        else:
+            code, body, resp_headers = route(
+                "POST", self.path, headers,
+                (self.token, self.token_next),
+                body=self._read_body(), state=self.state)
+        self._send(code, body, list(resp_headers) + [(REQ_ID_HEADER, req_id)])
+        ms = (time.time() - t0) * 1000
+        clean = urllib.parse.urlparse(self.path).path or "/"
+        http_observe(self.state, norm_http_route(clean), code, ms)
+        principal, cred_fp = classify_caller(
+            headers, (self.token, self.token_next),
+            (self.state or {}).get("service_token", ""), self.state)
+        ua = ""
+        for key, value in headers.items():
+            if key.lower() == "user-agent":
+                ua = value
+        rec = http_access_record(
+            datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+            req_id, trace_id, method, clean, code, ms, principal, cred_fp,
+            http_error_code(code, body), ua)
+        sys.stderr.write(json.dumps(rec, sort_keys=True) + "\n")
+        try:
+            import tracing as _tracing
+            _tracing.emit_request_span(
+                trace_id, norm_http_route(clean), code, ms, principal,
+                http_error_code(code, body))
+        except Exception:
+            pass
+
+    def do_GET(self):
+        self._serve("GET")
+
+    def do_POST(self):
+        self._serve("POST")
 
     def _send(self, code, body=b"", headers=()):
         self.send_response(code)
@@ -1602,19 +1828,6 @@ class H(BaseHTTPRequestHandler):
         except ValueError:
             length = 0
         return self.rfile.read(length) if length > 0 else b""
-
-    def do_GET(self):
-        code, body, headers = route("GET", self.path, dict(self.headers),
-                                    (self.token, self.token_next),
-                                    state=self.state)
-        self._send(code, body, headers)
-
-    def do_POST(self):
-        code, body, headers = route("POST", self.path, dict(self.headers),
-                                    (self.token, self.token_next),
-                                    body=self._read_body(),
-                                    state=self.state)
-        self._send(code, body, headers)
 
 
 def probe_db_path():
