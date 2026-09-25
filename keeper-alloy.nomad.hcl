@@ -65,6 +65,23 @@ variable "loki_token" {
   type = string
 }
 
+# Tempo (traces) push: keeper posts OTLP/HTTP to the loopback receiver below;
+# Alloy forwards via gRPC (direct OTLP/HTTP push 404s on this instance).
+# Token: Bao secret/projects/nomad/GRAFANA_CLOUD_TRACES field token.
+variable "tempo_endpoint" {
+  type    = string
+  default = "tempo-prod-25-prod-gb-south-1.grafana.net:443"
+}
+
+variable "tempo_user" {
+  type    = string
+  default = "1470731"
+}
+
+variable "tempo_token" {
+  type = string
+}
+
 job "keeper-alloy" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -100,6 +117,7 @@ job "keeper-alloy" {
         # Loki password, same treatment: value from -var=loki_token at
         # register time (Bao, owner terminal only), never baked.
         GRAFANA_CLOUD_LOKI = var.loki_token
+        TEMPO_OTLP_TOKEN   = var.tempo_token
       }
 
       template {
@@ -167,6 +185,28 @@ loki.write "cloud" {
       password = env("GRAFANA_CLOUD_LOKI")
     }
   }
+}
+
+otelcol.receiver.otlp "keeper" {
+  http {
+    endpoint = "127.0.0.1:14318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.grafanacloud.input]
+  }
+}
+
+otelcol.exporter.otlp "grafanacloud" {
+  client {
+    endpoint = "${var.tempo_endpoint}"
+    auth     = otelcol.auth.basic.grafanacloud.handler
+  }
+}
+
+otelcol.auth.basic "grafanacloud" {
+  username = "${var.tempo_user}"
+  password = env("TEMPO_OTLP_TOKEN")
 }
 EOH
         destination = "local/config.alloy"

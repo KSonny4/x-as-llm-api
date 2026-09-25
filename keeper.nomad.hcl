@@ -157,6 +157,9 @@ job "keeper" {
         KEEPER_SERVICE_TOKEN       = var.keeper_service_token
         KEEPER_ZENCLI_TOKEN        = var.keeper_zencli_token
         KEEPER_ZENCLI_SOCKET       = "/alloc/data/keeper-zencli/http.sock"
+        # Spans go to keeper-alloy's loopback OTLP receiver (no credentials
+        # here). Dropped by the 2026-09-23 paid-fallback redeploys: keep it.
+        TEMPO_OTLP_ENDPOINT        = "http://127.0.0.1:14318/v1/traces"
       }
 
       template {

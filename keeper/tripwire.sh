@@ -2,7 +2,7 @@
 # tripwire v3: refuse secret-looking literals in the deliverable tree.
 #
 # Scope: tracked working tree EXCLUDING orchestration scratch
-# (.pi-glla/, wt/) — scratch is machine-generated transcripts, scrubbed
+# (.pi-glla/, wt/) and the gitignored graft/ index cache — scratch is machine-generated transcripts, scrubbed
 # separately (2026-09-20: 12 sk- values redacted) and too noisy for
 # exact matching. What ships (git) is fully covered, tracked or not.
 #
@@ -23,7 +23,7 @@ ROOT="${TRIPWIRE_ROOT:-$(dirname "$0")/..}"
 cd "$ROOT" || exit 2
 ALLOW="$(dirname "$0")/tripwire.allowlist"
 SCAN_EXCLUDES=(--exclude-dir=.git --exclude-dir=node_modules
-  --exclude-dir=.pi-glla --exclude-dir=wt
+  --exclude-dir=.pi-glla --exclude-dir=wt --exclude-dir=graft
   --exclude="*.png" --exclude=package-lock.json)
 
 hits=$(grep -rEn "sk-[A-Za-z0-9]{20,}|sk-or-v1-[A-Za-z0-9]{8,}|AIza[A-Za-z0-9_-]{10,}|enc:v1:[A-Za-z0-9+/=]{16,}|xox[bpas]-[A-Za-z0-9-]+|glpat-[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|[Bb][Ee][Aa][Rr][Ee][Rr] +[A-Za-z0-9_.-]{20,}|[Tt][Oo][Kk][Ee][Nn][\"']? *: *[A-Za-z0-9_.-]{20,}" . "${SCAN_EXCLUDES[@]}" -I 2>/dev/null || true)
