@@ -35,10 +35,17 @@ Matching is separate from scoring: an exact/normalized hit ends resolution
 even when AA has no Coding Index for that slug yet (the model stays unscored
 and is never sent to the LLM). Unless the Keeper id itself ends in an effort
 label (`-max|-xhigh|-high|-medium|-low|-minimal|-reasoning|-non-reasoning`),
-a non-alias match takes the **lowest scored member of its AA family** (same
+a normalized or AI match takes the **lowest scored member of its AA family** (same
 creator + name without the trailing parenthesised label, e.g. "Qwen3.8 27B
 (xhigh|medium|low|Non-reasoning)"), extending the muse-spark precedent below
-so ranking never over-promises. Aliases are not lowered.
+so ranking never over-promises. Aliases and exact slug matches are not
+lowered: an exact slug already names the precise AA variant.
+
+Secondary key (owner request 2026-09-25): models AA lists without a Coding
+Index (e.g. GPT-6 Luna, released 2026-09-22, Intelligence Index 37.3 only)
+are ordered by the AA **Intelligence Index** after every Coding-scored model
+and before fully unscored ones. It is exposed as `intelligence_index` and is
+never reported as, or substituted for, a Coding Index.
 
 Persistence/audit: AI decisions live in `aa-matches.json` next to the AA
 cache (`$(dirname AA_CACHE)`, prod `/var/lib/keeper/aa-matches.json`) with

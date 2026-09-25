@@ -118,7 +118,9 @@ def _resolve(t, scores, provider, model, aliases):
         extra = {'confidence': d.get('confidence'), 'reason': d.get('reason'), 'decided_at': d.get('decided_at')}
     else:
         return None
-    slug = conservative(picked, scores, model, t['family'])
+    # An exact slug already names the precise AA variant; only inferred
+    # matches (normalized/ai) take the family's most conservative score.
+    slug = picked if method == 'exact' else conservative(picked, scores, model, t['family'])
     out = {'slug': slug, 'method': method, 'confidence': 1.0, **extra}
     if slug != picked:
         out['picked'] = picked

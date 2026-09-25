@@ -105,9 +105,10 @@ def test_luna_is_matched_exactly_but_unscored_until_aa_publishes_coding(table):
     ask = Asker({})
     aa_match.run(table, scores, aa.ALIASES, 1, ask, served(('openai', 'gpt-6-luna')))
     assert ask.prompts == []
-    # Once AA publishes Luna's Coding Index, the lowest effort variant counts.
+    # Once AA publishes Luna's Coding Index the exact slug's own score counts:
+    # an exact slug already names the precise variant (no family lowering).
     later = {**scores, 'gpt-6-luna': 80.0, 'gpt-6-luna-low': 60.0}
-    assert score_for(later, 'openai', 'gpt-6-luna') == 60.0
+    assert score_for(later, 'openai', 'gpt-6-luna') == 80.0
 
 
 def test_variant_conservatism_unless_the_endpoint_names_an_effort(table):
@@ -261,3 +262,22 @@ def test_catalog_rows_carry_match_provenance(tmp_path):
     row = next(m for m in json.loads(body)['models'] if m['model'] == model)
     assert code == 200 and row['coding_index'] == 42.0
     assert row['coding_index_match'] == {'slug': model, 'method': 'exact', 'confidence': 1.0}
+
+
+def test_intelligence_index_orders_models_aa_has_not_coding_scored():
+    """Luna has only an Intelligence Index (37.3): it ranks after every
+    Coding-scored model but ahead of fully unscored ones."""
+    index = {**AA_INDEX, 'gpt-6-luna': {**AA_INDEX['gpt-6-luna'], 'intelligence': 37.3},
+             'mimo-v2-6-pro': {**AA_INDEX['mimo-v2-6-pro'], 'intelligence': 20.0}}
+    aa_match.install(index, {})
+    try:
+        scores = scores_of(index)
+        rows = rank_models(served(('opencode-zen', 'nemotron-3.5-lightning-free'), ('opencode-zen', 'big-pickle'),
+                                  ('openai', 'gpt-6-luna'), ('xiaomi', 'mimo-v2.6-pro')), scores)
+        assert [r['model'] for r in rows] == ['nemotron-3.5-lightning-free', 'gpt-6-luna', 'mimo-v2.6-pro', 'big-pickle']
+        luna = rows[1]
+        assert luna['coding_index'] is None and luna['intelligence_index'] == 37.3
+        assert aa.parse_index({'data': [{'slug': 'x', 'evaluations': {
+            'artificial_analysis_intelligence_index': 41.0}}]})['x']['intelligence'] == 41.0
+    finally:
+        aa_match.install({}, {})

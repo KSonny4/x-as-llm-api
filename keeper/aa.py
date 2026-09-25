@@ -20,7 +20,8 @@ AA_MODELS_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
 
 
 def parse_scores(payload):
-    """Exact AA slugs and Coding Index only; never Intelligence Index."""
+    """Exact AA slugs -> Coding Index (the ranking score). The Intelligence
+    Index lives only in parse_index, as a secondary sort key."""
     scores = {}
     data = payload.get("data") if isinstance(payload, dict) else None
     for entry in data if isinstance(data, list) else []:
@@ -50,10 +51,13 @@ def parse_index(payload):
         creator = entry.get("model_creator")
         evals = entry.get("evaluations") if isinstance(entry.get("evaluations"), dict) else {}
         score = evals.get("artificial_analysis_coding_index")
+        intel = evals.get("artificial_analysis_intelligence_index")
         index[entry["slug"]] = {
             "name": entry.get("name") if isinstance(entry.get("name"), str) else None,
             "creator": creator.get("slug") if isinstance(creator, dict) else None,
-            "coding": float(score) if valid_score(score) else None}
+            "coding": float(score) if valid_score(score) else None,
+            # Secondary ranking key only (never a Coding Index substitute).
+            "intelligence": float(intel) if valid_score(intel) else None}
     return index
 
 
@@ -148,6 +152,14 @@ def _scored(scores, match):
     return float(value) if valid_score(value) else None
 
 
+def intelligence_for(match):
+    """AA Intelligence Index of the matched slug: a secondary sort key for
+    models AA has not given a Coding Index yet (e.g. a week-old release)."""
+    entry = aa_match._TABLE['index'].get(match['slug']) if match else None
+    value = (entry or {}).get('intelligence')
+    return float(value) if valid_score(value) else None
+
+
 def score_for(scores, provider, model):
     return _scored(scores, match_for(scores, provider, model))
 
@@ -156,9 +168,13 @@ def rank_models(models, scores):
     rows = []
     for m in models:
         match = match_for(scores, m['provider'], m['model'])
-        rows.append({**m, 'coding_index': _scored(scores, match), 'coding_index_match': match})
+        rows.append({**m, 'coding_index': _scored(scores, match), 'coding_index_match': match,
+                     'intelligence_index': intelligence_for(match)})
+    # Coding Index first; models without one are ordered by Intelligence
+    # Index (still after every Coding-scored model), then unscored ones.
     return sorted(rows, key=lambda m: (not bool(m['working_keys']), m['coding_index'] is None,
-                                      -(m['coding_index'] or 0), m['provider'], m['model'], m['id']))
+                                      -(m['coding_index'] or 0), m['intelligence_index'] is None,
+                                      -(m['intelligence_index'] or 0), m['provider'], m['model'], m['id']))
 
 
 def _install(state):
