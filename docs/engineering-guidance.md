@@ -16,7 +16,10 @@ at the service API per "Other-service configuration".
 Use the existing OpenAI-compatible client with base URL
 `https://keeper.pkubelka.cz/v1`, model `keeper-coder`, and the non-expiring
 inference-only token from your service secret store. Operator source:
-Bao `secret/projects/pi-infinity-llm/KEEPER_SERVICE_TOKEN`, field `token`.
+Bao `secret/projects/pi-infinity-llm/keeper-consumers/<consumer>`, field `token`
+(one token per calling service, so usage is attributed to it).
+Send a W3C `traceparent` so Keeper's span joins your trace; Keeper returns
+`X-Request-Id` (see engineering-guidance `standards/tracing.md`).
 The separate internal bridge token and administrator token are never consumer
 credentials. Do not log request Authorization headers or dump environment/config.
 
@@ -33,7 +36,8 @@ from your terminal, write straight to Bao).
 | Purpose | Bao path | Field | Scope | How to mint/rotate |
 |---|---|---|---|---|
 | Admin token (dashboard, catalog, metrics) | `secret/projects/pi-infinity-llm/KEEPER_TOKEN` | `token` | full admin, operator only | generated at deploy, escrowed by operator |
-| Service token (consumers: `keeper-coder`) | `secret/projects/pi-infinity-llm/KEEPER_SERVICE_TOKEN` | `token` | inference-only (`/v1/models` + chat), non-expiring | same; this is the ONLY consumer credential |
+| Consumer tokens (`keeper-coder`, one per caller) | `secret/projects/pi-infinity-llm/keeper-consumers/<consumer>` | `token` | inference-only, non-expiring, usage attributed to `<consumer>` | mint 32+ random bytes into Bao, add to keeper env `KEEPER_SERVICE_TOKENS` JSON, redeploy |
+| Legacy shared service token | `secret/projects/pi-infinity-llm/KEEPER_SERVICE_TOKEN` | `token` | same scope, attributed as `consumer=legacy` | do not hand out to new callers |
 | Bridge token (keeper↔zencli IPC) | `secret/projects/pi-infinity-llm/KEEPER_ZENCLI_TOKEN` | `token` | internal Unix-socket HTTP | same; never a consumer credential |
 | Coding-Index ranking | `.../ARTIFICIALANALYSIS_API_KEY` | `key` | Artificial Analysis read | provider dashboard |
 | Nomad API | `secret/projects/nomad/NOMAD_BOOTSTRAP` | `acl_token` | deploy/operate jobs | Nomad bootstrap |

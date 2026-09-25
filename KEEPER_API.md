@@ -81,8 +81,12 @@ snapshot on failure, marked stale; catalog polling never fetches providers/AA.
 
 ## Service-to-service inference (latest approved scope amendment)
 
-The separate, manually issued `KEEPER_SERVICE_TOKEN` is **non-expiring** and
-inference-only. Parent provisions it in Bao; never put it in frontend code.
+Service tokens are **non-expiring** and inference-only. Each consumer has its
+own (`KEEPER_SERVICE_TOKENS` = JSON `{consumer: token}`, Bao
+`secret/projects/pi-infinity-llm/keeper-consumers/<consumer>`); the shared
+`KEEPER_SERVICE_TOKEN` remains accepted as consumer `legacy`. Consumer names are
+metric labels (`[a-z0-9-]`, not `legacy`/`admin`); tokens are unique and differ
+from every other principal. Parent provisions them in Bao; never in frontend code.
 No Keeper usage quotas, token rate/concurrency caps or automatic expiry apply.
 Upstream quota/cooldowns, pricing freshness and free eligibility still apply.
 Base URL: `https://keeper.pkubelka.cz/v1`; model: `keeper-coder`.
@@ -95,8 +99,16 @@ credential endpoints return 403 to it. Administrator credentials remain separate
 compatible, free** route across all providers, not a claim of globally strongest.
 If no scored compatible route is working, unscored working routes are eligible.
 Background checks establish availability; the service never spends on unknown
-pricing or paid routes. Actual upstream failure records precise feedback, and
-up to three connection attempts may be made, preferring same-model alternative keys before a lower-ranked model before returning an OpenAI-shaped 503.
+pricing. The only paid spend is the operator-escrowed paid fallback, tried after
+free routes: up to 3 free then up to 2 paid connection attempts per request,
+same-model alternative keys before a lower-ranked model, within a 180s request
+deadline (`KEEPER_REQUEST_DEADLINE`), then an OpenAI-shaped 503 with
+`Retry-After`. An upstream 400/422 moves to the next model (a rejected request
+is not credential evidence); 400 only when every tried model rejected it, and
+two free rejections skip the paid fallback. `max_tokens` is retried once as
+`max_completion_tokens` on models that reject it. `metadata`, `store` and
+`service_tier` are dropped. Responses carry `X-Request-Id`, `X-Keeper-Model`,
+`X-Keeper-Provider` and `X-Keeper-Tier`.
 No fallback occurs after any stream output. SSE comes incrementally from the
 upstream, not a buffered nonstream response. Tool calls/history are preserved.
 
