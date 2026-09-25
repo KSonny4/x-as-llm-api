@@ -1,4 +1,7 @@
 FROM python:3.12-slim
+# keeper-alloy keeps only server-* containers carrying this label: other jobs'
+# "server" tasks (Cognee, Node apps) must not land in service=keeper-server.
+LABEL org.opencontainers.image.title="keeper"
 WORKDIR /srv/keeper
 COPY server.py smoke.py translate.py matrix.py aa.py inventory.py keyqueue.json probe-seed.json ./
 COPY availability.py store.py credentials.py discovery.py inference.py sweeps.py selection.py api_v2.py runtime.py legacy_view.py service_api.py service_wire.py zencli_bridge.py tracing.py ./

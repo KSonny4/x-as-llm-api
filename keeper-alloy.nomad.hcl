@@ -117,6 +117,9 @@ job "keeper-alloy" {
         # Loki password, same treatment: value from -var=loki_token at
         # register time (Bao, owner terminal only), never baked.
         GRAFANA_CLOUD_LOKI = var.loki_token
+        # Admin bearer for /metrics, as env so the rendered config never
+        # carries it (it used to be inlined into local/config.alloy).
+        KEEPER_METRICS_TOKEN = var.keeper_token
         TEMPO_OTLP_TOKEN   = var.tempo_token
       }
 
@@ -125,7 +128,7 @@ job "keeper-alloy" {
 prometheus.scrape "keeper" {
   targets         = [{ "__address__" = "127.0.0.1:8102" }]
   scrape_interval = "30s"
-  bearer_token    = "${var.keeper_token}"
+  bearer_token    = env("KEEPER_METRICS_TOKEN")
   forward_to      = [prometheus.remote_write.cloud.receiver]
 }
 
@@ -150,9 +153,13 @@ discovery.relabel "keeper" {
   // the stable task prefix. Never labeldrop __meta_docker_container_id —
   // the source needs it to identify containers, and dropping it ships zero
   // lines with zero errors. (__-prefixed labels never reach Loki streams.)
+  // Other jobs also run tasks named "server" (Cognee, Node apps): keep
+  // server-* only when the image carries the keeper OCI title label
+  // (keeper/Dockerfile). Relabel regexes are fully anchored.
   rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex         = "^/(server|probe)-.*"
+    source_labels = ["__meta_docker_container_name", "__meta_docker_container_label_org_opencontainers_image_title"]
+    separator     = ";"
+    regex         = "/(server-.*;keeper|probe-.*;.*)"
     action        = "keep"
   }
 
