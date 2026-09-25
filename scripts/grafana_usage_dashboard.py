@@ -281,8 +281,11 @@ def alerts():
         rule('keeper-paid-spend-day', 'Keeper paid spend over $2 in 24h',
              'sum(increase(keeper_llm_cost_usd_total{basis="actual"}[24h]))', 2,
              'Keeper spent ${{ $values.B.Value | printf "%.2f" }} on paid routes in 24h'),
+        # Only models that still serve on other keys (the muse 2/10 pattern):
+        # keys a provider denies outright stay suspect by design and are noise.
         rule('keeper-suspect-keys', 'Keeper model has suspect keys for 1h',
-             'sum by (provider, model) (keeper_connections{state="suspect"})', 0,
+             'sum by (provider, model) (keeper_connections{state="suspect"}) and on (provider, model) '
+             '(sum by (provider, model) (keeper_connections{state="working"}) > 0)', 0,
              '{{ $labels.provider }}/{{ $labels.model }}: {{ $values.B.Value }} suspect keys for 1h', for_='1h'),
     ]
 

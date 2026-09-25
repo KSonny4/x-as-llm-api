@@ -107,7 +107,7 @@
     },
     "datasourceUid": "grafanacloud-prom",
     "model": {
-     "expr": "sum by (provider, model) (keeper_connections{state=\"suspect\"})",
+     "expr": "sum by (provider, model) (keeper_connections{state=\"suspect\"}) and on (provider, model) (sum by (provider, model) (keeper_connections{state=\"working\"}) > 0)",
      "instant": true,
      "intervalMs": 60000,
      "maxDataPoints": 43200,
