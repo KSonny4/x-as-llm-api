@@ -12,7 +12,7 @@ from test_api_v2 import state_for
 def test_docker_copies_all_runtime_assets_and_durable_nomad_bind():
     root=Path(__file__).resolve().parent
     docker=(root/'Dockerfile').read_text()
-    for name in ['runtime.py','availability.py','store.py','selection.py','service_api.py','service_wire.py','dashboard.html','dashboard.js','dashboard.css','legacy_view.py']:
+    for name in ['runtime.py','aa.py','aa_match.py','availability.py','store.py','selection.py','service_api.py','service_wire.py','dashboard.html','dashboard.js','dashboard.css','legacy_view.py']:
         assert name in docker
     nomad=(root.parent/'keeper.nomad.hcl').read_text()
     assert 'AVAILABILITY_DB' in nomad and '/var/lib/keeper/availability.db' in nomad

@@ -294,7 +294,12 @@ def refresh(state, scores, aliases, now, background=True):
         work()
         return None
     thread = threading.Thread(target=work, name='keeper-aa-matcher', daemon=True)
-    thread.start()
+    try:
+        thread.start()
+    except Exception:
+        _LOCK.release()  # never leave the matcher disabled until restart
+        state['aa_match_error'] = 'matcher_failed'
+        return None
     return thread
 
 
