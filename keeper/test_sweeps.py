@@ -125,6 +125,70 @@ def test_worker_fake_provider_end_to_end_no_paid_or_cli_evidence(tmp_path):
     assert 'synthetic-secret' not in '\n'.join(s.store.db.iterdump())
 
 
+def test_worker_sweeps_operator_paid_seed_as_fallback(tmp_path):
+    # Fallback-to-paid: an operator-paid seed (explicit spend intent) is
+    # swept and verifies working; the 'paid' label stays honest while the
+    # connection serves. Discovery-priced paid rows stay untouched (see the
+    # no_paid_or_cli_evidence test above).
+    from credentials import RuntimeCredentials
+    from inference import HttpResponse
+    route = dict(seed('p', 'ONE'), paid_eligibility=True, model='pm')
+    s, clock = setup(tmp_path, [route])
+    worker = Sweeps(s, provider_interval=0, key_interval=0)
+    sid = worker.schedule()
+    calls = []
+    def http(method, url, headers, payload):
+        calls.append(payload['model'])
+        return HttpResponse(200, {}, json.dumps({'model': payload['model'],
+            'choices': [{'message': {'content': 'Hello'}}]}).encode())
+    import json
+    secrets = RuntimeCredentials([route])
+    while worker.run_once(secrets.resolve, http):
+        pass
+    assert calls == ['pm']
+    assert worker.progress(sid)['done'] == 1
+    conns = [c for c in s.connections() if c['model'] == 'pm']
+    assert conns and all(c['state'] == 'working' for c in conns)
+    assert all(c['blocked_reason'] == 'paid' for c in conns)
+
+
+def test_operator_paid_feedback_recovers_after_serving_exhausts_free_budget(tmp_path):
+    """Real incident: serving checks consumed 259/5 slots; recovery starved."""
+    route = dict(seed('p', 'ONE'), paid_eligibility=True, model='pm')
+    s, clock = setup(tmp_path, [route])
+    worker = Sweeps(s, provider_interval=1, key_interval=1)
+    cid = s.connections()[0]['id']
+    for _ in range(worker.daily_budget + 1):
+        s.finish_check(s.begin_check(cid), Result('working'))
+    s.report_failure(cid, 'transient_error')
+    assert s.connections()[0]['state'] == 'suspect'
+    job = worker.claim()
+    assert job is not None, 'escrowed fallback must recover after serving traffic'
+    assert worker.complete(job, Result('working'))
+    assert s.connections()[0]['state'] == 'working'
+    assert not s.connections()[0]['excluded']
+
+
+def test_paid_recovery_still_obeys_cooldown_and_retry_bound(tmp_path):
+    route = dict(seed('p', 'ONE'), paid_eligibility=True, model='pm')
+    s, clock = setup(tmp_path, [route])
+    worker = Sweeps(s, provider_interval=1, key_interval=1, max_attempts=2)
+    cid = s.connections()[0]['id']
+    for _ in range(worker.daily_budget + 1):
+        s.finish_check(s.begin_check(cid), Result('working'))
+    s.report_failure(cid, 'transient_error')
+    job = worker.claim()
+    assert job is not None
+    worker.complete(job, Result('rate_limited', 120))
+    assert worker.claim() is None
+    clock.advance(121)
+    job = worker.claim()
+    assert job is not None
+    worker.complete(job, Result('transient_error'))
+    clock.advance(300)
+    assert worker.claim() is None
+
+
 def test_feedback_on_exhausted_lease_survives_restart_once(tmp_path):
     s, clock = setup(tmp_path, [seed()])
     s.update_catalog('p', [free('a')])

@@ -74,7 +74,16 @@ class Model:
 
 
 def seed_model(route):
-    """Only exact, timestamped pricing evidence is usable from trusted seeds."""
+    """Only exact, timestamped pricing evidence is usable from trusted seeds.
+
+    An explicit operator-paid flag marks escrowed paid credentials (spend
+    intent); paid seeds require a safe endpoint like free ones.
+    """
+    if route.get('paid_eligibility') is True:
+        if not safe_connection_base(route.get('base_url', ''), route.get('wire', 'openai')):
+            raise ValueError('paid seed requires safe endpoint')
+        return Model(route['provider'], route['model'], safe_base(route.get('base_url', '')),
+                     route.get('wire', 'openai'), 'paid', OPERATOR_PAID, False, None)
     evidence = route.get('free_eligibility') or {}
     stamp = evidence.get('verified_at') if isinstance(evidence, dict) else None
     known = (isinstance(evidence, dict) and evidence.get('kind') in ('zero_price', 'recurring_allowance')
@@ -121,6 +130,26 @@ def evidence_age(stamp, now):
     if not isinstance(stamp, (int, float)) or not math.isfinite(stamp):
         return -1
     return now - stamp
+
+
+OPERATOR_PAID = 'operator-paid-escrow'
+
+
+def spendable(c):
+    """Operator-escrowed paid credential: explicit spend intent.
+
+    Provenance-gated: discovery-priced paid rows never qualify, only seeds
+    carrying the operator-paid flag."""
+    return (c['eligibility'] == 'paid' and c['provenance'] == OPERATOR_PAID
+            and c['has_secret'] and c['active'])
+
+
+def checkable(c, now):
+    """Free-unblocked, or escrowed-paid (verified and selectable as fallback)."""
+    br = blocked_reason(c, now)
+    if br is None:
+        return True
+    return br == 'paid' and spendable(c)
 
 
 def blocked_reason(c, now):
@@ -207,7 +236,7 @@ class Availability:
                 for r in rs:
                     if r.get('model'):
                         model = seed_model(r)
-                        self._put_model(db, model, replace=model.eligibility == 'free')
+                        self._put_model(db, model, replace=model.eligibility in ('free', 'paid'))
             removed = set(existing) - {identity(*pair) for pair in grouped}
             for kid in removed:
                 if existing[kid]['active']:
@@ -223,6 +252,12 @@ class Availability:
         if not math.isfinite(checked_at):
             raise ValueError('invalid catalog time')
         old = db.execute('SELECT * FROM av_models WHERE id=?', (m.id,)).fetchone()
+        if old and old['provenance'] == OPERATOR_PAID and m.provenance != OPERATOR_PAID:
+            # Operator spend intent wins over later discovery pricing: keep
+            # eligibility/provenance, refresh presence only.
+            db.execute('UPDATE av_models SET checked_at=?, present=1 WHERE id=?',
+                       (checked_at, m.id))
+            return
         if old and replace:
             if isinstance(old['checked_at'], (int, float)) and checked_at < old['checked_at']:
                 return
@@ -295,7 +330,8 @@ class Availability:
             c['policy_source'] = ('inherited prior CLI endpoint'
                 if c['inherited_cli_cooldown'] > now or c['inherited_cli_auth_invalid'] else None)
             age = evidence_age(c['checked_at'], now)
-            if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale':
+            if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale' and not (
+                    c['blocked_reason'] == 'paid' and spendable(c)):
                 c['state'] = c['blocked_reason']
             elif c['excluded']:
                 c['state'] = 'suspect'
@@ -367,7 +403,7 @@ class Availability:
         row = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (cid,)).fetchone()
         if row is None:
             raise KeyError('unknown connection')
-        if blocked_reason(row, self.clock()) or max(row['cooldown'], row['retry_at']) > self.clock():
+        if not checkable(row, self.clock()) or max(row['cooldown'], row['retry_at']) > self.clock():
             return None
         revision = row['revision'] + 1
         db.execute('UPDATE av_connections SET revision=? WHERE id=?', (revision, cid))
@@ -389,7 +425,7 @@ class Availability:
             return False
         c = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (check['connection_id'],)).fetchone()
         applied = (check['revision'] == c['revision'] and check['key_revision'] == c['key_revision']
-                   and check['started_at'] <= self.clock() and not blocked_reason(c, self.clock()))
+                   and check['started_at'] <= self.clock() and checkable(c, self.clock()))
         db.execute('UPDATE av_checks SET finished_at=?,state=?,applied=? WHERE id=?',
                    (self.clock(), result.state, int(applied), ticket))
         if applied:
@@ -411,6 +447,26 @@ class Availability:
     def finish_check(self, ticket, result):
         with self.store.transaction() as db:
             return self._finish(db, ticket, result)
+
+    def finish_request_failure(self, ticket, result):
+        """Apply failure feedback only if this attempt is still current.
+
+        Overlapping inference can finish a newer successful check first. Its
+        older failing sibling must not exclude the now-working route. Finish
+        and exclusion share one transaction to prevent a race between them.
+        """
+        with self.store.transaction() as db:
+            check = db.execute('SELECT connection_id FROM av_checks WHERE id=?', (ticket,)).fetchone()
+            if check is None:
+                raise KeyError('unknown check')
+            if not self._finish(db, ticket, result):
+                return False
+            cid = check['connection_id']
+            db.execute('UPDATE av_connections SET excluded=1,revision=revision+1 WHERE id=?', (cid,))
+            db.execute('INSERT INTO av_feedback(connection_id,created_at,reason) VALUES (?,?,?)',
+                       (cid, self.clock(), result.state))
+            self._enqueue(db, cid)
+            return True
 
     def discard_request_check(self, ticket):
         """Close request-validation attempts without changing health/feedback."""

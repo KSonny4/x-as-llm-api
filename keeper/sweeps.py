@@ -5,8 +5,8 @@ checks, provider/key pacing persists, and manual checks cannot clear cooldowns.
 run() belongs on one background thread, never in the HTTP request handler.
 """
 from availability import (CONNECTION_SQL, DAILY_CHECK_BUDGET, Result,
-                           blocked_reason, checks_started_since, identity,
-                           utc_day_start)
+                           blocked_reason, checkable, checks_started_since, identity,
+                           spendable, utc_day_start)
 from inference import verify
 
 # Operator-forced discovery refreshes are rate-limited durably: discovery
@@ -59,7 +59,7 @@ class Sweeps:
                     continue
                 if model_id and c['model_id'] != model_id:
                     continue
-                if blocked_reason(c, now):
+                if blocked_reason(c, now) and not checkable(c, now):
                     continue
                 jid = self.service._enqueue(db, c['id'])
                 db.execute('INSERT INTO av_sweep_jobs VALUES (?,?)', (sid, jid))
@@ -94,9 +94,15 @@ class Sweeps:
                 if connection_id and job['connection_id'] != connection_id:
                     continue
                 c = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (job['connection_id'],)).fetchone()
-                if connection_id is None and checks_started_since(db, c['credential_id'], day) >= self.daily_budget:
+                # This budget protects scarce FREE-tier verification quota.
+                # Serving checks also count, so applying it to the explicitly
+                # escrowed paid fallback strands its queued recovery after a
+                # single transient failure. Paid recovery still obeys transport
+                # cooldowns, pacing, leases and max_attempts below.
+                if (connection_id is None and not spendable(c)
+                        and checks_started_since(db, c['credential_id'], day) >= self.daily_budget):
                     continue
-                if blocked_reason(c, now):
+                if not checkable(c, now):
                     db.execute("UPDATE av_jobs SET state='blocked' WHERE id=?", (job['id'],))
                     continue
                 if max(c['cooldown'], c['retry_at']) > now:

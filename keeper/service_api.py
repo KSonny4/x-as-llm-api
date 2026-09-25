@@ -10,7 +10,7 @@ import urllib.request
 
 import aa
 from api_v2 import response
-from availability import Result
+from availability import Result, spendable
 from inference import NoRedirect, request, retry_after
 import service_wire as wire
 
@@ -164,10 +164,20 @@ def _usable(doc):
     return False
 
 
+def _inference_request(state, model, url, headers, payload):
+    transport = state.get('inference_transport')
+    if transport is not None:
+        return transport('POST', url, headers, payload)
+    # A 25s verification probe is deliberately short. A large structured
+    # extraction on the explicitly escrowed paid fallback needs longer; the
+    # observed 26s Keeper 503s were the 25s read deadline, not provider 429s.
+    return request('POST', url, headers, payload,
+                   timeout=60 if model['eligibility'] == 'paid' else 25)
+
+
 def _failed(state, config, ticket, failure):
     result = failure.result if isinstance(failure, UpstreamFailure) else Result('transient_error')
-    state['availability'].finish_check(ticket, result)
-    state['availability'].report_failure(config['connection_id'], result.state)
+    state['availability'].finish_request_failure(ticket, result)
 
 
 def _validated_chunks(events, config):
@@ -254,8 +264,13 @@ def chat(state, body, allow_exact=False):
             if len(candidates) > 1:
                 return error(400, 'ambiguous_model_use_catalog_id')
         candidates = [m for m in candidates if m['working_keys'] and wire.compatible(m['protocol'], req)
-                      and any(c['state']=='working' and not c['blocked_reason'] and not c['excluded']
-                              and c['retry_at'] <= s.clock() for c in m['connections'])]
+                      and any(c['state']=='working' and (not c['blocked_reason'] or (
+                          c['blocked_reason'] == 'paid' and spendable(c))) and not c['excluded']
+                          and c['retry_at'] <= s.clock() for c in m['connections'])]
+        # Spend order: free first, unknown next, escrowed-paid last (fallback).
+        # Stable sort keeps AA rank order within each tier.
+        candidates = sorted(candidates, key=lambda m: (
+            0 if m.get('eligibility') == 'free' else 2 if m.get('eligibility') == 'paid' else 1))
     except (TypeError, KeyError, ValueError):
         return error(400, 'invalid_request')
     if not candidates: return error(503, 'no_working_compatible_free_model')
@@ -264,7 +279,9 @@ def chat(state, body, allow_exact=False):
         while attempts < 3:
             if not any(c['model_id'] == model['id'] and c['id'] not in excluded
                        and c['state'] == 'working' and not c['excluded']
-                       and not c['blocked_reason'] and c['retry_at'] <= s.clock()
+                       and (not c['blocked_reason'] or (
+                           c['blocked_reason'] == 'paid' and spendable(c)))
+                       and c['retry_at'] <= s.clock()
                        for c in s.connections()):
                 break
             attempts += 1
@@ -296,7 +313,7 @@ def chat(state, body, allow_exact=False):
                         ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
                         ('X-Accel-Buffering', 'no')]
                 res = (state['zencli'].infer(config, payload) if config['protocol'] == 'zencli' else
-                       state.get('inference_transport', request)('POST', config['endpoint'], config['headers'], payload))
+                       _inference_request(state, model, config['endpoint'], config['headers'], payload))
                 if res.status != 200: raise classify(res.status, res.headers, s.clock())
                 doc = wire.normalize(res.json(), config)
                 if not _usable(doc): raise UpstreamFailure('invalid_response')

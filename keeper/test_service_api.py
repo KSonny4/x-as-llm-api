@@ -44,6 +44,31 @@ def test_ranked_alias_nonstream_tools_pass_through_without_quota(tmp_path):
     assert b'synthetic-secret' not in raw
 
 
+def test_paid_inference_gets_longer_deadline_than_probe_or_free(monkeypatch):
+    from service_api import _inference_request
+    observed = []
+    monkeypatch.setattr('service_api.request', lambda *args, **kw: observed.append(kw['timeout']))
+    _inference_request({}, {'eligibility':'paid'}, 'url', {}, {})
+    _inference_request({}, {'eligibility':'free'}, 'url', {}, {})
+    assert observed == [60, 25]
+
+
+def test_stale_failed_request_cannot_exclude_newer_success(tmp_path):
+    from service_api import _failed, UpstreamFailure
+    state = ready(tmp_path)
+    service = state['availability']
+    cid = next(c['id'] for c in service.connections() if c['state']=='working')
+    old = service.begin_check(cid)
+    fresh = service.begin_check(cid)
+    assert service.finish_check(fresh, Result('working'))
+    before = len(service.feedback(cid))
+    _failed(state, {'connection_id': cid}, old, UpstreamFailure('transient_error'))
+    current = next(c for c in service.connections() if c['id']==cid)
+    assert current['state'] == 'working'
+    assert not current['excluded']
+    assert len(service.feedback(cid)) == before
+
+
 def test_bounded_ranked_failover_and_precise_feedback(tmp_path):
     state=ready(tmp_path); seen=[]
     def http(method,url,headers,payload):

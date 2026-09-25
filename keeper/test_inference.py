@@ -54,3 +54,20 @@ def test_retry_after_seconds_and_http_date_and_malformed():
 def test_gemini_model_version_identity(version, expected):
     doc = {'modelVersion': version, 'candidates': [{'content': {'parts': [{'text': 'Hi'}]}}]}
     assert verify(conn('gemini'), 'synthetic', lambda *a: HttpResponse(200, {}, json.dumps(doc).encode())).state == expected
+
+
+def test_verify_retries_max_completion_tokens_when_max_tokens_rejected():
+    # Newer OpenAI models (o-series, gpt-6) 400 legacy max_tokens; the
+    # verifier retries once with max_completion_tokens instead of failing.
+    calls = []
+    def http(method, url, headers, payload):
+        calls.append(payload)
+        if 'max_tokens' in payload:
+            return HttpResponse(400, {}, json.dumps({'error': {
+                'message': "Unsupported parameter: 'max_tokens'",
+                'code': 'unsupported_parameter'}}).encode())
+        return HttpResponse(200, {}, json.dumps({
+            'model': 'exact', 'choices': [{'message': {'content': 'Hello'}}]}).encode())
+    assert verify(conn(), 'synthetic-secret', http).state == 'working'
+    assert len(calls) == 2
+    assert 'max_tokens' not in calls[1] and calls[1]['max_completion_tokens'] == 64
