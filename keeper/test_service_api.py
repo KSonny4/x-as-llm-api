@@ -44,13 +44,13 @@ def test_ranked_alias_nonstream_tools_pass_through_without_quota(tmp_path):
     assert b'synthetic-secret' not in raw
 
 
-def test_paid_inference_gets_longer_deadline_than_probe_or_free(monkeypatch):
-    from service_api import _inference_request
+def test_inference_deadline_is_long_and_bounded_by_the_request(monkeypatch):
+    from service_api import _inference_request, UPSTREAM_TIMEOUT
     observed = []
     monkeypatch.setattr('service_api.request', lambda *args, **kw: observed.append(kw['timeout']))
     _inference_request({}, {'eligibility':'paid'}, 'url', {}, {})
-    _inference_request({}, {'eligibility':'free'}, 'url', {}, {})
-    assert observed == [60, 25]
+    _inference_request({}, {'eligibility':'free'}, 'url', {}, {}, timeout=12)
+    assert observed == [UPSTREAM_TIMEOUT, 12] and UPSTREAM_TIMEOUT > 25
 
 
 def test_stale_failed_request_cannot_exclude_newer_success(tmp_path):

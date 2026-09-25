@@ -1,10 +1,16 @@
 """Inference-only service principal: ranked free alias, no Keeper usage quotas.
 
-Provider failures are precise observations + feedback. At most three connection attempts per request; same-model keys precede lower-ranked
-model routes; never fail over after the first streaming byte.
+Provider failures are precise observations + feedback. Up to FREE_ATTEMPTS
+free and then PAID_ATTEMPTS escrowed-paid connection attempts per request
+(so free failures never starve the paid fallback), bounded by a wall-clock
+deadline. Same-model keys precede lower-ranked model routes; an upstream
+request rejection (400/422) moves on to the next model; never fail over
+after the first streaming byte.
 HTTP response/error bodies never become diagnostics, logs or feedback text.
 """
 import json
+import math
+import os
 import urllib.error
 import urllib.request
 
@@ -16,6 +22,14 @@ import service_wire as wire
 from zencli_bridge import BridgeUnavailable
 
 ALIAS = 'keeper-coder'
+FREE_ATTEMPTS = 3
+PAID_ATTEMPTS = 2
+# Loopback callers (Cognee) are not behind Cloudflare's ~100s cap.
+REQUEST_DEADLINE = float(os.environ.get('KEEPER_REQUEST_DEADLINE', '180'))
+UPSTREAM_TIMEOUT = 90
+# Harmless client bookkeeping (litellm/OpenAI SDK). Dropped, never forwarded:
+# `store` would persist completions upstream; `service_tier` can change price.
+DROPPED_EXTRAS = ('metadata', 'store', 'service_tier')
 
 
 class UpstreamFailure(Exception):
@@ -27,8 +41,9 @@ class UpstreamRequestError(Exception):
     """A rejected request is not evidence against a provider credential."""
 
 
-def error(code, name):
-    return response(code, {'error': {'message': name, 'type': 'keeper_error', 'code': name}})
+def error(code, name, headers=()):
+    code, raw, base = response(code, {'error': {'message': name, 'type': 'keeper_error', 'code': name}})
+    return code, raw, base + list(headers)
 
 
 def models():
@@ -166,15 +181,41 @@ def _usable(doc):
     return False
 
 
-def _inference_request(state, model, url, headers, payload):
+def _inference_request(state, model, url, headers, payload, timeout=UPSTREAM_TIMEOUT):
     transport = state.get('inference_transport')
     if transport is not None:
         return transport('POST', url, headers, payload)
-    # A 25s verification probe is deliberately short. A large structured
-    # extraction on the explicitly escrowed paid fallback needs longer; the
-    # observed 26s Keeper 503s were the 25s read deadline, not provider 429s.
-    return request('POST', url, headers, payload,
-                   timeout=60 if model['eligibility'] == 'paid' else 25)
+    # Verification probes stay short (25s). Real inference is large
+    # structured extraction (Cognee); the observed 26s Keeper 503s were a 25s
+    # read deadline, not provider failures. Bounded by the request deadline.
+    return request('POST', url, headers, payload, timeout=timeout)
+
+
+def _token_field_fallback(config, payload, send):
+    """Newer OpenAI models (o-series, gpt-6) reject legacy max_tokens with a
+    400. Retry once on the same connection with max_completion_tokens, like
+    inference.verify does; a rejected field is not credential evidence."""
+    try:
+        return send(payload)
+    except UpstreamRequestError:
+        if config['protocol'] != 'openai' or 'max_tokens' not in payload:
+            raise
+        alt = {k: v for k, v in payload.items() if k != 'max_tokens'}
+        alt['max_completion_tokens'] = payload['max_tokens']
+        return send(alt)
+
+
+def _retry_after(s):
+    """Seconds until the soonest cooled-down connection is eligible (15-300)."""
+    now = s.clock()
+    soon = min((c['retry_at'] for c in s.connections() if c['retry_at'] > now), default=now + 15)
+    return str(max(15, min(300, math.ceil(soon - now))))
+
+
+def _served_headers(config, model):
+    return [('X-Keeper-Model', str(config.get('model', ''))),
+            ('X-Keeper-Provider', str(config.get('provider', model.get('provider', '')))),
+            ('X-Keeper-Tier', 'paid' if model.get('eligibility') == 'paid' else 'free')]
 
 
 def _failed(state, config, ticket, failure):
@@ -243,6 +284,9 @@ def _stream_body(first, chunks, state, config, ticket):
 def chat(state, body, allow_exact=False):
     try:
         req = json.loads(body or b'{}')
+        if isinstance(req, dict):
+            for field in DROPPED_EXTRAS:
+                req.pop(field, None)
         if (not isinstance(req, dict) or not isinstance(req.get('model'), str)
                 or (req['model'] != ALIAS and not allow_exact)):
             return error(400, 'use_keeper_coder_model')
@@ -275,12 +319,22 @@ def chat(state, body, allow_exact=False):
             0 if m.get('eligibility') == 'free' else 2 if m.get('eligibility') == 'paid' else 1))
     except (TypeError, KeyError, ValueError):
         return error(400, 'invalid_request')
-    if not candidates: return error(503, 'no_working_compatible_free_model')
-    attempts, excluded, bridge_down = 0, set(), False
+    if not candidates:
+        return error(503, 'no_working_compatible_free_model', [('Retry-After', _retry_after(s))])
+    deadline = s.clock() + REQUEST_DEADLINE
+    used = {'free': 0, 'paid': 0}
+    excluded, bridge_down, failures = set(), False, 0
+    rejected_free, rejected = set(), set()
     for model in candidates:
+        tier = 'paid' if model.get('eligibility') == 'paid' else 'free'
         if bridge_down and model['protocol'] == 'zencli':
             continue
-        while attempts < 3:
+        # Two distinct free models rejecting the request means the request
+        # is the problem: don't pay the fallback to confirm it.
+        if tier == 'paid' and len(rejected_free) >= 2:
+            continue
+        limit = PAID_ATTEMPTS if tier == 'paid' else FREE_ATTEMPTS
+        while used[tier] < limit and s.clock() < deadline:
             if not any(c['model_id'] == model['id'] and c['id'] not in excluded
                        and c['state'] == 'working' and not c['excluded']
                        and (not c['blocked_reason'] or (
@@ -288,7 +342,7 @@ def chat(state, body, allow_exact=False):
                        and c['retry_at'] <= s.clock()
                        for c in s.connections()):
                 break
-            attempts += 1
+            used[tier] += 1
             config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
             if 'error' in config:
                 if config['error'] == 'verification_pending':
@@ -303,30 +357,43 @@ def chat(state, body, allow_exact=False):
                 return error(400, 'unsupported_request_features')
             ticket = s.begin_check(config['connection_id'], kind='serve')
             if ticket is None: continue
+            served = _served_headers(config, model)
             try:
                 if req.get('stream'):
-                    events = state.get('stream_transport', stream_request)(config, payload)
-                    chunks = _validated_chunks(events, config)
-                    try:
-                        first = next(chunks)
-                        _safe_doc(first, config)
-                    except BaseException:
-                        chunks.close()
-                        raise
+                    def open_stream(body):
+                        events = state.get('stream_transport', stream_request)(config, body)
+                        chunks = _validated_chunks(events, config)
+                        try:
+                            first = next(chunks)
+                            _safe_doc(first, config)
+                        except BaseException:
+                            chunks.close()
+                            raise
+                        return first, chunks
+                    first, chunks = _token_field_fallback(config, payload, open_stream)
                     return 200, _stream_body(first, chunks, state, config, ticket), [
                         ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
-                        ('X-Accel-Buffering', 'no')]
-                res = (state['zencli'].infer(config, payload) if config['protocol'] == 'zencli' else
-                       _inference_request(state, model, config['endpoint'], config['headers'], payload))
-                if res.status != 200: raise classify(res.status, res.headers, s.clock())
+                        ('X-Accel-Buffering', 'no')] + served
+                timeout = max(5, min(UPSTREAM_TIMEOUT, deadline - s.clock()))
+
+                def send(body):
+                    res = (state['zencli'].infer(config, body) if config['protocol'] == 'zencli' else
+                           _inference_request(state, model, config['endpoint'], config['headers'], body, timeout))
+                    if res.status != 200: raise classify(res.status, res.headers, s.clock())
+                    return res
+                res = _token_field_fallback(config, payload, send)
                 doc = wire.normalize(res.json(), config)
                 if not _usable(doc): raise UpstreamFailure('invalid_response')
                 raw = _safe_doc(doc, config)
                 s.finish_check(ticket, Result('working'))
-                return 200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')]
+                return 200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')] + served
             except UpstreamRequestError:
+                # Not credential evidence. Another model may accept it.
                 s.discard_request_check(ticket)
-                return error(400, 'upstream_rejected_request')
+                rejected.add(model['id'])
+                if tier == 'free':
+                    rejected_free.add(model['id'])
+                break
             except BridgeUnavailable:
                 # The shared CLI sidecar is down: not evidence about this key
                 # or model, and every other zencli candidate would fail too.
@@ -334,5 +401,8 @@ def chat(state, body, allow_exact=False):
                 bridge_down = True
                 break
             except Exception as exc:
+                failures += 1
                 _failed(state, config, ticket, exc)
-    return error(503, 'no_working_compatible_free_model')
+    if rejected and not failures:
+        return error(400, 'upstream_rejected_request')
+    return error(503, 'no_working_compatible_free_model', [('Retry-After', _retry_after(s))])
