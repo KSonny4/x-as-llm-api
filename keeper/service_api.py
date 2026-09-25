@@ -484,6 +484,10 @@ def _chat(state, body, allow_exact, ctx):
                 # candidate would wait on the same sidecar.
                 s.discard_request_check(ticket)
                 bridge_down = True
+                # Nothing was tried: overflow keeps its full free budget for
+                # the non-CLI free routes before the paid fallback.
+                used[tier] -= 1
+                ctx['attempts'] = used['free'] + used['paid']
                 if isinstance(exc, BridgeBusy):
                     _emulation_log(ctx, config, 'queue', 'busy')
                 break

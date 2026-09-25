@@ -211,16 +211,19 @@ def test_busy_cli_fails_over_without_penalizing_keys(tmp_path):
             succeed(s, c)
     import threading
     bridge._slots, bridge.queue_wait = threading.BoundedSemaphore(1), 0
-    logs = []
+    logs, ctx = [], {}
     state = {'availability': s, 'selector': select, 'zencli': bridge, 'aa_scores': {}}
     release, worker = _hold_slot(bridge)
     try:
         from service_api import chat
+        ctx['log'] = logs.append
         code, raw, _ = chat(state, json.dumps({'model': 'keeper-coder', 'messages': [{'role': 'user', 'content': 'x'}]}).encode(),
-                            ctx={'log': logs.append})
+                            ctx=ctx)
     finally:
         release.set(); worker.join(5)
     assert code == 503
     cli = [c for c in s.connections() if c['protocol'] == 'zencli']
     assert all(c['state'] == 'working' and not c['excluded'] and c['fail_streak'] == 0 for c in cli)
     assert any('"event": "zencli_busy"' in line for line in logs)
+    # A busy slot is not an attempt: the free budget stays whole for overflow.
+    assert [r['attempts'] for r in s.store.rows('SELECT attempts FROM av_usage')] == [0]
