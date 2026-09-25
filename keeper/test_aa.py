@@ -107,14 +107,19 @@ if __name__ == "__main__":
 
 
 def test_conservative_matching_and_rank():
-    from aa import rank_models, score_for
-    assert score_for({'a': 99}, 'p', 'vendor/a') is None
+    from aa import match_for, rank_models, score_for
+    # Owner-authorized 2026-09-25: vendor/namespace prefixes normalize away.
+    assert score_for({'a': 99}, 'p', 'vendor/a') == 99
+    assert match_for({'a': 99}, 'p', 'vendor/a')['method'] == 'normalized'
     assert score_for({'a': float('nan')}, 'p', 'a') is None
     assert score_for({'a': True}, 'p', 'a') is None
     rows = [{'id': 'p-a', 'provider': 'p', 'model': 'a', 'working_keys': 0},
             {'id': 'q-a', 'provider': 'q', 'model': 'a', 'working_keys': 1},
             {'id': 'p-b', 'provider': 'p', 'model': 'b', 'working_keys': 1}]
-    assert [r['id'] for r in rank_models(rows, {'a': 90})] == ['q-a', 'p-b', 'p-a']
+    ranked = rank_models(rows, {'a': 90})
+    assert [r['id'] for r in ranked] == ['q-a', 'p-b', 'p-a']
+    assert ranked[0]['coding_index_match'] == {'slug': 'a', 'method': 'exact', 'confidence': 1.0}
+    assert ranked[1]['coding_index_match'] is None
 
 
 def test_daily_cache_no_refresh_from_catalog(tmp_path):
@@ -133,27 +138,39 @@ def test_daily_cache_no_refresh_from_catalog(tmp_path):
     assert state['aa_stale'] and state['aa_scores']['m-high'] == 90
 
 
-def test_reviewed_exact_provider_aliases_without_family_or_setting_guesses():
-    from aa import score_for
+def test_reviewed_exact_provider_aliases_win_and_normalization_covers_other_providers():
+    from aa import match_for, score_for
     scores={'ling-3-0-flash-fin':55.6,'nemotron-3-5-lightning':26.8,
             'muse-spark-1-3':75.8,'muse-spark-1-3-xhigh':76.5,'mimo-v2-5-0424':56.8}
     assert score_for(scores,'opencode-zen','ling-3.0-flash-fin-free')==55.6
+    assert match_for(scores,'opencode-zen','ling-3.0-flash-fin-free')['method']=='alias'
     assert score_for(scores,'opencode-zen','nemotron-3.5-lightning-free')==26.8
     for provider in ('openrouter','kilocode'):
         assert score_for(scores,provider,'inclusionai/ling-3.0-flash-fin:free')==55.6
         assert score_for(scores,provider,'nvidia/nemotron-3.5-lightning:free')==26.8
-    assert score_for(scores,'other','ling-3.0-flash-fin-free') is None
+    # Not in ALIASES any more needed: the free-suffix/dot normalization finds it.
+    assert score_for(scores,'other','ling-3.0-flash-fin-free')==55.6
+    assert match_for(scores,'other','ling-3.0-flash-fin-free')['method']=='normalized'
     assert score_for(scores,'opencode-zen','muse-spark-1.3-contributor-free')==75.8
+    # Dated AA slug (mimo-v2-5-0424) is not a normalization of mimo-v2.5.
     assert score_for(scores,'opencode-zen','mimo-v2.5-free') is None
 
 
-def test_additional_primary_named_aliases_never_guess_reasoning_variants():
-    from aa import score_for
-    scores={'ling-3-0-flash-vl':57,'inkling-small':52.9,'north-mini-code':36.5,'lfm2-5-2-6b':7.7,'step-3-7-flash':39.6,
-            'qwen3-8-27b-xhigh':68.1,'glm-5-2':68.8,'inkling':52.1}
-    for provider in ('openrouter','kilocode'):
-        for model,score in [('inclusionai/ling-3.0-flash-vl:free',57),('thinkingmachines/inkling-small:free',52.9),('cohere/north-mini-code:free',36.5),('liquid/lfm-2.5-2.6b:free',7.7)]:
-            assert score_for(scores,provider,model)==score
-        for model in ('qwen/qwen3.8-27b:free','z-ai/glm-5.2:free','thinkingmachines/inkling:free'):
-            assert score_for(scores,provider,model) is None
-    assert score_for(scores,'kilocode','stepfun/step-3.7-flash:free')==39.6
+def test_additional_primary_named_aliases_and_conservative_reasoning_variants():
+    import aa_match
+    from aa import match_for, score_for
+    from test_aa_match import AA_INDEX, scores_of
+    scores = scores_of(AA_INDEX)
+    aa_match.install(AA_INDEX, {})
+    try:
+        for provider in ('openrouter','kilocode'):
+            for model,score in [('inclusionai/ling-3.0-flash-vl:free',57),('thinkingmachines/inkling-small:free',52.9),('cohere/north-mini-code:free',36.5),('liquid/lfm-2.5-2.6b:free',7.7)]:
+                assert score_for(scores,provider,model)==score
+            # No effort label on the endpoint: lowest scored family member.
+            assert score_for(scores,provider,'qwen/qwen3.8-27b:free')==44.6
+            assert match_for(scores,provider,'qwen/qwen3.8-27b:free')['picked']=='qwen3-8-27b'
+            assert score_for(scores,provider,'z-ai/glm-5.2:free')==46.5
+            assert score_for(scores,provider,'thinkingmachines/inkling:free')==52.1
+        assert score_for(scores,'kilocode','stepfun/step-3.7-flash:free')==39.6
+    finally:
+        aa_match.install({}, {})

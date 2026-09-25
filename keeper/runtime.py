@@ -72,6 +72,11 @@ def initialize(state, db_path, public_origin, service_token='', admin_tokens=(),
 def start_worker(state):
     if state.get('worker_thread'):
         raise ValueError('worker already started')
+    if 'aa_matcher' not in state and os.environ.get('KEEPER_AA_AI_MATCH', '1') != '0':
+        # Daily AI name matching for unresolved served models (aa_match); runs
+        # in its own thread from aa.refresh_state, never on the request path.
+        import aa_match
+        state['aa_matcher'] = aa_match.keeper_chat(state)
     stop = threading.Event()
     def refresh():
         aa.refresh_state(state)

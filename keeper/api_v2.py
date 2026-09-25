@@ -34,7 +34,10 @@ def catalog(state):
     doc['sweep'] = ({**sweeps[0], **state['sweeps'].progress(sweeps[0]['id'])} if sweeps else None)
     doc['jobs'] = s.store.rows('SELECT state,COUNT(*) AS count FROM av_jobs GROUP BY state')
     doc['aa'] = {'source': 'Artificial Analysis Coding Index', 'checked_at': state.get('aa_checked_at'),
-                 'succeeded_at': state.get('aa_succeeded_at'), 'stale': state.get('aa_stale', True)}
+                 'succeeded_at': state.get('aa_succeeded_at'), 'stale': state.get('aa_stale', True),
+                 # Per-row provenance: models[].coding_index_match (alias|exact|normalized|ai).
+                 'match_decided_at': aa.aa_match.table()['decided_at'],
+                 'match_error': state.get('aa_match_error')}
     doc['now'] = s.clock()
     doc['build'] = state.get('build', 'development')
     doc['worker_error'] = state.get('worker_error')
