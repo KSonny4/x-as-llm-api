@@ -257,7 +257,7 @@ def build():
     }
 
 
-def rule(uid, title, expr, threshold, summary, for_='0s', no_data='OK'):
+def rule(uid, title, expr, threshold, summary, for_='0s', no_data='OK', op='gt'):
     return {
         'uid': uid, 'title': title, 'folderUID': 'keeper', 'ruleGroup': 'keeper-usage', 'condition': 'C',
         'for': for_, 'noDataState': no_data, 'execErrState': 'Error',
@@ -272,7 +272,7 @@ def rule(uid, title, expr, threshold, summary, for_='0s', no_data='OK'):
              'model': {'expression': 'A', 'reducer': 'last', 'refId': 'B', 'type': 'reduce'}},
             {'refId': 'C', 'queryType': '', 'relativeTimeRange': {'from': 0, 'to': 0}, 'datasourceUid': '__expr__',
              'model': {'expression': 'B', 'refId': 'C', 'type': 'threshold',
-                       'conditions': [{'evaluator': {'params': [threshold], 'type': 'gt'}}]}},
+                       'conditions': [{'evaluator': {'params': [threshold], 'type': op}}]}},
         ]}
 
 
@@ -287,6 +287,18 @@ def alerts():
              'sum by (provider, model) (keeper_connections{state="suspect"}) and on (provider, model) '
              '(sum by (provider, model) (keeper_connections{state="working"}) > 0)', 0,
              '{{ $labels.provider }}/{{ $labels.model }}: {{ $values.B.Value }} suspect keys for 1h', for_='1h'),
+        # v2 health, replacing keeper-probe-stale/route-down (fed only by the
+        # retired on-demand dual prober, frozen since 2026-09-23). "working"
+        # needs fresh evidence, so a dead verification worker also lands here
+        # once rows age to stale; the paid fallback alone is not healthy.
+        rule('keeper-no-working-free', 'Keeper has no working free route',
+             '(sum(keeper_connections{tier="free",state="working"}) or vector(0))', 1,
+             'No free connection has fresh working evidence for 15m (paid fallback only)',
+             for_='15m', op='lt'),
+        # Window spans a UTC day so a spent daily check budget never fires it.
+        rule('keeper-verify-stalled', 'Keeper verification stalled (no verify checks in 26h)',
+             '(sum(increase(keeper_checks_total{kind="verify"}[26h])) or vector(0))', 1,
+             'Keeper ran no background verification checks in 26h', for_='30m', op='lt'),
     ]
 
 

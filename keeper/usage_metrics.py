@@ -107,9 +107,10 @@ def lines(state):
     for c in s.connections():
         if c['blocked_reason'] and not (c['blocked_reason'] == 'paid' and spendable(c)):
             continue
-        key = (c['provider'], c['model'], c['protocol'], c['state'])
+        tier = 'paid' if c['eligibility'] == 'paid' else 'free'
+        key = (c['provider'], c['model'], c['protocol'], tier, c['state'])
         counts[key] = counts.get(key, 0) + 1
-    for (provider, model, protocol, st), n in sorted(counts.items()):
+    for (provider, model, protocol, tier, st), n in sorted(counts.items()):
         out.append('keeper_connections{%s} %d' % (labels(
-            provider=provider, model=model, protocol=protocol, state=st), n))
+            provider=provider, model=model, protocol=protocol, tier=tier, state=st), n))
     return out

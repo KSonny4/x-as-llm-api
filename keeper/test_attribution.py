@@ -121,6 +121,8 @@ def test_metrics_expose_attribution_without_emails(tmp_path):
     assert 'keeper_llm_tokens_total{consumer="cognee",provider="p",model="b",tier="free",direction="prompt"} 10' in text
     assert 'basis="shadow"' in text and 'keeper_llm_latency_ms_bucket' in text
     assert 'keeper_connections{' in text and 'keeper_checks_total{kind="serve"' in text
+    tiers = {l.split('tier="')[1].split('"')[0] for l in text.splitlines() if l.startswith('keeper_connections{')}
+    assert tiers == {'free', 'paid'}
     assert '@' not in text.replace('@bao', '')  # no owner emails
     full = server.metrics_view(state)
     assert 'keeper_llm_requests_total' in full
