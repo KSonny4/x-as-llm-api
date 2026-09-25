@@ -5,13 +5,17 @@ free and then PAID_ATTEMPTS escrowed-paid connection attempts per request
 (so free failures never starve the paid fallback), bounded by a wall-clock
 deadline. Same-model keys precede lower-ranked model routes; an upstream
 request rejection (400/422) moves on to the next model; never fail over
-after the first streaming byte.
+after the first streaming byte. On the text-only CLI (zencli) route,
+structured output/tools are emulated (zencli_structured); a model that cannot
+produce the requested structure after one repair turn is skipped without
+key penalty.
 HTTP response/error bodies never become diagnostics, logs or feedback text.
 """
 import json
 import math
 import os
 import secrets
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -22,6 +26,7 @@ from availability import Result, spendable
 from inference import NoRedirect, request, retry_after
 import service_wire as wire
 from zencli_bridge import BridgeUnavailable
+import zencli_structured as structured
 import usage
 
 ALIAS = 'keeper-coder'
@@ -30,6 +35,9 @@ PAID_ATTEMPTS = 2
 # Loopback callers (Cognee) are not behind Cloudflare's ~100s cap.
 REQUEST_DEADLINE = float(os.environ.get('KEEPER_REQUEST_DEADLINE', '180'))
 UPSTREAM_TIMEOUT = 90
+# A structured-emulation repair turn is only worth it if a slow CLI answer
+# (bridge timeout 110s) still leaves the paid fallback room in the deadline.
+REPAIR_MIN_REMAINING = 60
 # Harmless client bookkeeping (litellm/OpenAI SDK). Dropped, never forwarded:
 # `store` would persist completions upstream; `service_tier` can change price.
 DROPPED_EXTRAS = ('metadata', 'store', 'service_tier')
@@ -206,6 +214,46 @@ def _token_field_fallback(config, payload, send):
         alt = {k: v for k, v in payload.items() if k != 'max_tokens'}
         alt['max_completion_tokens'] = payload['max_tokens']
         return send(alt)
+
+
+def _zencli_answer(s, ctx, config, req, payload, send, deadline):
+    """CLI text -> OpenAI doc; structured requests are emulated (plan ->
+    infer -> finish), with one repair turn on the same connection.
+
+    An empty CLI answer stays provider evidence (UpstreamFailure). A reply
+    that is not the requested structure after repair raises Unsatisfied.
+    """
+    raw = wire.normalize(send(payload).json(), config)
+    sp = structured.spec(req)
+    if sp is None:
+        return raw
+    for stage in ('first', 'repair'):
+        text = structured.reply_text(raw)
+        if not text or not text.strip():
+            raise UpstreamFailure('invalid_response')
+        try:
+            doc = structured.finish(text, sp, config['model'], raw.get('usage'))
+            doc.update({k: raw[k] for k in ('id', 'created') if k in raw})
+            return doc
+        except structured.Invalid as exc:
+            retry = (structured.repair(payload, text, str(exc))
+                     if stage == 'first' and deadline - s.clock() >= REPAIR_MIN_REMAINING else None)
+            _emulation_log(ctx, config, stage, 'repair' if retry else 'unsatisfied')
+            if retry is None:
+                raise structured.Unsatisfied() from None
+        raw = wire.normalize(send(retry).json(), config)
+    raise structured.Unsatisfied()
+
+
+def _emulation_log(ctx, config, stage, action):
+    """Counts/ids only: never prompt, answer or validation text."""
+    line = {'event': 'zencli_structured', 'stage': stage, 'action': action,
+            'model': config.get('model', ''), 'req_id': ctx.get('req_id', ''),
+            'trace': ctx.get('trace_id', '')}
+    try:
+        (ctx.get('log') or sys.stderr.write)(json.dumps(line, sort_keys=True) + '\n')
+    except Exception:
+        pass
 
 
 def _retry_after(s):
@@ -407,8 +455,11 @@ def _chat(state, body, allow_exact, ctx):
                            _inference_request(state, model, config['endpoint'], config['headers'], body, timeout))
                     if res.status != 200: raise classify(res.status, res.headers, s.clock())
                     return res
-                res = _token_field_fallback(config, payload, send)
-                doc = wire.normalize(res.json(), config)
+                if config['protocol'] == 'zencli':
+                    doc = _zencli_answer(s, ctx, config, req, payload, send, deadline)
+                else:
+                    res = _token_field_fallback(config, payload, send)
+                    doc = wire.normalize(res.json(), config)
                 if not _usable(doc): raise UpstreamFailure('invalid_response')
                 raw = _safe_doc(doc, config)
                 s.finish_check(ticket, Result('working'))
@@ -420,6 +471,12 @@ def _chat(state, body, allow_exact, ctx):
                 rejected.add(model['id'])
                 if tier == 'free':
                     rejected_free.add(model['id'])
+                break
+            except structured.Unsatisfied:
+                # This model cannot produce the requested structure: neither
+                # credential evidence nor a malformed client request. Next
+                # model; the paid fallback stays available.
+                s.discard_request_check(ticket)
                 break
             except BridgeUnavailable:
                 # The shared CLI sidecar is down: not evidence about this key

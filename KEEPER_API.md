@@ -148,9 +148,38 @@ and model. CLI success is never imported into a direct HTTP connection.
 labels them service-only. Actual-key export remains direct-verification-only.
 
 This backend accepts plain string system/user/assistant messages via the existing
-flattened prompt mapping. It rejects tools, generation controls (including
-`max_tokens`), multimodal input and `stream:true`; no buffered SSE masquerades as
-real streaming. `keeper-coder` includes it only for compatible text requests.
+flattened prompt mapping; plain text requests reach the bridge unchanged. It
+rejects multimodal input, `n>1`, `logprobs`/`logit_bias` and `stream:true`; no
+buffered SSE masquerades as real streaming. `keeper-coder` includes it only for
+compatible requests.
+
+**Structured output is emulated in Keeper** (`keeper/zencli_structured.py`; the
+sidecar is untouched). `response_format` `json_object`/`json_schema`, function
+`tools` with `tool_choice` forced to one function, `"required"`, or
+`"auto"`/absent with exactly one tool (`"none"` = plain text), and OpenAI
+tool-call history are turned into text: history is flattened into text turns and
+a "reply with ONLY this JSON" instruction (compact JSON Schema, or function name +
+parameters schema) is appended to the last user turn. The CLI reply is parsed
+(code fences / leading prose tolerated) and checked with a stdlib JSON-Schema
+subset (`$ref`/`$defs`, type, enum/const, properties/required,
+additionalProperties — extras are pruned, like pydantic's default —, items,
+anyOf/oneOf/allOf, length/range bounds). For `json_object` without a schema, a
+schema the client embedded in its own prompt ("conforming to this schema:"
+followed by a fenced `json` block — Cognee's litellm_native fallback, the shape
+Cognee sends for `openai/keeper-coder`) is enforced. The answer is returned as
+`message.content` (JSON string) or as one `message.tool_calls` entry with
+`finish_reason: "tool_calls"`. An invalid answer gets one repair turn on the same
+connection (skipped when less than 60 s of the request deadline remain); a model
+that still cannot produce it is skipped **without key penalty** and the next
+ranked model (then the paid fallback) serves the request. So structured requests
+now rank CLI models before OpenRouter/paid routes, in AA order.
+**Ignored on this route** (accepted, not forwarded — the CLI has no such
+controls): `temperature`, `top_p`, `max_tokens`, `max_completion_tokens`,
+`seed`, `frequency_penalty`, `presence_penalty`, `parallel_tool_calls`, `stop`,
+`user`, `reasoning_effort`, `verbosity`. Token usage is estimated (chars/4) and
+does not include the repair turn. Flattened prompts over ~120 kB are not routed
+to the CLI (the sidecar passes the prompt as one argv element; Linux caps that at
+128 KiB).
 The authenticated private bridge has no static model cap/default account and is
 never accessible to the public service bearer. Execution isolation and pinned
 CLI configuration proof are documented in `zencli/README.md`.
@@ -178,8 +207,9 @@ reason to probe a futile direct Zen route. No Keeper customer quota is introduce
 
 Native build tools remain defined but permission requests are auto-rejected by
 pinned noninteractive OpenCode (never approval flags). No custom agent or forced
-step count. Tool-required runs without final text fail honestly. This does **not**
-make CLI-only routes compatible with ordinary tool-using or streaming agents.
+step count. Tool-required runs without final text fail honestly. Client function
+tools are only *emulated* as JSON answers (see above); CLI routes remain unsuited
+to multi-tool `auto` agents and streaming.
 
 
 ### Current Unix IPC / exact native clock correction (schema 3)
@@ -195,5 +225,5 @@ Native ask-only was insufficient for raw shell syntax. An immutable gate now
 permits only exact internal `date`, executing `/bin/date` without an interpreter,
 with scrubbed UTC/C environment. Missing gate is fatal. Actual successful clock
 execution plus subsequent model final text is required; no tool output or
-continuation is fabricated. Consumer capabilities stay plain-history-only, not
-generic tools/streaming. See [security/canary gate](docs/keeper-uds-clock-repair.md).
+continuation is fabricated. Consumer capabilities stay flattened text history
+(structured output/tools emulated in Keeper as above), not streaming. See [security/canary gate](docs/keeper-uds-clock-repair.md).

@@ -53,7 +53,10 @@ def test_bridge_catalog_and_text_only_capability(tmp_path):
     s,clock,bridge,selector,calls=fixture(tmp_path)
     req={'model':'keeper-coder','messages':[{'role':'system','content':'Be concise'},{'role':'user','content':'hello'}]}
     assert wire.compatible('zencli',req)
-    for extra in [{'stream':True},{'max_tokens':64},{'tools':[]},{'temperature':0.2}]:
+    # Generation controls are accepted and ignored; structure is emulated.
+    for extra in [{'max_tokens':64},{'tools':[]},{'temperature':0.2},{'response_format':{'type':'json_object'}}]:
+        assert wire.compatible('zencli',{**req,**extra})
+    for extra in [{'stream':True},{'n':2},{'logprobs':True},{'stream':True,'response_format':{'type':'json_object'}}]:
         assert not wire.compatible('zencli',{**req,**extra})
     bridge.sync()
     assert len(calls[0][3]['models'])==1 and calls[0][3]['models'][0]['model']=='a'

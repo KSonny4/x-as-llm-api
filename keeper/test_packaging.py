@@ -21,6 +21,17 @@ def test_docker_copies_all_runtime_assets_and_durable_nomad_bind():
     assert re.search(r'PROBE_DB\s*=\s*"/var/lib/keeper/probe.db"', nomad)
 
 
+def test_docker_copies_every_keeper_module_the_server_imports():
+    import sys
+    import runtime, service_api  # noqa: F401  (import graph of the served app)
+    root=Path(__file__).resolve().parent
+    copied=set(re.findall(r'[\w.-]+\.py', (root/'Dockerfile').read_text()))
+    local={Path(m.__file__).name for m in list(sys.modules.values())
+           if getattr(m,'__file__',None) and Path(m.__file__).resolve().parent==root
+           and not Path(m.__file__).name.startswith(('test_','conftest'))}
+    assert 'zencli_structured.py' in local and local <= copied, sorted(local-copied)
+
+
 def test_sidecar_nomad_uses_supported_tmpfs_mount():
     import shutil
     import pytest
