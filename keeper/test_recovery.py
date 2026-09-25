@@ -148,3 +148,79 @@ def test_bridge_down_is_not_key_evidence_on_serving_path(tmp_path):
     assert code == 503
     cli = [c for c in s.connections() if c['protocol'] == 'zencli']
     assert all(c['state'] == 'working' and not c['excluded'] and c['fail_streak'] == 0 for c in cli)
+
+
+def _hold_slot(bridge):
+    """Occupy the only CLI slot from another thread until released."""
+    import threading
+    entered, release = threading.Event(), threading.Event()
+    original = bridge.transport
+
+    def blocking(method, url, headers, payload):
+        if url.endswith('/chat/completions'):
+            entered.set()
+            release.wait(5)
+        return original(method, url, headers, payload)
+    bridge.transport = blocking
+    config = bridge.config(next(c for c in bridge.service.connections() if c['protocol'] == 'zencli'), 'synthetic-secret')
+    worker = threading.Thread(target=bridge.infer, args=(config, {'model': 'a', 'messages': []}))
+    worker.start()
+    assert entered.wait(5)
+    return release, worker
+
+
+def test_busy_cli_slots_defer_verification_without_evidence(tmp_path):
+    from zencli_bridge import BridgeBusy
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    bridge.concurrency, bridge.queue_wait = 1, 0
+    import threading
+    bridge._slots = threading.BoundedSemaphore(1)
+    release, worker = _hold_slot(bridge)
+    try:
+        cli = next(c for c in s.connections() if c['protocol'] == 'zencli')
+        try:
+            bridge.verify(cli, 'synthetic-secret')
+            assert False, 'expected BridgeBusy'
+        except BridgeBusy:
+            pass
+    finally:
+        release.set(); worker.join(5)
+    # The slot is returned: the next run proceeds.
+    assert bridge.verify(cli, 'synthetic-secret').state == 'working'
+
+
+def test_slot_released_when_cli_transport_fails(tmp_path):
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    import threading
+    bridge._slots, bridge.queue_wait = threading.BoundedSemaphore(1), 0
+
+    def boom(method, url, headers, payload):
+        if url.endswith('/chat/completions'):
+            raise ConnectionResetError()
+        return HttpResponse(200, {}, b'{"ok":true}')
+    bridge.transport = boom
+    cli = next(c for c in s.connections() if c['protocol'] == 'zencli')
+    for _ in range(3):
+        assert bridge.verify(cli, 'synthetic-secret').state == 'transient_error'
+
+
+def test_busy_cli_fails_over_without_penalizing_keys(tmp_path):
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    for c in s.connections():
+        if c['protocol'] == 'zencli':
+            succeed(s, c)
+    import threading
+    bridge._slots, bridge.queue_wait = threading.BoundedSemaphore(1), 0
+    logs = []
+    state = {'availability': s, 'selector': select, 'zencli': bridge, 'aa_scores': {}}
+    release, worker = _hold_slot(bridge)
+    try:
+        from service_api import chat
+        code, raw, _ = chat(state, json.dumps({'model': 'keeper-coder', 'messages': [{'role': 'user', 'content': 'x'}]}).encode(),
+                            ctx={'log': logs.append})
+    finally:
+        release.set(); worker.join(5)
+    assert code == 503
+    cli = [c for c in s.connections() if c['protocol'] == 'zencli']
+    assert all(c['state'] == 'working' and not c['excluded'] and c['fail_streak'] == 0 for c in cli)
+    assert any('"event": "zencli_busy"' in line for line in logs)

@@ -10,6 +10,7 @@ import time
 import http.client
 import os
 import socket
+import threading
 
 from availability import BRIDGE_BASE, CATALOG_TTL, Model, NoEvidence, Result, evidence_age
 from inference import HttpResponse, connection_config, verify as direct_verify, request, retry_after
@@ -26,6 +27,27 @@ DEFAULT_SOCKET = '/alloc/data/keeper-zencli/http.sock'
 
 class BridgeUnavailable(NoEvidence):
     """The CLI sidecar itself is unreachable/unready: not key or model evidence."""
+
+
+class BridgeBusy(BridgeUnavailable):
+    """Every CLI slot is taken. Each `opencode run` peaks at ~0.65 GB, so runs
+    beyond the sidecar's memory budget get OOM-killed together (measured: 2
+    concurrent runs in 1 GiB -> all 502). Callers fail over instead."""
+
+
+def _env_number(name, default, cast):
+    try:
+        return max(0, cast(os.environ.get(name, default)))
+    except ValueError:
+        return default
+
+
+# Concurrent CLI runs the sidecar can hold (size with its task memory).
+ZENCLI_CONCURRENCY = max(1, _env_number('KEEPER_ZENCLI_CONCURRENCY', 1, int))
+# Seconds a serving request queues for a slot before failing over.
+ZENCLI_QUEUE_WAIT = _env_number('KEEPER_ZENCLI_QUEUE_WAIT', 20.0, float)
+# Background verification never queues behind serving traffic; it defers.
+VERIFY_QUEUE_WAIT = 0.0
 
 
 class UnixHTTPConnection(http.client.HTTPConnection):
@@ -64,12 +86,16 @@ def unix_request(method, url, headers, payload, *, socket_path=None):
 
 
 class ZenCLI:
-    def __init__(self, service, internal_token, transport=unix_request):
+    def __init__(self, service, internal_token, transport=unix_request,
+                 concurrency=None, queue_wait=None):
         if not internal_token:
             raise ValueError('internal bridge token required')
         self.service = service
         self._token = internal_token
         self.transport = transport
+        self.concurrency = concurrency or ZENCLI_CONCURRENCY
+        self.queue_wait = ZENCLI_QUEUE_WAIT if queue_wait is None else queue_wait
+        self._slots = threading.BoundedSemaphore(self.concurrency)
 
     def sync(self):
         # Push per-model original pricing timestamps, not renewed TTLs. Repeating
@@ -96,9 +122,14 @@ class ZenCLI:
                 'headers':{'Authorization':'Bearer '+self._token,'X-Keeper-Provider-Key':secret,
                            'Content-Type':'application/json'}}
 
-    def infer(self, config, payload):
-        self.sync()
-        return self.transport('POST', config['endpoint'], config['headers'], payload)
+    def infer(self, config, payload, wait=None):
+        if not self._slots.acquire(timeout=self.queue_wait if wait is None else wait):
+            raise BridgeBusy('all CLI slots busy')
+        try:
+            self.sync()
+            return self.transport('POST', config['endpoint'], config['headers'], payload)
+        finally:
+            self._slots.release()
 
     def verify(self, c, secret, transport=request, clock=None):
         if c['protocol'] != 'zencli':
@@ -107,7 +138,8 @@ class ZenCLI:
         if not secret:
             return Result('unsupported')
         try:
-            res = self.infer(self.config(c,secret), {'model':c['model'], 'messages':[{'role':'user','content':'Reply Hello.'}]})
+            res = self.infer(self.config(c,secret), {'model':c['model'], 'messages':[{'role':'user','content':'Reply Hello.'}]},
+                             wait=VERIFY_QUEUE_WAIT)
             if res.status == 429:
                 return Result('rate_limited', retry_after(res.headers, (clock or time.time)()))
             if res.status != 200:

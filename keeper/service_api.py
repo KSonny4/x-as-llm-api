@@ -25,7 +25,7 @@ from api_v2 import response
 from availability import Result, spendable
 from inference import NoRedirect, request, retry_after
 import service_wire as wire
-from zencli_bridge import BridgeUnavailable
+from zencli_bridge import BridgeBusy, BridgeUnavailable
 import zencli_structured as structured
 import usage
 
@@ -247,7 +247,7 @@ def _zencli_answer(s, ctx, config, req, payload, send, deadline):
 
 def _emulation_log(ctx, config, stage, action):
     """Counts/ids only: never prompt, answer or validation text."""
-    line = {'event': 'zencli_structured', 'stage': stage, 'action': action,
+    line = {'event': 'zencli_busy' if action == 'busy' else 'zencli_structured', 'stage': stage, 'action': action,
             'model': config.get('model', ''), 'req_id': ctx.get('req_id', ''),
             'trace': ctx.get('trace_id', '')}
     try:
@@ -478,11 +478,14 @@ def _chat(state, body, allow_exact, ctx):
                 # model; the paid fallback stays available.
                 s.discard_request_check(ticket)
                 break
-            except BridgeUnavailable:
-                # The shared CLI sidecar is down: not evidence about this key
-                # or model, and every other zencli candidate would fail too.
+            except BridgeUnavailable as exc:
+                # The shared CLI sidecar is down or every slot is busy: not
+                # evidence about this key or model, and every other zencli
+                # candidate would wait on the same sidecar.
                 s.discard_request_check(ticket)
                 bridge_down = True
+                if isinstance(exc, BridgeBusy):
+                    _emulation_log(ctx, config, 'queue', 'busy')
                 break
             except Exception as exc:
                 failures += 1

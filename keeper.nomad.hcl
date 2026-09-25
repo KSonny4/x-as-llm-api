@@ -157,6 +157,9 @@ job "keeper" {
         KEEPER_SERVICE_TOKEN       = var.keeper_service_token
         KEEPER_ZENCLI_TOKEN        = var.keeper_zencli_token
         KEEPER_ZENCLI_SOCKET       = "/alloc/data/keeper-zencli/http.sock"
+        # Concurrent CLI runs; size with the zencli task memory below (each
+        # `opencode run` peaks ~0.65 GB; 2 runs in 1 GiB were OOM-killed).
+        KEEPER_ZENCLI_CONCURRENCY  = "3"
         # Spans go to keeper-alloy's loopback OTLP receiver (no credentials
         # here). Dropped by the 2026-09-23 paid-fallback redeploys: keep it.
         TEMPO_OTLP_ENDPOINT        = "http://127.0.0.1:14318/v1/traces"
@@ -219,9 +222,11 @@ job "keeper" {
         KEEPER_ZENCLI_TOKEN  = var.keeper_zencli_token
         KEEPER_ZENCLI_SOCKET = "/alloc/data/keeper-zencli/http.sock"
       }
+      # Resources only; the image and source stay the protected control.
+      # 3 concurrent structured runs measured at 1.73 GiB peak (2026-09-25).
       resources {
-        cpu    = 500
-        memory = 1024
+        cpu    = 1500
+        memory = 3072
       }
     }
   }
