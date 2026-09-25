@@ -10,7 +10,7 @@ import http.client
 import os
 import socket
 
-from availability import BRIDGE_BASE, CATALOG_TTL, Model, Result, evidence_age
+from availability import BRIDGE_BASE, CATALOG_TTL, Model, NoEvidence, Result, evidence_age
 from inference import HttpResponse, connection_config, verify as direct_verify, request, retry_after
 
 
@@ -22,6 +22,10 @@ def bridge_models(models):
 
 
 DEFAULT_SOCKET = '/alloc/data/keeper-zencli/http.sock'
+
+
+class BridgeUnavailable(NoEvidence):
+    """The CLI sidecar itself is unreachable/unready: not key or model evidence."""
 
 
 class UnixHTTPConnection(http.client.HTTPConnection):
@@ -73,10 +77,13 @@ class ZenCLI:
         models = self.service.store.rows("SELECT model,checked_at FROM av_models WHERE provider='opencode-zen' AND protocol='zencli' AND present=1 AND eligibility='free'")
         doc = {'models': [{'model': m['model'], 'verified_at': m['checked_at']} for m in models
                           if 0 <= evidence_age(m['checked_at'], self.service.clock()) < CATALOG_TTL]}
-        res = self.transport('POST', BRIDGE_BASE.removesuffix('/v1') + '/internal/catalog',
-                             {'Authorization': 'Bearer ' + self._token, 'Content-Type':'application/json'}, doc)
+        try:
+            res = self.transport('POST', BRIDGE_BASE.removesuffix('/v1') + '/internal/catalog',
+                                 {'Authorization': 'Bearer ' + self._token, 'Content-Type':'application/json'}, doc)
+        except OSError as exc:
+            raise BridgeUnavailable('bridge unreachable') from exc
         if res.status != 200:
-            raise ValueError('bridge catalog unavailable')
+            raise BridgeUnavailable('bridge catalog unavailable')
 
     def config(self, c, secret):
         if c['protocol'] != 'zencli':
@@ -110,5 +117,7 @@ class ZenCLI:
                 return Result('model_mismatch')
             text = doc['choices'][0]['message']['content']
             return Result('working' if isinstance(text,str) and text.strip() and secret not in text and self._token not in text else 'invalid_response')
+        except BridgeUnavailable:
+            raise
         except Exception:
             return Result('transient_error')

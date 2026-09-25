@@ -13,6 +13,7 @@ from api_v2 import response
 from availability import Result, spendable
 from inference import NoRedirect, request, retry_after
 import service_wire as wire
+from zencli_bridge import BridgeUnavailable
 
 ALIAS = 'keeper-coder'
 
@@ -39,7 +40,8 @@ def classify(status, headers, now):
     if status in (400, 422): return UpstreamRequestError()
     if status == 429: return UpstreamFailure('rate_limited', retry_after(headers, now))
     if status in (401, 402, 403): return UpstreamFailure('access_denied')
-    return UpstreamFailure('transient_error' if status >= 500 else 'invalid_response')
+    # Same classes as inference.verify: timeouts are transient, not bad output.
+    return UpstreamFailure('transient_error' if status >= 500 or status in (408, 425) else 'invalid_response')
 
 
 def stream_request(config, payload):
@@ -228,7 +230,7 @@ def _stream_body(first, chunks, state, config, ticket):
         state['availability'].finish_check(ticket, Result('working'))
     except GeneratorExit:
         # Client disconnect is not evidence of a broken provider.
-        state['availability'].finish_check(ticket, Result('transient_error'))
+        state['availability'].discard_request_check(ticket)
         raise
     except Exception as exc:
         _failed(state, config, ticket, exc)
@@ -274,8 +276,10 @@ def chat(state, body, allow_exact=False):
     except (TypeError, KeyError, ValueError):
         return error(400, 'invalid_request')
     if not candidates: return error(503, 'no_working_compatible_free_model')
-    attempts, excluded = 0, set()
+    attempts, excluded, bridge_down = 0, set(), False
     for model in candidates:
+        if bridge_down and model['protocol'] == 'zencli':
+            continue
         while attempts < 3:
             if not any(c['model_id'] == model['id'] and c['id'] not in excluded
                        and c['state'] == 'working' and not c['excluded']
@@ -297,7 +301,7 @@ def chat(state, body, allow_exact=False):
                 payload = wire.prepare(config, req)
             except (TypeError, KeyError, ValueError):
                 return error(400, 'unsupported_request_features')
-            ticket = s.begin_check(config['connection_id'])
+            ticket = s.begin_check(config['connection_id'], kind='serve')
             if ticket is None: continue
             try:
                 if req.get('stream'):
@@ -323,6 +327,12 @@ def chat(state, body, allow_exact=False):
             except UpstreamRequestError:
                 s.discard_request_check(ticket)
                 return error(400, 'upstream_rejected_request')
+            except BridgeUnavailable:
+                # The shared CLI sidecar is down: not evidence about this key
+                # or model, and every other zencli candidate would fail too.
+                s.discard_request_check(ticket)
+                bridge_down = True
+                break
             except Exception as exc:
                 _failed(state, config, ticket, exc)
     return error(503, 'no_working_compatible_free_model')

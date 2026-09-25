@@ -93,8 +93,19 @@ class Store:
                 self.db.execute('INSERT INTO av_schema VALUES (3)')
             elif len(versions) != 1 or versions[0][0] not in (1, 2, 3):
                 raise ValueError('unsupported availability schema')
-            if 'feedback_id' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}:
+            check_cols = {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}
+            if 'feedback_id' not in check_cols:
                 self.db.execute('ALTER TABLE av_checks ADD COLUMN feedback_id INTEGER NOT NULL DEFAULT 0')
+            # 'verify' checks spend the daily verification budget; 'serve'
+            # checks are real traffic and must not starve verification.
+            if 'kind' not in check_cols:
+                self.db.execute("ALTER TABLE av_checks ADD COLUMN kind TEXT NOT NULL DEFAULT 'verify'")
+            if 'fail_streak' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_connections)')}:
+                self.db.execute('ALTER TABLE av_connections ADD COLUMN fail_streak INTEGER NOT NULL DEFAULT 0')
+            self.db.execute('CREATE INDEX IF NOT EXISTS av_checks_conn_started ON av_checks(connection_id, started_at)')
+            # Operator-scoped manual checks skip the daily verification budget.
+            if 'bypass' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_jobs)')}:
+                self.db.execute('ALTER TABLE av_jobs ADD COLUMN bypass INTEGER NOT NULL DEFAULT 0')
             if versions and versions[0][0] == 1:
                 self._migrate_transport_limits()
             if versions and versions[0][0] < 3:

@@ -78,9 +78,12 @@ def test_bounded_ranked_failover_and_precise_feedback(tmp_path):
     state['inference_transport']=http
     code,raw,_=service_call(state,'/v1/chat/completions',{'model':'keeper-coder','messages':[{'role':'user','content':'hello'}]})
     assert code==200 and seen==['b','b','a']
-    failed=[c for c in state['availability'].connections() if c['excluded']]
-    assert len(failed)==2 and all(c['model']=='b' for c in failed)
-    assert state['availability'].feedback(failed[0]['id'])
+    # One 500 is weak evidence: the key cools down, it is not excluded.
+    rows=state['availability'].connections()
+    assert not any(c['excluded'] for c in rows)
+    cooled=[c for c in rows if c['state']=='cooldown']
+    assert len(cooled)==2 and all(c['model']=='b' and c['fail_streak']==1 for c in cooled)
+    assert not state['availability'].feedback(cooled[0]['id'])
     assert b'synthetic-secret' not in raw
 
 
