@@ -167,7 +167,11 @@ job "keeper" {
 
       resources {
         cpu    = 200
-        memory = 128
+        # 512: OOM-killed again at 256 (~70min uptime, exit 137, restarts
+        # exhausted, public 502). Same signature as the 128->256 event:
+        # traffic-correlated growth, not a slow leak. Node has 23GB;
+        # revisit down only with headroom evidence, never on guesses.
+        memory = 512
       }
 
       service {
