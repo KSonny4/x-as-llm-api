@@ -231,3 +231,41 @@ func TestTimeoutCleansRequestAndKillsProcessGroup(t *testing.T) {
 		t.Fatal("timeout not enforced")
 	}
 }
+
+func TestFailureClassificationIsRedactedAndQueryable(t *testing.T) {
+	cases := []struct {
+		name    string
+		script  string
+		timeout time.Duration
+		code    string
+	}{
+		{"timeout", "sleep 10 & wait", 30 * time.Millisecond, "cli_timeout"},
+		{"exit", "exit 3", 0, "cli_exit_error"},
+		{"framing", `echo 'not json at all'`, 0, "invalid_event_framing"},
+		{"unknown-type", `echo '{"type":"mystery","part":{}}'`, 0, "unknown_event"},
+		{"tool-calls-no-final", `echo '{"type":"tool_use","part":{"tool":"bash","state":{"status":"error","error":"The user rejected permission to use this specific tool call."}}}'; echo '{"type":"step_finish","part":{"reason":"tool-calls"}}'`, 0, "tool_calls_no_final_text"},
+		{"empty", `echo '{"type":"text","part":{"text":""}}'; echo '{"type":"step_finish","part":{"reason":"stop"}}'`, 0, "empty_output"},
+	}
+	for _, tc := range cases {
+		b := fixtureBridge(t, tc.script)
+		if tc.timeout > 0 {
+			b.timeout = tc.timeout
+		}
+		w := invoke(b, plain, "synthetic-selected")
+		if w.Code != 502 {
+			t.Fatalf("%s: status %d", tc.name, w.Code)
+		}
+		var doc struct {
+			Error struct {
+				Message string `json:"message"`
+				Code    string `json:"code"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &doc); err != nil || doc.Error.Code != tc.code {
+			t.Fatalf("%s: body %q", tc.name, w.Body.String())
+		}
+		if strings.Contains(w.Body.String(), "synthetic-selected") {
+			t.Fatalf("%s: secret leaked", tc.name)
+		}
+	}
+}
