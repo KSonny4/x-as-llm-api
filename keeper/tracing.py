@@ -39,7 +39,7 @@ def fresh_trace_id():
     return secrets.token_hex(16)
 
 
-def span_payload(trace_id, name, start_ns, end_ns, attrs):
+def span_payload(trace_id, name, start_ns, end_ns, attrs, parent_span_id="", error=False):
     otlp_attrs = [{"key": str(k), "value": {"stringValue": str(v)}}
                   for k, v in attrs.items()]
     return {"resourceSpans": [{
@@ -51,12 +51,14 @@ def span_payload(trace_id, name, start_ns, end_ns, attrs):
             "spans": [{
                 "traceId": trace_id,
                 "spanId": secrets.token_hex(8),
+                **({"parentSpanId": parent_span_id} if parent_span_id else {}),
                 "name": name,
                 "kind": 1,
                 "startTimeUnixNano": str(start_ns),
                 "endTimeUnixNano": str(end_ns),
                 "attributes": otlp_attrs,
-                "status": {"code": 1},
+                # OTLP status: 1 OK, 2 ERROR (5xx are server errors).
+                "status": {"code": 2 if error else 1},
             }],
         }],
     }]}
@@ -75,7 +77,8 @@ def _post(endpoint, user, token, payload):
         r.read(64)
 
 
-def emit_request_span(trace_id, route_cls, code, ms, principal, err):
+def emit_request_span(trace_id, route_cls, code, ms, principal, err,
+                      attrs=None, parent_span_id=""):
     """Fire-and-forget one server span per request. Returns False when
     skipped (unconfigured, health/metrics noise) — never raises."""
     try:
@@ -91,7 +94,8 @@ def emit_request_span(trace_id, route_cls, code, ms, principal, err):
             tid, "keeper.request", now - int(ms * 1e6), now,
             {"http.route": route_cls, "http.status": code,
              "keeper.principal": principal, "keeper.error": err or "",
-             "keeper.duration_ms": int(ms)})
+             "keeper.duration_ms": int(ms), **(attrs or {})},
+            parent_span_id=parent_span_id, error=int(code) >= 500)
         threading.Thread(target=_post, args=(endpoint, user, token, payload),
                          daemon=True).start()
         return True

@@ -1,5 +1,6 @@
 """Production availability wiring; explicit durable path, one worker per server."""
 import os
+import re
 import threading
 from urllib.parse import urlsplit
 
@@ -12,7 +13,27 @@ from store import Store
 from sweeps import Sweeps
 
 
-def initialize(state, db_path, public_origin, service_token='', admin_tokens=(), zencli_token=''):
+CONSUMER_NAME = re.compile(r'^[a-z0-9][a-z0-9-]{0,31}$')
+
+
+def validate_service_tokens(tokens, forbidden):
+    """{consumer: token} for per-caller attribution. Names are low-cardinality
+    metric labels; tokens must be distinct from each other and every other
+    principal ('legacy'/'admin' are reserved for the shared/admin tokens)."""
+    if not isinstance(tokens, dict):
+        raise ValueError('KEEPER_SERVICE_TOKENS must be a JSON object')
+    seen = set(t for t in forbidden if t)
+    for name, token in tokens.items():
+        if not isinstance(name, str) or not CONSUMER_NAME.match(name) or name in ('legacy', 'admin'):
+            raise ValueError('invalid service consumer name')
+        if not isinstance(token, str) or len(token) < 16 or token in seen:
+            raise ValueError('service consumer tokens must be long and unique')
+        seen.add(token)
+    return dict(tokens)
+
+
+def initialize(state, db_path, public_origin, service_token='', admin_tokens=(), zencli_token='',
+               service_tokens=None):
     origin = urlsplit(public_origin)
     if (not db_path or db_path == ':memory:' or not os.path.isabs(db_path)
             or origin.scheme != 'https' or not origin.netloc or origin.path
@@ -22,6 +43,8 @@ def initialize(state, db_path, public_origin, service_token='', admin_tokens=(),
         raise ValueError('service principal must be separate from administrator')
     if zencli_token and zencli_token in (state['token'], service_token, *admin_tokens):
         raise ValueError('internal bridge principal must be separate')
+    consumers = validate_service_tokens(service_tokens or {},
+                                        (state['token'], service_token, zencli_token, *admin_tokens))
     runtime = RuntimeCredentials(state['routes'])
     os.makedirs(os.path.dirname(db_path), mode=0o700, exist_ok=True)
     service = Availability(Store(db_path))
@@ -41,6 +64,7 @@ def initialize(state, db_path, public_origin, service_token='', admin_tokens=(),
     state.update(availability=service, sweeps=sweeps,
                  selector=Selector(service, sweeps, runtime.resolve, **options),
                  public_origin=public_origin, service_token=service_token,
+                 service_tokens=consumers,
                  build=os.environ.get('BUILD_ID', 'development'), aa_stale=True)
     return state
 

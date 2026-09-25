@@ -11,6 +11,8 @@ HTTP response/error bodies never become diagnostics, logs or feedback text.
 import json
 import math
 import os
+import secrets
+import time
 import urllib.error
 import urllib.request
 
@@ -20,6 +22,7 @@ from availability import Result, spendable
 from inference import NoRedirect, request, retry_after
 import service_wire as wire
 from zencli_bridge import BridgeUnavailable
+import usage
 
 ALIAS = 'keeper-coder'
 FREE_ATTEMPTS = 3
@@ -263,25 +266,44 @@ def _validated_chunks(events, config):
         if close: close()
 
 
-def _stream_body(first, chunks, state, config, ticket):
+def _stream_body(first, chunks, state, config, ticket, ctx=None):
+    meter = usage.StreamMeter(ctx if ctx is not None else {})
     try:
+        meter.see(first)
         yield b'data: ' + _safe_doc(first, config) + b'\n\n'
         for chunk in chunks:
+            meter.see(chunk)
             yield b'data: ' + _safe_doc(chunk, config) + b'\n\n'
         state['availability'].finish_check(ticket, Result('working'))
+        meter.finish(state, 'ok')
     except GeneratorExit:
         # Client disconnect is not evidence of a broken provider.
         state['availability'].discard_request_check(ticket)
+        meter.finish(state, 'client_disconnect')
         raise
     except Exception as exc:
         _failed(state, config, ticket, exc)
+        meter.finish(state, 'upstream_failed')
         yield b'data: {"error":{"message":"upstream_failed","type":"keeper_error","code":"upstream_failed"}}\n\n'
     finally:
         chunks.close()
     yield b'data: [DONE]\n\n'
 
 
-def chat(state, body, allow_exact=False):
+def chat(state, body, allow_exact=False, ctx=None):
+    """OpenAI chat for the alias; ctx carries caller attribution (consumer,
+    req_id, trace_id, t0) and receives what served the request."""
+    ctx = dict(ctx or {})
+    ctx.setdefault('consumer', 'admin' if allow_exact else 'legacy')
+    ctx.setdefault('req_id', secrets.token_hex(8))
+    ctx.setdefault('t0', time.time())
+    code, raw, headers = _chat(state, body, allow_exact, ctx)
+    if not ctx.get('streaming') and 'availability' in state:
+        usage.record_response(state, ctx, code, raw)
+    return code, raw, headers
+
+
+def _chat(state, body, allow_exact, ctx):
     try:
         req = json.loads(body or b'{}')
         if isinstance(req, dict):
@@ -303,6 +325,7 @@ def chat(state, body, allow_exact=False):
         return error(400, 'invalid_request')
     if 'availability' not in state: return error(503, 'availability_not_initialized')
     s = state['availability']
+    ctx['req'], ctx['stream'] = req, bool(req.get('stream'))
     try:
         candidates = aa.rank_models(s.catalog()['models'], state.get('aa_scores', {}))
         if req['model'] != ALIAS:
@@ -343,6 +366,7 @@ def chat(state, body, allow_exact=False):
                        for c in s.connections()):
                 break
             used[tier] += 1
+            ctx['attempts'], ctx['model'] = used['free'] + used['paid'], model
             config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
             if 'error' in config:
                 if config['error'] == 'verification_pending':
@@ -351,6 +375,7 @@ def chat(state, body, allow_exact=False):
                 # Re-read remaining working keys for this same ranked model.
                 continue
             excluded.add(config['connection_id'])
+            ctx['config'] = config
             try:
                 payload = wire.prepare(config, req)
             except (TypeError, KeyError, ValueError):
@@ -371,7 +396,8 @@ def chat(state, body, allow_exact=False):
                             raise
                         return first, chunks
                     first, chunks = _token_field_fallback(config, payload, open_stream)
-                    return 200, _stream_body(first, chunks, state, config, ticket), [
+                    ctx['streaming'] = True
+                    return 200, _stream_body(first, chunks, state, config, ticket, ctx), [
                         ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
                         ('X-Accel-Buffering', 'no')] + served
                 timeout = max(5, min(UPSTREAM_TIMEOUT, deadline - s.clock()))
@@ -386,6 +412,7 @@ def chat(state, body, allow_exact=False):
                 if not _usable(doc): raise UpstreamFailure('invalid_response')
                 raw = _safe_doc(doc, config)
                 s.finish_check(ticket, Result('working'))
+                ctx['doc'] = doc
                 return 200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')] + served
             except UpstreamRequestError:
                 # Not credential evidence. Another model may accept it.

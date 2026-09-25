@@ -4,6 +4,7 @@ Only a fixed authenticated Unix-socket sidecar is reachable. Discovery supplies
 fresh authoritative zero-price eligibility; each execution receives the exact
 selected key/model. Sidecar has no default account or durable secret store.
 """
+import dataclasses
 import json
 import time
 import http.client
@@ -15,8 +16,7 @@ from inference import HttpResponse, connection_config, verify as direct_verify, 
 
 
 def bridge_models(models):
-    return [Model(m.provider, m.model, BRIDGE_BASE, 'zencli', m.eligibility,
-                  m.provenance, m.requires_free_tier, m.verified_at)
+    return [dataclasses.replace(m, base_url=BRIDGE_BASE, protocol='zencli')
             for m in models if m.provider == 'opencode-zen' and m.eligibility == 'free'
             and m.protocol in ('openai','responses','anthropic','gemini')]
 

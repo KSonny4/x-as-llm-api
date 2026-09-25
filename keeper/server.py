@@ -606,6 +606,11 @@ def metrics_view(state):
         "# TYPE keeper_process_cpu_seconds_total counter",
     ]
     lines.extend(process_metrics_lines())
+    try:
+        import usage_metrics
+        lines.extend(usage_metrics.lines(state))
+    except Exception:
+        lines.append("# keeper usage metrics unavailable")
     return "\n".join(lines) + "\n"
 
 
@@ -1494,13 +1499,31 @@ def fp_cred(auth):
     return hashlib.sha256(auth.encode()).hexdigest()[:12]
 
 
+def service_consumer(state, auth):
+    """Consumer name for a service bearer, else "".
+
+    Per-consumer tokens (KEEPER_SERVICE_TOKENS) attribute usage to a caller
+    that cannot spoof another's name; the shared legacy token is 'legacy'.
+    Every configured token is compared (constant time per token)."""
+    if not state or not auth:
+        return ""
+    found = ""
+    tokens = dict(state.get("service_tokens") or {})
+    if state.get("service_token"):
+        tokens.setdefault("legacy", state["service_token"])
+    for name, value in sorted(tokens.items()):
+        if value and secrets.compare_digest(auth, "Bearer " + value):
+            found = found or name
+    return found
+
+
 def classify_caller(headers, token, service_token, state):
     """(principal, cred_fp): none | service | admin | session. Fingerprint only."""
     auth = ""
     for key, value in headers.items():
         if key.lower() == "authorization":
             auth = value
-    if service_token and secrets.compare_digest(auth, "Bearer " + service_token):
+    if (service_token and secrets.compare_digest(auth, "Bearer " + service_token)) or service_consumer(state, auth):
         return "service", fp_cred(auth)
     if accepted(auth, token):
         return "admin", fp_cred(auth)
@@ -1530,12 +1553,51 @@ def http_observe(state, route_cls, code, ms):
 
 
 def http_access_record(ts, req_id, trace_id, method, path, status, ms,
-                       principal, cred_fp, err, ua):
+                       principal, cred_fp, err, ua, consumer="", served=None):
     """Whitelisted-field access record — secret values cannot be represented."""
-    return {"ts": ts, "req": req_id, "trace": trace_id, "method": method,
-            "path": path[:MAX_LOG_FIELD], "status": status, "ms": int(ms),
-            "principal": principal, "cred": cred_fp, "err": err,
-            "ua": (ua or "")[:80]}
+    rec = {"ts": ts, "req": req_id, "trace": trace_id, "method": method,
+           "path": path[:MAX_LOG_FIELD], "status": status, "ms": int(ms),
+           "principal": principal, "cred": cred_fp, "err": err,
+           "ua": (ua or "")[:80]}
+    if consumer:
+        rec["consumer"] = consumer[:64]
+    for key, value in (served or {}).items():
+        rec[key] = str(value)[:MAX_LOG_FIELD]
+    return rec
+
+
+SERVED_HEADERS = {"x-keeper-model": "model", "x-keeper-provider": "provider",
+                  "x-keeper-tier": "tier"}
+INTERNAL_TRACE_HEADER = "X-Keeper-Internal-Trace"
+
+
+def served_fields(resp_headers):
+    """What served an inference request, from Keeper's own response headers."""
+    out = {}
+    for key, value in resp_headers or ():
+        if key.lower() in SERVED_HEADERS:
+            out[SERVED_HEADERS[key.lower()]] = value
+    return out
+
+
+def http_parent_span(headers):
+    """W3C traceparent parent span-id (16 hex) or ""."""
+    for key, value in headers.items():
+        if key.lower() == "traceparent":
+            parts = (value or "").strip().split("-")
+            if (len(parts) == 4 and len(parts[2]) == 16
+                    and all(c in "0123456789abcdefABCDEF" for c in parts[2])):
+                return parts[2].lower()
+    return ""
+
+
+def request_ctx(headers, consumer):
+    """Attribution context for inference: caller, request id, trace id."""
+    trace = http_trace_id(headers)
+    for key, value in headers.items():
+        if key == INTERNAL_TRACE_HEADER and not trace:
+            trace = value
+    return {"consumer": consumer, "req_id": http_req_id(headers), "trace_id": trace}
 
 
 def route(method, path, headers, token, body=None, query="", state=None):
@@ -1564,12 +1626,12 @@ def route(method, path, headers, token, body=None, query="", state=None):
     for key, value in headers.items():
         if key.lower() == "authorization":
             auth = value
-    service_token = state.get("service_token", "") if state else ""
-    if service_token and secrets.compare_digest(auth, "Bearer " + service_token):
+    consumer = service_consumer(state, auth)
+    if consumer:
         if method == "GET" and clean_path == "/v1/models":
             return service_api.models()
         if method == "POST" and clean_path == "/v1/chat/completions":
-            return service_api.chat(state, body)
+            return service_api.chat(state, body, ctx=request_ctx(headers, consumer))
         # Scope refusal: principal IS the service token but the path is not
         # an inference endpoint. Debuggable via this request's stderr
         # access-log line (principal=service, err=inference_only_token).
@@ -1668,7 +1730,8 @@ def route(method, path, headers, token, body=None, query="", state=None):
                                              "type": "invalid_request",
                                              "code": "invalid_request"}})
         if "availability" in state or req.get("model") == service_api.ALIAS:
-            return service_api.chat(state, body, allow_exact=True)
+            return service_api.chat(state, body, allow_exact=True,
+                                    ctx=request_ctx(headers, "admin"))
         code, doc, sse = chat_completions(state, req, dict(headers))
         if sse is not None:
             return code, sse, [("Content-Type", "text/event-stream")]
@@ -1752,9 +1815,16 @@ class H(BaseHTTPRequestHandler):
 
     def _serve(self, method):
         t0 = time.time()
-        headers = dict(self.headers)
-        req_id = http_req_id(headers)
+        headers = {k: v for k, v in dict(self.headers).items()
+                   if k.lower() not in ("x-request-id", INTERNAL_TRACE_HEADER.lower())}
+        req_id = http_req_id(dict(self.headers))
+        headers["X-Request-Id"] = req_id  # route() re-derives the same id
+        parent_span = http_parent_span(headers)
         trace_id = http_trace_id(headers)
+        if not trace_id:
+            import tracing as _tracing
+            trace_id = _tracing.fresh_trace_id()  # always logged: Loki<->Tempo join
+            headers[INTERNAL_TRACE_HEADER] = trace_id
         if method == "GET":
             code, body, resp_headers = route(
                 "GET", self.path, headers,
@@ -1771,6 +1841,10 @@ class H(BaseHTTPRequestHandler):
         principal, cred_fp = classify_caller(
             headers, (self.token, self.token_next),
             (self.state or {}).get("service_token", ""), self.state)
+        auth = next((v for k, v in headers.items() if k.lower() == "authorization"), "")
+        consumer = service_consumer(self.state, auth) or (
+            "admin" if principal == "admin" else "")
+        served = served_fields(resp_headers)
         ua = ""
         for key, value in headers.items():
             if key.lower() == "user-agent":
@@ -1778,13 +1852,18 @@ class H(BaseHTTPRequestHandler):
         rec = http_access_record(
             datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
             req_id, trace_id, method, clean, code, ms, principal, cred_fp,
-            http_error_code(code, body), ua)
+            http_error_code(code, body), ua, consumer, served)
         sys.stderr.write(json.dumps(rec, sort_keys=True) + "\n")
         try:
             import tracing as _tracing
+            attrs = {"keeper.request_id": req_id}
+            if consumer:
+                attrs["keeper.consumer"] = consumer
+            for key, value in served.items():
+                attrs["keeper." + key] = value
             _tracing.emit_request_span(
                 trace_id, norm_http_route(clean), code, ms, principal,
-                http_error_code(code, body))
+                http_error_code(code, body), attrs=attrs, parent_span_id=parent_span)
         except Exception:
             pass
 
@@ -1921,7 +2000,8 @@ def main():
     from runtime import initialize, start_worker
     initialize(H.state, os.environ.get("AVAILABILITY_DB", ""),
                os.environ.get("PUBLIC_ORIGIN", ""), os.environ.get("KEEPER_SERVICE_TOKEN", ""),
-               (H.token_next,), os.environ.get("KEEPER_ZENCLI_TOKEN", ""))
+               (H.token_next,), os.environ.get("KEEPER_ZENCLI_TOKEN", ""),
+               service_tokens=json.loads(os.environ.get("KEEPER_SERVICE_TOKENS") or "{}"))
     start_worker(H.state)
     n = hydrate_probe_state(H.state)
     print("keeper v2 port=%d probe_hydrated=%d" % (PORT, n),

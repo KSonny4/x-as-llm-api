@@ -78,10 +78,28 @@ class Model:
     provenance: str = ''
     requires_free_tier: bool = False
     verified_at: Optional[float] = None
+    # USD per token, list price where the source publishes one. shadow_* is
+    # the price of the same model's paid sibling (what a free call would
+    # cost without the free tier). Accounting only, never eligibility.
+    price_in: Optional[float] = None
+    price_out: Optional[float] = None
+    shadow_in: Optional[float] = None
+    shadow_out: Optional[float] = None
 
     @property
     def id(self):
         return identity(self.provider, self.model, self.base_url, self.protocol)
+
+
+def seed_prices(route):
+    """Operator-declared list price (USD per 1M tokens) -> per-token pair."""
+    out = []
+    for field in ('price_in_per_mtok', 'price_out_per_mtok'):
+        value = route.get(field)
+        ok = (isinstance(value, (int, float)) and not isinstance(value, bool)
+              and math.isfinite(value) and value >= 0)
+        out.append(value / 1e6 if ok else None)
+    return out
 
 
 def seed_model(route):
@@ -94,7 +112,8 @@ def seed_model(route):
         if not safe_connection_base(route.get('base_url', ''), route.get('wire', 'openai')):
             raise ValueError('paid seed requires safe endpoint')
         return Model(route['provider'], route['model'], safe_base(route.get('base_url', '')),
-                     route.get('wire', 'openai'), 'paid', OPERATOR_PAID, False, None)
+                     route.get('wire', 'openai'), 'paid', OPERATOR_PAID, False, None,
+                     *seed_prices(route))
     evidence = route.get('free_eligibility') or {}
     stamp = evidence.get('verified_at') if isinstance(evidence, dict) else None
     known = (isinstance(evidence, dict) and evidence.get('kind') in ('zero_price', 'recurring_allowance')
@@ -276,8 +295,9 @@ class Availability:
         if old and old['provenance'] == OPERATOR_PAID and m.provenance != OPERATOR_PAID:
             # Operator spend intent wins over later discovery pricing: keep
             # eligibility/provenance, refresh presence only.
-            db.execute('UPDATE av_models SET checked_at=?, present=1 WHERE id=?',
-                       (checked_at, m.id))
+            db.execute('UPDATE av_models SET checked_at=?, present=1, '
+                       'price_in=COALESCE(?,price_in), price_out=COALESCE(?,price_out) WHERE id=?',
+                       (checked_at, m.price_in, m.price_out, m.id))
             return
         if old and replace:
             if isinstance(old['checked_at'], (int, float)) and checked_at < old['checked_at']:
@@ -285,13 +305,18 @@ class Availability:
             if (old['eligibility'], old['requires_free_tier'], old['present']) != (m.eligibility, int(m.requires_free_tier), 1):
                 db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (m.id,))
         values = (m.id, m.provider, m.model, m.base_url, m.protocol, m.eligibility,
-                  m.provenance, checked_at, int(m.requires_free_tier))
+                  m.provenance, checked_at, int(m.requires_free_tier),
+                  m.price_in, m.price_out, m.shadow_in, m.shadow_out)
         suffix = ''' ON CONFLICT(id) DO UPDATE SET eligibility=excluded.eligibility,
             provenance=excluded.provenance, checked_at=excluded.checked_at,
-            requires_free_tier=excluded.requires_free_tier, present=1''' if replace else ' ON CONFLICT(id) DO NOTHING'
+            requires_free_tier=excluded.requires_free_tier, present=1,
+            price_in=COALESCE(excluded.price_in,price_in), price_out=COALESCE(excluded.price_out,price_out),
+            shadow_in=COALESCE(excluded.shadow_in,shadow_in),
+            shadow_out=COALESCE(excluded.shadow_out,shadow_out)''' if replace else ' ON CONFLICT(id) DO NOTHING'
         db.execute('''INSERT INTO av_models
-            (id,provider,model,base_url,protocol,eligibility,provenance,checked_at,requires_free_tier)
-            VALUES (?,?,?,?,?,?,?,?,?)''' + suffix, values)
+            (id,provider,model,base_url,protocol,eligibility,provenance,checked_at,requires_free_tier,
+             price_in,price_out,shadow_in,shadow_out)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''' + suffix, values)
 
     def _expand(self, db):
         for k in db.execute('SELECT id,provider FROM av_credentials').fetchall():

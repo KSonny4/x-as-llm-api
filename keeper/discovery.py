@@ -5,7 +5,9 @@ MDX tables (joined by exact display name, not a '-free' guess); Gemini's
 standard free-tier pricing tables + generateContent inventory. Account-tier
 proof is independently required before recurring-allowance inference.
 """
+import dataclasses
 from decimal import Decimal, InvalidOperation
+import math
 import html
 import re
 from urllib.parse import urlencode
@@ -31,6 +33,39 @@ def pricing_eligibility(pricing):
         return 'unknown'
 
 
+def price_pair(pricing):
+    """(prompt, completion) USD per token, or (None, None). Accounting only."""
+    try:
+        values = [float(Decimal(str(pricing[k]))) for k in ('prompt', 'completion')]
+    except (TypeError, KeyError, InvalidOperation, ValueError):
+        return None, None
+    if any(not math.isfinite(v) or v < 0 for v in values):
+        return None, None
+    return values[0], values[1]
+
+
+def with_prices(models, prices):
+    """Attach list prices; a ':free' id gets its paid sibling's price as shadow."""
+    out = []
+    for m in models:
+        price_in, price_out = prices.get(m.model, (None, None))
+        shadow_in, shadow_out = (prices.get(m.model.removesuffix(':free'), (None, None))
+                                 if m.model.endswith(':free') else (None, None))
+        out.append(dataclasses.replace(m, price_in=price_in, price_out=price_out,
+                                       shadow_in=shadow_in, shadow_out=shadow_out))
+    return out
+
+
+def zen_price(cell):
+    """'$0.30' per 1M tokens -> per-token float; 'Free' -> 0.0; else None."""
+    if cell == 'Free':
+        return 0.0
+    try:
+        return float(Decimal(cell.removeprefix('$'))) / 1e6 if cell.startswith('$') else None
+    except (InvalidOperation, ValueError):
+        return None
+
+
 def priced_text_eligibility(row):
     """Zero text-token prices do not cover audio/image generation charges.
 
@@ -50,7 +85,7 @@ def priced_text_eligibility(row):
 
 
 def parse_zen(text):
-    endpoints, prices = {}, {}
+    endpoints, prices, numbers = {}, {}, {}
     section = ''
     for line in text.splitlines():
         if line.startswith('## '):
@@ -65,6 +100,8 @@ def parse_zen(text):
                 prices[cols[0]] = 'free'
             elif any('$' in v for v in cols[1:3]):
                 prices[cols[0]] = 'paid'
+            if cols[0] in prices:
+                numbers[cols[0]] = (zen_price(cols[1]), zen_price(cols[2]))
     models = []
     for name, (model, endpoint) in endpoints.items():
         suffix = endpoint.removeprefix('https://opencode.ai/zen/v1')
@@ -72,8 +109,12 @@ def parse_zen(text):
                     '/messages': 'anthropic'}.get(suffix, 'unsupported')
         if suffix == '/models/' + model:
             protocol = 'gemini'
+        price_in, price_out = numbers.get(name, (None, None))
+        shadow_in, shadow_out = (numbers.get(name.removesuffix(' Free'), (None, None))
+                                 if name.endswith(' Free') else (None, None))
         models.append(Model('opencode-zen', model, 'https://opencode.ai/zen/v1', protocol,
-                            prices.get(name, 'unknown'), ZEN_DOC))
+                            prices.get(name, 'unknown'), ZEN_DOC, price_in=price_in,
+                            price_out=price_out, shadow_in=shadow_in, shadow_out=shadow_out))
     if not models or not prices:
         raise ValueError('unrecognized Zen pricing document')
     return models
@@ -157,9 +198,10 @@ class CatalogDiscovery:
         secret = route.get('api_key', '')
         if provider in PRICED_BASES:
             base = PRICED_BASES[provider]
-            return [Model(provider, r['id'], base, 'openai', priced_text_eligibility(r), base + '/models')
-                    for r in self._pages(base + '/models', {'Authorization': 'Bearer ' + secret})
+            rows = [r for r in self._pages(base + '/models', {'Authorization': 'Bearer ' + secret})
                     if isinstance(r, dict) and isinstance(r.get('id'), str) and r['id']]
+            return with_prices([Model(provider, r['id'], base, 'openai', priced_text_eligibility(r), base + '/models')
+                                for r in rows], {r['id']: price_pair(r.get('pricing')) for r in rows})
         if provider == 'opencode-zen':
             if provider not in public:
                 public[provider] = parse_zen(self._get(ZEN_DOC, text=True))
