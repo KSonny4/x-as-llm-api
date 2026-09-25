@@ -93,6 +93,13 @@ now caps concurrent CLI runs (`KEEPER_ZENCLI_CONCURRENCY`, job sets 3 with a
 (20s) for a slot, then fails over to non-CLI routes without penalizing keys and
 logs `event=zencli_busy`. Background verification never waits; it defers.
 
+Last resort: when every attempt fails only because the CLI slot was busy
+(`BridgeBusy`, not a down bridge), and at least 20s remain before the request
+deadline, Keeper makes exactly one more attempt on the highest-ranked zencli
+route, waiting up to `deadline - 60s` for the slot instead of returning 503.
+It logs `event=zencli_last_resort` with `action=served|busy|failed` (no
+prompt/answer text); a busy or failed last resort still returns 503.
+
 ## PromQL (`/metrics` additions)
 
 ```

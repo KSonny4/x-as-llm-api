@@ -34,6 +34,10 @@ FREE_ATTEMPTS = 3
 PAID_ATTEMPTS = 2
 # Loopback callers (Cognee) are not behind Cloudflare's ~100s cap.
 REQUEST_DEADLINE = float(os.environ.get('KEEPER_REQUEST_DEADLINE', '180'))
+# Last-resort CLI queue: only wait for the CLI slot instead of returning 503
+# when this much time remains before the deadline, keeping RESERVE for the run.
+LAST_RESORT_MIN_REMAINING = 20
+LAST_RESORT_RUN_RESERVE = 60
 UPSTREAM_TIMEOUT = 90
 # A structured-emulation repair turn is only worth it if a slow CLI answer
 # (bridge timeout 110s) still leaves the paid fallback room in the deadline.
@@ -256,6 +260,18 @@ def _emulation_log(ctx, config, stage, action):
         pass
 
 
+def _last_resort_log(ctx, config, action):
+    """Counts/ids only: never prompt, answer or validation text."""
+    model = config.get('model', '') if isinstance(config, dict) else ''
+    line = {'event': 'zencli_last_resort', 'stage': 'last_resort', 'action': action,
+            'model': model, 'req_id': ctx.get('req_id', ''),
+            'trace': ctx.get('trace_id', '')}
+    try:
+        (ctx.get('log') or sys.stderr.write)(json.dumps(line, sort_keys=True) + '\n')
+    except Exception:
+        pass
+
+
 def _retry_after(s):
     """Seconds until the soonest cooled-down connection is eligible (15-300)."""
     now = s.clock()
@@ -394,8 +410,116 @@ def _chat(state, body, allow_exact, ctx):
         return error(503, 'no_working_compatible_free_model', [('Retry-After', _retry_after(s))])
     deadline = s.clock() + REQUEST_DEADLINE
     used = {'free': 0, 'paid': 0}
-    excluded, bridge_down, failures = set(), False, 0
+    excluded, bridge_down, zencli_busy, failures = set(), False, False, 0
     rejected_free, rejected = set(), set()
+
+    def _eligible(model):
+        return any(c['model_id'] == model['id'] and c['id'] not in excluded
+                   and c['state'] == 'working' and not c['excluded']
+                   and (not c['blocked_reason'] or (
+                       c['blocked_reason'] == 'paid' and spendable(c)))
+                   and c['retry_at'] <= s.clock()
+                   for c in s.connections())
+
+    def _attempt(model, tier, zencli_wait=None):
+        """One ranked-model attempt, shared by the main pass and the last resort.
+
+        Returns ('return', response) for a terminal 200/400 response,
+        ('busy', None) when the CLI slot was busy, ('break', None) to move to
+        the next ranked model, or ('next', None) to retry the same model.
+        """
+        nonlocal bridge_down, zencli_busy, failures
+        used[tier] += 1
+        ctx['attempts'], ctx['model'] = used['free'] + used['paid'], model
+        config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
+        if 'error' in config:
+            if config['error'] == 'verification_pending':
+                return 'break', None
+            # A failed revalidation superseded that key's old success.
+            # Re-read remaining working keys for this same ranked model.
+            return 'next', None
+        excluded.add(config['connection_id'])
+        ctx['config'] = config
+        try:
+            payload = wire.prepare(config, req)
+        except (TypeError, KeyError, ValueError):
+            return 'return', error(400, 'unsupported_request_features')
+        ticket = s.begin_check(config['connection_id'], kind='serve')
+        if ticket is None:
+            return 'next', None
+        served = _served_headers(config, model)
+        try:
+            if req.get('stream'):
+                def open_stream(body):
+                    events = state.get('stream_transport', stream_request)(config, body)
+                    chunks = _validated_chunks(events, config)
+                    try:
+                        first = next(chunks)
+                        _safe_doc(first, config)
+                    except BaseException:
+                        chunks.close()
+                        raise
+                    return first, chunks
+                first, chunks = _token_field_fallback(config, payload, open_stream)
+                ctx['streaming'] = True
+                return 'return', (200, _stream_body(first, chunks, state, config, ticket, ctx), [
+                    ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
+                    ('X-Accel-Buffering', 'no')] + served)
+            timeout = max(5, min(UPSTREAM_TIMEOUT, deadline - s.clock()))
+
+            def send(body):
+                if config['protocol'] == 'zencli':
+                    if zencli_wait is None:
+                        res = state['zencli'].infer(config, body)
+                    else:
+                        res = state['zencli'].infer(config, body, wait=zencli_wait)
+                else:
+                    res = _inference_request(state, model, config['endpoint'], config['headers'], body, timeout)
+                if res.status != 200: raise classify(res.status, res.headers, s.clock())
+                return res
+            if config['protocol'] == 'zencli':
+                doc = _zencli_answer(s, ctx, config, req, payload, send, deadline)
+            else:
+                res = _token_field_fallback(config, payload, send)
+                doc = wire.normalize(res.json(), config)
+            if not _usable(doc): raise UpstreamFailure('invalid_response')
+            raw = _safe_doc(doc, config)
+            s.finish_check(ticket, Result('working'))
+            ctx['doc'] = doc
+            return 'return', (200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')] + served)
+        except UpstreamRequestError:
+            # Not credential evidence. Another model may accept it.
+            s.discard_request_check(ticket)
+            rejected.add(model['id'])
+            if tier == 'free':
+                rejected_free.add(model['id'])
+            return 'break', None
+        except structured.Unsatisfied:
+            # This model cannot produce the requested structure: neither
+            # credential evidence nor a malformed client request. Next
+            # model; the paid fallback stays available.
+            s.discard_request_check(ticket)
+            return 'break', None
+        except BridgeUnavailable as exc:
+            # The shared CLI sidecar is down or every slot is busy: not
+            # evidence about this key or model, and every other zencli
+            # candidate would wait on the same sidecar.
+            s.discard_request_check(ticket)
+            bridge_down = True
+            # Nothing was tried: overflow keeps its full free budget for
+            # the non-CLI free routes before the paid fallback.
+            used[tier] -= 1
+            ctx['attempts'] = used['free'] + used['paid']
+            if isinstance(exc, BridgeBusy):
+                zencli_busy = True
+                _emulation_log(ctx, config, 'queue', 'busy')
+                return 'busy', None
+            return 'break', None
+        except Exception as exc:
+            failures += 1
+            _failed(state, config, ticket, exc)
+            return 'next', None
+
     for model in candidates:
         tier = 'paid' if model.get('eligibility') == 'paid' else 'free'
         if bridge_down and model['protocol'] == 'zencli':
@@ -406,94 +530,28 @@ def _chat(state, body, allow_exact, ctx):
             continue
         limit = PAID_ATTEMPTS if tier == 'paid' else FREE_ATTEMPTS
         while used[tier] < limit and s.clock() < deadline:
-            if not any(c['model_id'] == model['id'] and c['id'] not in excluded
-                       and c['state'] == 'working' and not c['excluded']
-                       and (not c['blocked_reason'] or (
-                           c['blocked_reason'] == 'paid' and spendable(c)))
-                       and c['retry_at'] <= s.clock()
-                       for c in s.connections()):
+            if not _eligible(model):
                 break
-            used[tier] += 1
-            ctx['attempts'], ctx['model'] = used['free'] + used['paid'], model
-            config = state['selector'].select(model['id'], exclude=excluded, max_attempts=1, export=False)
-            if 'error' in config:
-                if config['error'] == 'verification_pending':
-                    break
-                # A failed revalidation superseded that key's old success.
-                # Re-read remaining working keys for this same ranked model.
-                continue
-            excluded.add(config['connection_id'])
-            ctx['config'] = config
-            try:
-                payload = wire.prepare(config, req)
-            except (TypeError, KeyError, ValueError):
-                return error(400, 'unsupported_request_features')
-            ticket = s.begin_check(config['connection_id'], kind='serve')
-            if ticket is None: continue
-            served = _served_headers(config, model)
-            try:
-                if req.get('stream'):
-                    def open_stream(body):
-                        events = state.get('stream_transport', stream_request)(config, body)
-                        chunks = _validated_chunks(events, config)
-                        try:
-                            first = next(chunks)
-                            _safe_doc(first, config)
-                        except BaseException:
-                            chunks.close()
-                            raise
-                        return first, chunks
-                    first, chunks = _token_field_fallback(config, payload, open_stream)
-                    ctx['streaming'] = True
-                    return 200, _stream_body(first, chunks, state, config, ticket, ctx), [
-                        ('Content-Type', 'text/event-stream'), ('Cache-Control', 'no-store, private'),
-                        ('X-Accel-Buffering', 'no')] + served
-                timeout = max(5, min(UPSTREAM_TIMEOUT, deadline - s.clock()))
-
-                def send(body):
-                    res = (state['zencli'].infer(config, body) if config['protocol'] == 'zencli' else
-                           _inference_request(state, model, config['endpoint'], config['headers'], body, timeout))
-                    if res.status != 200: raise classify(res.status, res.headers, s.clock())
-                    return res
-                if config['protocol'] == 'zencli':
-                    doc = _zencli_answer(s, ctx, config, req, payload, send, deadline)
-                else:
-                    res = _token_field_fallback(config, payload, send)
-                    doc = wire.normalize(res.json(), config)
-                if not _usable(doc): raise UpstreamFailure('invalid_response')
-                raw = _safe_doc(doc, config)
-                s.finish_check(ticket, Result('working'))
-                ctx['doc'] = doc
-                return 200, raw, [('Content-Type', 'application/json'), ('Cache-Control', 'no-store, private')] + served
-            except UpstreamRequestError:
-                # Not credential evidence. Another model may accept it.
-                s.discard_request_check(ticket)
-                rejected.add(model['id'])
-                if tier == 'free':
-                    rejected_free.add(model['id'])
+            kind, response = _attempt(model, tier)
+            if kind == 'return':
+                return response
+            if kind in ('break', 'busy'):
                 break
-            except structured.Unsatisfied:
-                # This model cannot produce the requested structure: neither
-                # credential evidence nor a malformed client request. Next
-                # model; the paid fallback stays available.
-                s.discard_request_check(ticket)
-                break
-            except BridgeUnavailable as exc:
-                # The shared CLI sidecar is down or every slot is busy: not
-                # evidence about this key or model, and every other zencli
-                # candidate would wait on the same sidecar.
-                s.discard_request_check(ticket)
-                bridge_down = True
-                # Nothing was tried: overflow keeps its full free budget for
-                # the non-CLI free routes before the paid fallback.
-                used[tier] -= 1
-                ctx['attempts'] = used['free'] + used['paid']
-                if isinstance(exc, BridgeBusy):
-                    _emulation_log(ctx, config, 'queue', 'busy')
-                break
-            except Exception as exc:
-                failures += 1
-                _failed(state, config, ticket, exc)
     if rejected and not failures:
         return error(400, 'upstream_rejected_request')
+    if zencli_busy and deadline - s.clock() >= LAST_RESORT_MIN_REMAINING:
+        target = next((m for m in candidates if m['protocol'] == 'zencli' and _eligible(m)), None)
+        if target is not None:
+            tier = 'paid' if target.get('eligibility') == 'paid' else 'free'
+            wait = max(0, deadline - s.clock() - LAST_RESORT_RUN_RESERVE)
+            kind, response = _attempt(target, tier, zencli_wait=wait)
+            log_config = ctx.get('config') or {'model': target.get('model', '')}
+            if kind == 'return':
+                _last_resort_log(ctx, log_config, 'served' if response[0] == 200 else 'failed')
+                return response
+            if kind == 'busy':
+                _last_resort_log(ctx, log_config, 'busy')
+            else:
+                _last_resort_log(ctx, log_config, 'failed')
+            return error(503, 'no_working_compatible_free_model', [('Retry-After', _retry_after(s))])
     return error(503, 'no_working_compatible_free_model', [('Retry-After', _retry_after(s))])

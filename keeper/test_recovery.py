@@ -204,7 +204,10 @@ def test_slot_released_when_cli_transport_fails(tmp_path):
         assert bridge.verify(cli, 'synthetic-secret').state == 'transient_error'
 
 
-def test_busy_cli_fails_over_without_penalizing_keys(tmp_path):
+def test_busy_cli_fails_over_without_penalizing_keys(tmp_path, monkeypatch):
+    # Failover path only: the last resort is covered by the dedicated tests
+    # below, so disable it here to keep this pin fast and deterministic.
+    monkeypatch.setattr('service_api.LAST_RESORT_MIN_REMAINING', 10 ** 9)
     s, clock, bridge, select, calls = bridge_fixture(tmp_path)
     for c in s.connections():
         if c['protocol'] == 'zencli':
@@ -227,3 +230,84 @@ def test_busy_cli_fails_over_without_penalizing_keys(tmp_path):
     assert any('"event": "zencli_busy"' in line for line in logs)
     # A busy slot is not an attempt: the free budget stays whole for overflow.
     assert [r['attempts'] for r in s.store.rows('SELECT attempts FROM av_usage')] == [0]
+
+
+def test_last_resort_serves_when_slot_frees(tmp_path, monkeypatch):
+    import threading
+    import time
+    import service_api
+    # Main attempt fails fast (queue_wait=0); the last resort waits for the slot.
+    monkeypatch.setattr('service_api.REQUEST_DEADLINE', 10)
+    monkeypatch.setattr('service_api.LAST_RESORT_MIN_REMAINING', 1)
+    monkeypatch.setattr('service_api.LAST_RESORT_RUN_RESERVE', 1)
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    for c in s.connections():
+        if c['protocol'] == 'zencli':
+            succeed(s, c)
+    bridge._slots, bridge.queue_wait = threading.BoundedSemaphore(1), 0
+    logs, ctx = [], {}
+    state = {'availability': s, 'selector': select, 'zencli': bridge, 'aa_scores': {}}
+    release, worker = _hold_slot(bridge)
+    timer = threading.Timer(0.3, release.set)
+    timer.start()
+    try:
+        ctx['log'] = logs.append
+        code, raw, _ = service_api.chat(state, json.dumps({'model': 'keeper-coder', 'messages': [{'role': 'user', 'content': 'x'}]}).encode(),
+                                        ctx=ctx)
+    finally:
+        timer.cancel()
+        release.set(); worker.join(5)
+    assert code == 200
+    assert [r['attempts'] for r in s.store.rows('SELECT attempts FROM av_usage')] == [1]
+    assert any('"event": "zencli_last_resort"' in line and '"action": "served"' in line for line in logs)
+    assert 'Hello' in json.loads(raw)['choices'][0]['message']['content']
+
+
+def test_last_resort_skipped_on_tiny_deadline(tmp_path, monkeypatch):
+    import threading
+    import time
+    import service_api
+    monkeypatch.setattr('service_api.REQUEST_DEADLINE', 0.5)
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    for c in s.connections():
+        if c['protocol'] == 'zencli':
+            succeed(s, c)
+    bridge._slots, bridge.queue_wait = threading.BoundedSemaphore(1), 0
+    logs, ctx = [], {}
+    state = {'availability': s, 'selector': select, 'zencli': bridge, 'aa_scores': {}}
+    release, worker = _hold_slot(bridge)
+    try:
+        ctx['log'] = logs.append
+        start = time.monotonic()
+        code, raw, _ = service_api.chat(state, json.dumps({'model': 'keeper-coder', 'messages': [{'role': 'user', 'content': 'x'}]}).encode(),
+                                        ctx=ctx)
+        elapsed = time.monotonic() - start
+    finally:
+        release.set(); worker.join(5)
+    assert code == 503
+    assert elapsed < 2, 'no last-resort wait on a tiny deadline'
+    assert not any('zencli_last_resort' in line for line in logs)
+    cli = [c for c in s.connections() if c['protocol'] == 'zencli']
+    assert all(c['state'] == 'working' and not c['excluded'] and c['fail_streak'] == 0 for c in cli)
+
+
+def test_bridge_down_never_triggers_last_resort(tmp_path, monkeypatch):
+    import service_api
+    monkeypatch.setattr('service_api.REQUEST_DEADLINE', 10)
+    monkeypatch.setattr('service_api.LAST_RESORT_MIN_REMAINING', 1)
+    monkeypatch.setattr('service_api.LAST_RESORT_RUN_RESERVE', 1)
+    s, clock, bridge, select, calls = bridge_fixture(tmp_path)
+    for c in s.connections():
+        if c['protocol'] == 'zencli':
+            succeed(s, c)
+    logs, ctx = [], {}
+    state = {'availability': s, 'selector': select, 'zencli': bridge, 'aa_scores': {}}
+
+    def down(method, url, headers, payload):
+        raise ConnectionRefusedError()
+    bridge.transport = down
+    ctx['log'] = logs.append
+    code, raw, _ = service_api.chat(state, json.dumps({'model': 'keeper-coder', 'messages': [{'role': 'user', 'content': 'x'}]}).encode(),
+                                    ctx=ctx)
+    assert code == 503
+    assert not any('zencli_last_resort' in line for line in logs)
