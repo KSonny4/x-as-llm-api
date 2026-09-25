@@ -8,3 +8,6 @@ feedback.jsonl
 # built binaries
 zencli/zencli
 zencli/zencli-linux
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
