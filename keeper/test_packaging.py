@@ -12,13 +12,24 @@ from test_api_v2 import state_for
 def test_docker_copies_all_runtime_assets_and_durable_nomad_bind():
     root=Path(__file__).resolve().parent
     docker=(root/'Dockerfile').read_text()
-    for name in ['runtime.py','availability.py','store.py','selection.py','service_api.py','service_wire.py','dashboard.html','dashboard.js','dashboard.css','legacy_view.py']:
+    for name in ['runtime.py','aa.py','aa_match.py','availability.py','store.py','selection.py','service_api.py','service_wire.py','dashboard.html','dashboard.js','dashboard.css','legacy_view.py']:
         assert name in docker
     nomad=(root.parent/'keeper.nomad.hcl').read_text()
     assert 'AVAILABILITY_DB' in nomad and '/var/lib/keeper/availability.db' in nomad
     assert 'KEEPER_SERVICE_TOKEN' in nomad and 'PUBLIC_ORIGIN' in nomad
     assert 'volumes' in nomad and 'var.keeper_data_path' in nomad
     assert re.search(r'PROBE_DB\s*=\s*"/var/lib/keeper/probe.db"', nomad)
+
+
+def test_docker_copies_every_keeper_module_the_server_imports():
+    import sys
+    import runtime, service_api  # noqa: F401  (import graph of the served app)
+    root=Path(__file__).resolve().parent
+    copied=set(re.findall(r'[\w.-]+\.py', (root/'Dockerfile').read_text()))
+    local={Path(m.__file__).name for m in list(sys.modules.values())
+           if getattr(m,'__file__',None) and Path(m.__file__).resolve().parent==root
+           and not Path(m.__file__).name.startswith(('test_','conftest'))}
+    assert 'zencli_structured.py' in local and local <= copied, sorted(local-copied)
 
 
 def test_sidecar_nomad_uses_supported_tmpfs_mount():

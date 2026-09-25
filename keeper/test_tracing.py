@@ -37,6 +37,13 @@ def test_unconfigured_is_noop(monkeypatch):
         "", "/v1/chat/completions", 200, 5, "service", "") is False
 
 
+def test_explicit_endpoint_needs_no_credentials(monkeypatch):
+    monkeypatch.delenv("TEMPO_OTLP_USER", raising=False)
+    monkeypatch.delenv("TEMPO_OTLP_TOKEN", raising=False)
+    monkeypatch.setenv("TEMPO_OTLP_ENDPOINT", "http://127.0.0.1:9/none")
+    assert tracing.tempo_config()[0] == "http://127.0.0.1:9/none"
+
+
 def test_health_and_metrics_routes_skipped(monkeypatch):
     monkeypatch.setenv("TEMPO_OTLP_USER", "u")
     monkeypatch.setenv("TEMPO_OTLP_TOKEN", "t")

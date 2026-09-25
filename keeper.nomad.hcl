@@ -157,6 +157,15 @@ job "keeper" {
         KEEPER_SERVICE_TOKEN       = var.keeper_service_token
         KEEPER_ZENCLI_TOKEN        = var.keeper_zencli_token
         KEEPER_ZENCLI_SOCKET       = "/alloc/data/keeper-zencli/http.sock"
+        # One CLI run at a time: each `opencode run` peaks ~0.65 GB whatever
+        # the OpenCode/Bun switches (measured 2026-09-25; 2 runs in 1 GiB were
+        # OOM-killed) and Zen's free tier refuses `opencode serve`. Overflow
+        # waits 5s, then goes to the non-CLI free routes (OpenRouter).
+        KEEPER_ZENCLI_CONCURRENCY  = "1"
+        KEEPER_ZENCLI_QUEUE_WAIT   = "5"
+        # Spans go to keeper-alloy's loopback OTLP receiver (no credentials
+        # here). Dropped by the 2026-09-23 paid-fallback redeploys: keep it.
+        TEMPO_OTLP_ENDPOINT        = "http://127.0.0.1:14318/v1/traces"
       }
 
       template {
@@ -167,7 +176,11 @@ job "keeper" {
 
       resources {
         cpu    = 200
-        memory = 128
+        # 512: OOM-killed again at 256 (~70min uptime, exit 137, restarts
+        # exhausted, public 502). Same signature as the 128->256 event:
+        # traffic-correlated growth, not a slow leak. Node has 23GB;
+        # revisit down only with headroom evidence, never on guesses.
+        memory = 512
       }
 
       service {
@@ -212,6 +225,7 @@ job "keeper" {
         KEEPER_ZENCLI_TOKEN  = var.keeper_zencli_token
         KEEPER_ZENCLI_SOCKET = "/alloc/data/keeper-zencli/http.sock"
       }
+      # Sized for KEEPER_ZENCLI_CONCURRENCY=1 (one run peaks ~0.65 GB).
       resources {
         cpu    = 500
         memory = 1024

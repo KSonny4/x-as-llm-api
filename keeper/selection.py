@@ -4,7 +4,7 @@ Verification uses the durable paced queue, including on-demand requests. No
 network call holds the SQLite lock. Final eligibility and selection history
 are committed together, fencing feedback received during verification.
 """
-from availability import Result, evidence_age
+from availability import Result, evidence_age, spendable
 from inference import connection_config, request, verify
 
 
@@ -22,7 +22,9 @@ class Selector:
         if export and s.store.rows("SELECT 1 FROM av_models WHERE id=? AND protocol='zencli'", (model_id,)):
             return {'error':'not_exportable', 'model_id':model_id}
         rows = [c for c in s.connections() if c['model_id'] == model_id
-                and c['id'] not in exclude and not c['excluded'] and not c['blocked_reason']
+                and c['id'] not in exclude and not c['excluded']
+                and (not c['blocked_reason'] or (
+                    c['blocked_reason'] == 'paid' and spendable(c)))
                 and c['retry_at'] <= s.clock()]
         rows.sort(key=lambda c: (c['state'] != 'working', -(c['checked_at'] or 0), c['id']))
         pending = False
@@ -44,7 +46,9 @@ class Selector:
             # RLock allows a local snapshot inside the transaction, never network.
             with s.store.transaction() as db:
                 current = next(row for row in s.connections() if row['id'] == c['id'])
-                if (current['state'] != 'working' or current['blocked_reason'] or current['excluded']
+                if (current['state'] != 'working' or (current['blocked_reason'] and not (
+                        current['blocked_reason'] == 'paid' and spendable(current)))
+                        or current['excluded']
                         or current['retry_at'] > s.clock()
                         or not 0 <= evidence_age(current['checked_at'], s.clock()) <= 300):
                     continue

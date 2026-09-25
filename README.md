@@ -21,10 +21,16 @@ genuine-CLI route. The original zencli control still passes alongside it and
 
 - **Target base URL:** `https://keeper.pkubelka.cz/v1`
 - **Model:** `keeper-coder`
-- **Authentication:** separate, non-expiring `KEEPER_SERVICE_TOKEN`
+- **Authentication:** a non-expiring per-consumer service token
+  (`keeper-consumers/<name>` in Bao; see below). The shared
+  `KEEPER_SERVICE_TOKEN` still works and is attributed as `consumer=legacy`.
 - **Scope:** inference only; no dashboard, admin access or provider-key export.
 - **Quotas:** no Keeper usage quotas or per-token rate/concurrency caps. Actual
-  upstream free-tier limits/cooldowns still apply; no paid fallback.
+  upstream free-tier limits/cooldowns still apply. Free routes are tried first;
+  the operator-escrowed paid fallback (OpenAI `gpt-6-luna`) is used only after
+  free attempts fail (up to 3 free, then up to 2 paid attempts per request).
+- **Attribution:** every request is recorded per consumer, route, key, tokens
+  and cost (actual + shadow). Grafana: `/d/keeper-usage`.
 
 `keeper-coder` selects the highest Coding Index verified working **compatible**
 free backend across providers. Unmatched models remain honestly unscored. It
@@ -34,7 +40,9 @@ Exact private credential requests never substitute models.
 ## Secure token retrieval
 
 For the authorized operator, provision the other service's secret store from
-Bao `secret/projects/pi-infinity-llm/KEEPER_SERVICE_TOKEN`, field `token`.
+Bao `secret/projects/pi-infinity-llm/keeper-consumers/<consumer>`, field `token`
+(one per calling service, e.g. `cognee`, `cognee-probe`; add a new consumer by
+minting a token there and adding it to Keeper's `KEEPER_SERVICE_TOKENS` JSON).
 Do not print, commit or put the token in browser storage. For a local process:
 
 ```sh

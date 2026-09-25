@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -140,11 +141,26 @@ func (w *boundedOutput) Write(p []byte) (int, error) {
 	}
 	return w.Buffer.Write(p)
 }
+
+// Typed parse failures so operators can distinguish a dead CLI from a
+// rejected transcript shape without ever seeing bodies, prompts or keys.
+var (
+	errFailedGeneration = errors.New("failed generation")
+	errUnsafeTool       = errors.New("unsafe tool execution")
+	errIncomplete       = errors.New("incomplete generation")
+	errUnknownEvent     = errors.New("unknown event")
+	errInvalidEvent     = errors.New("invalid event")
+	errNoOutput         = errors.New("no usable output")
+	errToolCallsNoFinal = errors.New("tool calls without final text")
+	errEchoSuspect      = errors.New("response may echo credential")
+)
+
 func parseText(raw []byte, key string) (string, string, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(raw))
 	scanner.Buffer(make([]byte, 4096), 1<<20)
 	var text strings.Builder
 	finish := ""
+	sawTool := false
 	for scanner.Scan() {
 		var event struct {
 			Type string `json:"type"`
@@ -165,20 +181,21 @@ func parseText(raw []byte, key string) (string, string, error) {
 			} `json:"part"`
 		}
 		if json.Unmarshal(scanner.Bytes(), &event) != nil {
-			return "", "", errors.New("invalid event")
+			return "", "", errInvalidEvent
 		}
 		switch event.Type {
 		case "error":
-			return "", "", errors.New("failed generation")
+			return "", "", errFailedGeneration
 		case "tool_use":
 			clock := event.Part.Tool == "bash" && event.Part.State.Status == "completed" &&
 				event.Part.State.Input.Command == "date" && event.Part.State.Metadata.Exit != nil && *event.Part.State.Metadata.Exit == 0
 			denied := event.Part.State.Status == "error" && event.Part.State.Error == "The user rejected permission to use this specific tool call."
 			if !clock && !denied {
-				return "", "", errors.New("unsafe tool execution")
+				return "", "", errUnsafeTool
 			}
 			// Neither tool output nor text preceding the tool is a final answer.
 			// Require actual subsequent generated text and a terminal step.
+			sawTool = true
 			text.Reset()
 			finish = ""
 		case "text":
@@ -189,24 +206,64 @@ func parseText(raw []byte, key string) (string, string, error) {
 				continue
 			}
 			if event.Part.Reason != "stop" && event.Part.Reason != "length" {
-				return "", "", errors.New("incomplete generation")
+				return "", "", errIncomplete
 			}
 			finish = event.Part.Reason
 		case "step_start", "reasoning": // only generated text is returned
 		default:
-			return "", "", errors.New("unknown event")
+			return "", "", errUnknownEvent
 		}
 	}
+	if scanner.Err() != nil {
+		return "", "", errInvalidEvent
+	}
 	result := strings.TrimSpace(text.String())
-	if scanner.Err() != nil || result == "" || finish == "" || strings.Contains(result, key) {
-		return "", "", errors.New("no usable output")
+	if strings.Contains(result, key) {
+		return "", "", errEchoSuspect
+	}
+	if result == "" || finish == "" {
+		if sawTool {
+			return "", "", errToolCallsNoFinal
+		}
+		return "", "", errNoOutput
 	}
 	return result, finish, nil
 }
 
+// failureClass maps a failed CLI run to a stable redacted code. The code
+// carries no bodies, prompts, keys or outputs - only the failure shape.
+func failureClass(runErr error, timedOut bool, parseErr error) string {
+	if runErr != nil {
+		if timedOut {
+			return "cli_timeout"
+		}
+		return "cli_exit_error"
+	}
+	switch parseErr {
+	case errFailedGeneration:
+		return "provider_error_event"
+	case errUnsafeTool:
+		return "rejected_tool_shape"
+	case errIncomplete:
+		return "incomplete_generation"
+	case errUnknownEvent:
+		return "unknown_event"
+	case errInvalidEvent:
+		return "invalid_event_framing"
+	case errToolCallsNoFinal:
+		return "tool_calls_no_final_text"
+	case errEchoSuspect:
+		return "echo_suspect_output"
+	default:
+		return "empty_output"
+	}
+}
+
 // Preserve structured provider denial/rate-limit semantics, never its message,
 // headers or body (which may contain credentials). Unknown failures stay 502.
-func cliFailure(w http.ResponseWriter, raw []byte, key string) {
+// Every failure also emits one redacted log line (model, class, exit,
+// duration) and a machine-readable error code - never bodies or secrets.
+func cliFailure(w http.ResponseWriter, raw []byte, key, class, model string, exit int, elapsed time.Duration) {
 	status := http.StatusBadGateway
 	scanner := bufio.NewScanner(bytes.NewReader(raw))
 	scanner.Buffer(make([]byte, 4096), 1<<20)
@@ -240,7 +297,11 @@ func cliFailure(w http.ResponseWriter, raw []byte, key string) {
 		}
 		break
 	}
-	http.Error(w, "CLI generation failed", status)
+	fmt.Fprintf(os.Stderr, "bridge chat model=%s class=%s exit=%d duration_ms=%d\n",
+		model, class, exit, elapsed.Milliseconds())
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	fmt.Fprintf(w, `{"error":{"message":"CLI generation failed","type":"keeper_error","code":%q}}`, class)
 }
 
 func (b *Bridge) chat(w http.ResponseWriter, r *http.Request) {
@@ -303,13 +364,19 @@ func (b *Bridge) chat(w http.ResponseWriter, r *http.Request) {
 	cmd.WaitDelay = time.Second
 	var out boundedOutput
 	cmd.Stdout = &out
+	start := time.Now()
 	if err := cmd.Run(); err != nil {
-		cliFailure(w, out.Bytes(), key)
+		exit := -1
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exit = exitErr.ExitCode()
+		}
+		timedOut := ctx.Err() == context.DeadlineExceeded
+		cliFailure(w, out.Bytes(), key, failureClass(err, timedOut, nil), req.Model, exit, time.Since(start))
 		return
 	}
-	text, finish, err := parseText(out.Bytes(), key)
-	if err != nil {
-		cliFailure(w, out.Bytes(), key)
+	text, finish, parseErr := parseText(out.Bytes(), key)
+	if parseErr != nil {
+		cliFailure(w, out.Bytes(), key, failureClass(nil, false, parseErr), req.Model, 0, time.Since(start))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

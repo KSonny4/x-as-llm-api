@@ -92,7 +92,9 @@ def test_upstream_request_error_is_not_credential_failure(tmp_path, streaming, s
     state['inference_transport'] = http
     state['stream_transport'] = stream
     code, raw, _ = service_call(state, '/v1/chat/completions', {**BASE, 'stream': streaming})
-    assert code == 400 and len(calls) == 1
+    # Each model is tried once (a rejection moves to the next model, never
+    # another key of the same model); all rejected -> honest 400.
+    assert code == 400 and len(calls) == 2
     assert b'private diagnostic' not in raw
     assert {c['id']: (c['state'], c['checked_at'], c['excluded']) for c in state['availability'].connections()} == before
     assert not state['availability'].store.rows('SELECT * FROM av_feedback')

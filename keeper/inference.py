@@ -34,12 +34,12 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def request(method, url, headers, payload=None):
+def request(method, url, headers, payload=None, timeout=25):
     data = None if payload is None else json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     opener = urllib.request.build_opener(NoRedirect())
     try:
-        res = opener.open(req, timeout=25)
+        res = opener.open(req, timeout=timeout)
     except urllib.error.HTTPError as exc:
         res = exc
     with res:
@@ -106,6 +106,15 @@ def verify(c, secret, transport=request, clock=time.time):
         res = transport('POST', config['endpoint'], config['headers'], payload)
     except Exception:
         return Result('transient_error')
+    if res.status == 400 and protocol == 'openai':
+        # Newer models (o-series, gpt-6) reject legacy max_tokens; retry
+        # once with max_completion_tokens before classifying the failure.
+        try:
+            probe = {k: v for k, v in payload.items() if k != 'max_tokens'}
+            probe['max_completion_tokens'] = 64
+            res = transport('POST', config['endpoint'], config['headers'], probe)
+        except Exception:
+            return Result('transient_error')
     try:
         doc = res.json()
     except (ValueError, UnicodeError):

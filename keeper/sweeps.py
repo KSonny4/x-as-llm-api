@@ -4,9 +4,9 @@ Multiple process claims serialize in SQLite. Lease expiry fences abandoned
 checks, provider/key pacing persists, and manual checks cannot clear cooldowns.
 run() belongs on one background thread, never in the HTTP request handler.
 """
-from availability import (CONNECTION_SQL, DAILY_CHECK_BUDGET, Result,
-                           blocked_reason, checks_started_since, identity,
-                           utc_day_start)
+from availability import (CONNECTION_SQL, DAILY_CHECK_BUDGET, NoEvidence, Result,
+                           blocked_reason, checkable, checks_started_since, identity,
+                           spendable, utc_day_start)
 from inference import verify
 
 # Operator-forced discovery refreshes are rate-limited durably: discovery
@@ -59,9 +59,11 @@ class Sweeps:
                     continue
                 if model_id and c['model_id'] != model_id:
                     continue
-                if blocked_reason(c, now):
+                if blocked_reason(c, now) and not checkable(c, now):
                     continue
                 jid = self.service._enqueue(db, c['id'])
+                if kind == 'manual' and (credential_id or model_id):
+                    db.execute('UPDATE av_jobs SET bypass=1 WHERE id=?', (jid,))
                 db.execute('INSERT INTO av_sweep_jobs VALUES (?,?)', (sid, jid))
             return sid
 
@@ -89,15 +91,27 @@ class Sweeps:
         day = utc_day_start(now)
         with self.store.transaction() as db:
             self._recover(db)
-            jobs = db.execute("SELECT j.* FROM av_jobs j JOIN av_connections c ON c.id=j.connection_id WHERE j.state='queued' AND j.due_at<=? ORDER BY CASE WHEN j.attempts>0 THEN 0 ELSE 1 END, CASE WHEN c.checked_at IS NULL THEN 0 ELSE 1 END, c.checked_at, j.id", (now,)).fetchall()
+            # Suspects and operator-scoped checks first (they are why someone is
+            # waiting), then bounded retries, then never-checked, then oldest.
+            jobs = db.execute("""SELECT j.* FROM av_jobs j JOIN av_connections c ON c.id=j.connection_id
+                WHERE j.state='queued' AND j.due_at<=?
+                ORDER BY CASE WHEN c.excluded=1 OR j.bypass=1 THEN 0 WHEN j.attempts>0 THEN 1 ELSE 2 END,
+                CASE WHEN c.checked_at IS NULL THEN 0 ELSE 1 END, c.checked_at, j.id""", (now,)).fetchall()
             for job in jobs:
                 if connection_id and job['connection_id'] != connection_id:
                     continue
                 c = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (job['connection_id'],)).fetchone()
-                if connection_id is None and checks_started_since(db, c['credential_id'], day) >= self.daily_budget:
-                    continue
-                if blocked_reason(c, now):
+                if not checkable(c, now):
                     db.execute("UPDATE av_jobs SET state='blocked' WHERE id=?", (job['id'],))
+                    continue
+                # This budget protects scarce FREE-tier verification quota for
+                # routine sweeps. It must not strand recovery: the escrowed paid
+                # fallback, excluded (suspect) rows and operator-scoped checks
+                # bypass it, still bounded by cooldowns, pacing, leases and
+                # max_attempts below.
+                if (connection_id is None and not spendable(c) and not c['excluded']
+                        and not job['bypass']
+                        and checks_started_since(db, c['credential_id'], day) >= self.daily_budget):
                     continue
                 if max(c['cooldown'], c['retry_at']) > now:
                     continue
@@ -162,10 +176,25 @@ class Sweeps:
             if transport is not None:
                 kwargs['transport'] = transport
             result = self.verifier(job, secret, **kwargs)
+        except NoEvidence:
+            self.defer(job)
+            return True
         except Exception:
             result = Result('transient_error')
         self.complete(job, result)
         return True
+
+    def defer(self, job, delay=60):
+        """Requeue without applying or counting: the check never tested the key."""
+        with self.store.transaction() as db:
+            current = db.execute('SELECT * FROM av_jobs WHERE id=?', (job['job_id'],)).fetchone()
+            if not current or current['state'] != 'running' or current['check_id'] != job['check_id']:
+                return False
+            db.execute("""UPDATE av_checks SET finished_at=?,state='deferred',applied=0,kind='deferred'
+                WHERE id=? AND finished_at IS NULL""", (self.clock(), job['check_id']))
+            db.execute("""UPDATE av_jobs SET state='queued',due_at=?,lease_until=NULL,check_id=NULL,
+                attempts=MAX(attempts-1,0) WHERE id=?""", (self.clock() + delay, job['job_id']))
+            return True
 
     def refresh_due(self):
         """(daily_due, forced_due): fulfillment inserts a daily row after the
@@ -173,7 +202,8 @@ class Sweeps:
         without extra state."""
         latest = self.store.rows("SELECT MAX(created_at) AS at, MAX(id) AS id FROM av_sweeps WHERE kind='daily'")
         forced = self.store.rows("SELECT MAX(id) AS id FROM av_sweeps WHERE kind='forced'")
-        daily_due = latest[0]['at'] is None or self.clock() - latest[0]['at'] >= 86400
+        # Aligned to the UTC day, like the verification budget it spends.
+        daily_due = latest[0]['at'] is None or latest[0]['at'] < utc_day_start(self.clock())
         forced_due = (forced[0]['id'] is not None
                       and (latest[0]['id'] is None or forced[0]['id'] > latest[0]['id']))
         return daily_due, forced_due

@@ -9,6 +9,7 @@ import datetime
 import hashlib
 import json
 import math
+import os
 import time
 from urllib.parse import urlsplit
 from typing import Optional
@@ -16,10 +17,20 @@ from typing import Optional
 STALE_AFTER = 30 * 3600
 CATALOG_TTL = 24 * 3600
 # Verification spends the same per-key daily quota it measures. The background
-# worker never starts more than this many inference checks per credential per
-# UTC day; on-demand serving/manual checks bypass but still count. Unknown rows
-# stay unknown past budget — never assumed from a sibling row.
-DAILY_CHECK_BUDGET = 5
+# worker never starts more than this many *verification* checks per credential
+# per UTC day. Serving traffic is recorded as kind='serve' and does not count:
+# otherwise one busy key starves its own verification. Selector probes,
+# scoped manual checks and suspect recovery bypass the cap but still count.
+# Unknown rows stay unknown past budget — never assumed from a sibling row.
+DAILY_CHECK_BUDGET = int(os.environ.get('KEEPER_DAILY_CHECK_BUDGET', '5'))
+# Request-path transient failures cool a connection down (escalating) instead
+# of excluding it; this many consecutive ones mark it failed for re-verification.
+REQUEST_FAILURE_LIMIT = 3
+REQUEST_COOLDOWN_BASE = 60
+REQUEST_COOLDOWN_MAX = 900
+SOFT_REQUEST_FAILURES = {'transient_error', 'invalid_response'}
+# Evidence about the key itself: exclude until a successful re-verification.
+EXCLUDING_FAILURES = {'access_denied', 'auth_invalid', 'model_mismatch', 'unsupported'}
 
 
 def utc_day_start(now):
@@ -27,9 +38,9 @@ def utc_day_start(now):
         hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
-CHECKS_TODAY_SQL = '''SELECT COUNT(*) AS n FROM av_checks h
+CHECKS_TODAY_SQL = """SELECT COUNT(*) AS n FROM av_checks h
     JOIN av_connections x ON x.id=h.connection_id
-    WHERE x.credential_id=? AND h.started_at>=?'''
+    WHERE x.credential_id=? AND h.started_at>=? AND h.kind='verify'"""
 
 
 def checks_started_since(db, credential_id, day_start):
@@ -67,14 +78,42 @@ class Model:
     provenance: str = ''
     requires_free_tier: bool = False
     verified_at: Optional[float] = None
+    # USD per token, list price where the source publishes one. shadow_* is
+    # the price of the same model's paid sibling (what a free call would
+    # cost without the free tier). Accounting only, never eligibility.
+    price_in: Optional[float] = None
+    price_out: Optional[float] = None
+    shadow_in: Optional[float] = None
+    shadow_out: Optional[float] = None
 
     @property
     def id(self):
         return identity(self.provider, self.model, self.base_url, self.protocol)
 
 
+def seed_prices(route):
+    """Operator-declared list price (USD per 1M tokens) -> per-token pair."""
+    out = []
+    for field in ('price_in_per_mtok', 'price_out_per_mtok'):
+        value = route.get(field)
+        ok = (isinstance(value, (int, float)) and not isinstance(value, bool)
+              and math.isfinite(value) and value >= 0)
+        out.append(value / 1e6 if ok else None)
+    return out
+
+
 def seed_model(route):
-    """Only exact, timestamped pricing evidence is usable from trusted seeds."""
+    """Only exact, timestamped pricing evidence is usable from trusted seeds.
+
+    An explicit operator-paid flag marks escrowed paid credentials (spend
+    intent); paid seeds require a safe endpoint like free ones.
+    """
+    if route.get('paid_eligibility') is True:
+        if not safe_connection_base(route.get('base_url', ''), route.get('wire', 'openai')):
+            raise ValueError('paid seed requires safe endpoint')
+        return Model(route['provider'], route['model'], safe_base(route.get('base_url', '')),
+                     route.get('wire', 'openai'), 'paid', OPERATOR_PAID, False, None,
+                     *seed_prices(route))
     evidence = route.get('free_eligibility') or {}
     stamp = evidence.get('verified_at') if isinstance(evidence, dict) else None
     known = (isinstance(evidence, dict) and evidence.get('kind') in ('zero_price', 'recurring_allowance')
@@ -83,6 +122,11 @@ def seed_model(route):
                  route.get('wire', 'openai'), 'free' if known else 'unknown',
                  str(evidence['provenance']) if known else '',
                  bool(known and evidence['kind'] == 'recurring_allowance'), stamp if known else None)
+
+
+class NoEvidence(Exception):
+    """A check could not run for reasons unrelated to the key/model under test
+    (e.g. the shared CLI sidecar is down). Defer it; record nothing."""
 
 
 @dataclass(frozen=True)
@@ -123,6 +167,26 @@ def evidence_age(stamp, now):
     return now - stamp
 
 
+OPERATOR_PAID = 'operator-paid-escrow'
+
+
+def spendable(c):
+    """Operator-escrowed paid credential: explicit spend intent.
+
+    Provenance-gated: discovery-priced paid rows never qualify, only seeds
+    carrying the operator-paid flag."""
+    return (c['eligibility'] == 'paid' and c['provenance'] == OPERATOR_PAID
+            and c['has_secret'] and c['active'])
+
+
+def checkable(c, now):
+    """Free-unblocked, or escrowed-paid (verified and selectable as fallback)."""
+    br = blocked_reason(c, now)
+    if br is None:
+        return True
+    return br == 'paid' and spendable(c)
+
+
 def blocked_reason(c, now):
     if not c['active']:
         return 'disabled'
@@ -147,6 +211,11 @@ def blocked_reason(c, now):
     if c['requires_free_tier'] and not c['free_tier']:
         return 'free_tier_unverified'
     return None
+
+
+def blocked_for_selection(c):
+    """Blocked for serving; escrowed paid fallbacks are selectable, not blocked."""
+    return bool(c['blocked_reason']) and not (c['blocked_reason'] == 'paid' and spendable(c))
 
 
 def aggregate_health(states):
@@ -207,7 +276,7 @@ class Availability:
                 for r in rs:
                     if r.get('model'):
                         model = seed_model(r)
-                        self._put_model(db, model, replace=model.eligibility == 'free')
+                        self._put_model(db, model, replace=model.eligibility in ('free', 'paid'))
             removed = set(existing) - {identity(*pair) for pair in grouped}
             for kid in removed:
                 if existing[kid]['active']:
@@ -223,19 +292,31 @@ class Availability:
         if not math.isfinite(checked_at):
             raise ValueError('invalid catalog time')
         old = db.execute('SELECT * FROM av_models WHERE id=?', (m.id,)).fetchone()
+        if old and old['provenance'] == OPERATOR_PAID and m.provenance != OPERATOR_PAID:
+            # Operator spend intent wins over later discovery pricing: keep
+            # eligibility/provenance, refresh presence only.
+            db.execute('UPDATE av_models SET checked_at=?, present=1, '
+                       'price_in=COALESCE(?,price_in), price_out=COALESCE(?,price_out) WHERE id=?',
+                       (checked_at, m.price_in, m.price_out, m.id))
+            return
         if old and replace:
             if isinstance(old['checked_at'], (int, float)) and checked_at < old['checked_at']:
                 return
             if (old['eligibility'], old['requires_free_tier'], old['present']) != (m.eligibility, int(m.requires_free_tier), 1):
                 db.execute('UPDATE av_connections SET revision=revision+1 WHERE model_id=?', (m.id,))
         values = (m.id, m.provider, m.model, m.base_url, m.protocol, m.eligibility,
-                  m.provenance, checked_at, int(m.requires_free_tier))
+                  m.provenance, checked_at, int(m.requires_free_tier),
+                  m.price_in, m.price_out, m.shadow_in, m.shadow_out)
         suffix = ''' ON CONFLICT(id) DO UPDATE SET eligibility=excluded.eligibility,
             provenance=excluded.provenance, checked_at=excluded.checked_at,
-            requires_free_tier=excluded.requires_free_tier, present=1''' if replace else ' ON CONFLICT(id) DO NOTHING'
+            requires_free_tier=excluded.requires_free_tier, present=1,
+            price_in=COALESCE(excluded.price_in,price_in), price_out=COALESCE(excluded.price_out,price_out),
+            shadow_in=COALESCE(excluded.shadow_in,shadow_in),
+            shadow_out=COALESCE(excluded.shadow_out,shadow_out)''' if replace else ' ON CONFLICT(id) DO NOTHING'
         db.execute('''INSERT INTO av_models
-            (id,provider,model,base_url,protocol,eligibility,provenance,checked_at,requires_free_tier)
-            VALUES (?,?,?,?,?,?,?,?,?)''' + suffix, values)
+            (id,provider,model,base_url,protocol,eligibility,provenance,checked_at,requires_free_tier,
+             price_in,price_out,shadow_in,shadow_out)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''' + suffix, values)
 
     def _expand(self, db):
         for k in db.execute('SELECT id,provider FROM av_credentials').fetchall():
@@ -295,7 +376,8 @@ class Availability:
             c['policy_source'] = ('inherited prior CLI endpoint'
                 if c['inherited_cli_cooldown'] > now or c['inherited_cli_auth_invalid'] else None)
             age = evidence_age(c['checked_at'], now)
-            if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale':
+            if c['blocked_reason'] and c['blocked_reason'] != 'catalog_stale' and not (
+                    c['blocked_reason'] == 'paid' and spendable(c)):
                 c['state'] = c['blocked_reason']
             elif c['excluded']:
                 c['state'] = 'suspect'
@@ -318,14 +400,14 @@ class Availability:
             model['working_keys'] = sum(c['state'] == 'working' for c in cells)
             model['total_keys'] = len(cells)
             model['checked'] = sum(c['checked_at'] is not None for c in cells)
-            model['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
+            model['blocked'] = sum(blocked_for_selection(c) for c in cells)
             model['state'] = ('cli_required' if model['provider'] == 'opencode-zen'
                               and model['protocol'] != 'zencli' and model['eligibility'] == 'free'
                               else aggregate_health(c['state'] for c in cells))
             model['exportable'] = model['protocol'] != 'zencli'
             model['transport_note'] = ('Historical CLI endpoint · not selectable · fresh Unix IPC verification required'
                 if model['protocol'] == 'zencli' and model['base_url'] != BRIDGE_BASE else
-                'Genuine CLI · private Unix HTTP · flattened text history · no client tools/stream/controls · service only'
+                'Genuine CLI · private Unix HTTP · flattened text history · JSON/tools emulated · no stream/controls · service only'
                 if model['protocol'] == 'zencli' else 'CLI required · direct free Zen inference disabled by policy'
                 if model['provider'] == 'opencode-zen' and model['eligibility'] == 'free'
                 else 'Direct provider API')
@@ -353,7 +435,7 @@ class Availability:
             k['check_budget'] = DAILY_CHECK_BUDGET
             k['total'] = len(cells)
             k['checked'] = sum(c['checked_at'] is not None for c in cells)
-            k['blocked'] = sum(bool(c['blocked_reason']) for c in cells)
+            k['blocked'] = sum(blocked_for_selection(c) for c in cells)
             k['state'] = ('disabled' if not k['active'] else 'revoked' if k['revoked']
                           else aggregate_health(c['state'] for c in cells
                                                 if c['blocked_reason'] in (None, 'catalog_stale', 'auth_invalid')))
@@ -363,25 +445,27 @@ class Availability:
              'working_keys': sum(k['working'] > 0 for k in ks), 'total_keys': len(ks)}
             for owner, ks in owners.items()]}
 
-    def _begin(self, db, cid):
+    def _begin(self, db, cid, kind='verify'):
         row = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (cid,)).fetchone()
         if row is None:
             raise KeyError('unknown connection')
-        if blocked_reason(row, self.clock()) or max(row['cooldown'], row['retry_at']) > self.clock():
+        if not checkable(row, self.clock()) or max(row['cooldown'], row['retry_at']) > self.clock():
             return None
         revision = row['revision'] + 1
         db.execute('UPDATE av_connections SET revision=? WHERE id=?', (revision, cid))
         cur = db.execute('''INSERT INTO av_checks
-            (connection_id,revision,key_revision,started_at,feedback_id) VALUES (?,?,?,?,?)''',
+            (connection_id,revision,key_revision,started_at,feedback_id,kind) VALUES (?,?,?,?,?,?)''',
             (cid, revision, row['key_revision'], self.clock(),
-             db.execute('SELECT COALESCE(MAX(id),0) FROM av_feedback WHERE connection_id=?', (cid,)).fetchone()[0]))
+             db.execute('SELECT COALESCE(MAX(id),0) FROM av_feedback WHERE connection_id=?', (cid,)).fetchone()[0],
+             kind))
         return cur.lastrowid
 
-    def begin_check(self, cid):
+    def begin_check(self, cid, kind='verify'):
+        """kind='serve' for real traffic (outside the verification budget)."""
         with self.store.transaction() as db:
-            return self._begin(db, cid)
+            return self._begin(db, cid, kind)
 
-    def _finish(self, db, ticket, result):
+    def _finish(self, db, ticket, result, soft=False):
         check = db.execute('SELECT * FROM av_checks WHERE id=?', (ticket,)).fetchone()
         if check is None:
             raise KeyError('unknown check')
@@ -389,14 +473,26 @@ class Availability:
             return False
         c = db.execute(CONNECTION_SQL + ' WHERE c.id=?', (check['connection_id'],)).fetchone()
         applied = (check['revision'] == c['revision'] and check['key_revision'] == c['key_revision']
-                   and check['started_at'] <= self.clock() and not blocked_reason(c, self.clock()))
+                   and check['started_at'] <= self.clock() and checkable(c, self.clock()))
         db.execute('UPDATE av_checks SET finished_at=?,state=?,applied=? WHERE id=?',
                    (self.clock(), result.state, int(applied), ticket))
-        if applied:
+        if applied and soft:
+            # One request-path blip is weak evidence: cool down (escalating)
+            # but keep the observation until REQUEST_FAILURE_LIMIT in a row.
+            streak = c['fail_streak'] + 1
+            retry = self.clock() + min(REQUEST_COOLDOWN_BASE * 2 ** (streak - 1), REQUEST_COOLDOWN_MAX)
+            if streak >= REQUEST_FAILURE_LIMIT:
+                db.execute('''UPDATE av_connections SET state=?,checked_at=?,retry_at=?,
+                    fail_streak=? WHERE id=?''', (result.state, self.clock(), retry, streak, c['id']))
+            else:
+                db.execute('UPDATE av_connections SET retry_at=?,fail_streak=? WHERE id=?',
+                           (retry, streak, c['id']))
+        elif applied:
             retry = self.clock() + result.retry_after if result.retry_after else 0
             db.execute('''UPDATE av_connections SET state=?,checked_at=?,retry_at=?,
-                excluded=CASE WHEN ?='working' THEN 0 ELSE excluded END WHERE id=?''',
-                (result.state, self.clock(), retry, result.state, c['id']))
+                excluded=CASE WHEN ?='working' THEN 0 ELSE excluded END,
+                fail_streak=CASE WHEN ?='working' THEN 0 ELSE fail_streak END WHERE id=?''',
+                (result.state, self.clock(), retry, result.state, result.state, c['id']))
             if result.state in ('auth_invalid', 'rate_limited'):
                 db.execute('''INSERT INTO av_transport_limits
                     (credential_id,base_url,protocol,cooldown,auth_invalid) VALUES (?,?,?,?,?)
@@ -411,6 +507,40 @@ class Availability:
     def finish_check(self, ticket, result):
         with self.store.transaction() as db:
             return self._finish(db, ticket, result)
+
+    def finish_request_failure(self, ticket, result):
+        """Apply failure feedback only if this attempt is still current.
+
+        Overlapping inference can finish a newer successful check first. Its
+        older failing sibling must not exclude the now-working route. Finish
+        and exclusion share one transaction to prevent a race between them.
+
+        Transient/invalid responses only cool the connection down (escalating)
+        until REQUEST_FAILURE_LIMIT consecutive failures; key-level evidence
+        (access/auth/model mismatch) excludes it until re-verified.
+        """
+        with self.store.transaction() as db:
+            check = db.execute('SELECT connection_id FROM av_checks WHERE id=?', (ticket,)).fetchone()
+            if check is None:
+                raise KeyError('unknown check')
+            cid = check['connection_id']
+            if result.state in SOFT_REQUEST_FAILURES:
+                if not self._finish(db, ticket, result, soft=True):
+                    return False
+                row = db.execute('SELECT state FROM av_connections WHERE id=?', (cid,)).fetchone()
+                if row['state'] != 'working':
+                    self._enqueue(db, cid)
+                return True
+            if not self._finish(db, ticket, result):
+                return False
+            # rate_limited already set a transport cooldown; only evidence
+            # about the key/model itself excludes it until re-verified.
+            if result.state in EXCLUDING_FAILURES:
+                db.execute('UPDATE av_connections SET excluded=1,revision=revision+1 WHERE id=?', (cid,))
+            db.execute('INSERT INTO av_feedback(connection_id,created_at,reason) VALUES (?,?,?)',
+                       (cid, self.clock(), result.state))
+            self._enqueue(db, cid)
+            return True
 
     def discard_request_check(self, ticket):
         """Close request-validation attempts without changing health/feedback."""

@@ -70,6 +70,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS av_job_live ON av_jobs(connection_id)
 CREATE TABLE IF NOT EXISTS av_sweep_jobs (
  sweep_id INTEGER NOT NULL REFERENCES av_sweeps(id), job_id INTEGER NOT NULL REFERENCES av_jobs(id),
  PRIMARY KEY(sweep_id, job_id));
+CREATE TABLE IF NOT EXISTS av_usage (
+ id INTEGER PRIMARY KEY, req_id TEXT NOT NULL, ts REAL NOT NULL, consumer TEXT NOT NULL,
+ model_id TEXT, provider TEXT NOT NULL DEFAULT '', model TEXT NOT NULL DEFAULT '',
+ protocol TEXT NOT NULL DEFAULT '', tier TEXT NOT NULL DEFAULT '', credential_ref TEXT NOT NULL DEFAULT '',
+ attempts INTEGER NOT NULL DEFAULT 0, outcome TEXT NOT NULL,
+ prompt_tokens INTEGER NOT NULL DEFAULT 0, completion_tokens INTEGER NOT NULL DEFAULT 0,
+ tokens_estimated INTEGER NOT NULL DEFAULT 0, cost_usd REAL NOT NULL DEFAULT 0,
+ shadow_cost_usd REAL, latency_ms INTEGER NOT NULL DEFAULT 0, stream INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS av_usage_ts ON av_usage(ts);
 CREATE TABLE IF NOT EXISTS av_provider_pacing (
  provider TEXT PRIMARY KEY, next_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS av_key_pacing (
@@ -93,8 +102,23 @@ class Store:
                 self.db.execute('INSERT INTO av_schema VALUES (3)')
             elif len(versions) != 1 or versions[0][0] not in (1, 2, 3):
                 raise ValueError('unsupported availability schema')
-            if 'feedback_id' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}:
+            check_cols = {r[1] for r in self.db.execute('PRAGMA table_info(av_checks)')}
+            if 'feedback_id' not in check_cols:
                 self.db.execute('ALTER TABLE av_checks ADD COLUMN feedback_id INTEGER NOT NULL DEFAULT 0')
+            # 'verify' checks spend the daily verification budget; 'serve'
+            # checks are real traffic and must not starve verification.
+            if 'kind' not in check_cols:
+                self.db.execute("ALTER TABLE av_checks ADD COLUMN kind TEXT NOT NULL DEFAULT 'verify'")
+            if 'fail_streak' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_connections)')}:
+                self.db.execute('ALTER TABLE av_connections ADD COLUMN fail_streak INTEGER NOT NULL DEFAULT 0')
+            self.db.execute('CREATE INDEX IF NOT EXISTS av_checks_conn_started ON av_checks(connection_id, started_at)')
+            model_cols = {r[1] for r in self.db.execute('PRAGMA table_info(av_models)')}
+            for col in ('price_in', 'price_out', 'shadow_in', 'shadow_out'):
+                if col not in model_cols:
+                    self.db.execute('ALTER TABLE av_models ADD COLUMN %s REAL' % col)
+            # Operator-scoped manual checks skip the daily verification budget.
+            if 'bypass' not in {r[1] for r in self.db.execute('PRAGMA table_info(av_jobs)')}:
+                self.db.execute('ALTER TABLE av_jobs ADD COLUMN bypass INTEGER NOT NULL DEFAULT 0')
             if versions and versions[0][0] == 1:
                 self._migrate_transport_limits()
             if versions and versions[0][0] < 3:

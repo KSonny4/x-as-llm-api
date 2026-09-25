@@ -9,14 +9,14 @@ set -euo pipefail
 PREFIX="secret/projects/pi-infinity-llm"
 get() { bao kv get -format=json "$PREFIX/$1" 2>/dev/null; }
 
-route() { # route <KEY> <provider> <model> <base> <wire> <conn> <name> <legacy-live>
-  local key="$1" doc
+route() { # route <KEY> <provider> <model> <base> <wire> <conn> <name> <legacy> [paid]
+  local key="$1" doc paid="${9:-0}"
   doc="$(get "$key")" || { echo "no Bao entry: $key" >&2; return 1; }
   # Secret document goes through stdin, never process arguments. Missing values
   # remain visible/signin-required rather than creating a fabricated credential.
   printf '%s' "$doc" | python3 -c '
 import json, sys
-key, provider, model, base, wire, conn, name = sys.argv[1:]
+key, provider, model, base, wire, conn, name, paid = sys.argv[1:]
 doc = json.load(sys.stdin)["data"]
 d = doc["data"]
 version = doc.get("metadata", {}).get("version")
@@ -28,6 +28,8 @@ r = {"provider": provider, "model": model, "base_url": base,
      "credential_ref": key + "@bao:" + str(version),
      "connection_id": conn, "bao_status": status,
      "active": status.lower() not in ("disabled", "retired", "inactive", "revoked", "banned")}
+if paid == "1":
+    r["paid_eligibility"] = True
 cred = d.get("key") or d.get("access")
 if isinstance(cred, str) and cred.strip():
     r["api_key"] = cred
@@ -38,7 +40,7 @@ eligibility = d.get("model_eligibility", {}).get(model)
 if isinstance(eligibility, dict):
     r["free_eligibility"] = eligibility
 print(json.dumps(r))
-' "$key" "$2" "$3" "$4" "$5" "$6" "$7"
+' "$key" "$2" "$3" "$4" "$5" "$6" "$7" "$paid"
 }
 
 OR_BASE="https://openrouter.ai/api/v1"
@@ -63,6 +65,7 @@ emit OPENCODE_ZEN_API_KEY opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool
 emit OPENCODE_ZEN_API_KEY_PETR opencode-zen "big-pickle" "$ZEN_BASE" openai "zen/pool-petr" "Big Pickle (pool Petr key)" 1
 emit GEMINI_API_KEY gemini "gemini-3.6-flash" "https://generativelanguage.googleapis.com/v1beta" gemini "gemini/gemini-3.6-flash" "Gemini 3.6 Flash" 1
 emit MOONSHOT_API_KEY moonshot "kimi-k2.7-code" "https://api.moonshot.ai/v1" openai "moonshot/kimi-k2.7-code" "Kimi K2.7 Code" 1
+emit OPENAI_API_KEY openai "gpt-6-luna" "https://api.openai.com/v1" openai "openai/gpt-6-luna" "GPT-6 Luna via OpenAI" 1 1
 emit MUSE_CODE_OAUTH claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6" "Claude Sonnet 4.6 (oauth 1)" 1
 emit MUSE_CODE_OAUTH_2 claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6-oauth2" "Claude Sonnet 4.6 (oauth 2)" 1
 emit MUSE_CODE_OAUTH_3 claude "claude-sonnet-4-6" "$ANTHropic_BASE" anthropic "claude/claude-sonnet-4-6-oauth3" "Claude Sonnet 4.6 (oauth 3)" 1

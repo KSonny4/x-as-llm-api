@@ -65,6 +65,23 @@ variable "loki_token" {
   type = string
 }
 
+# Tempo (traces) push: keeper posts OTLP/HTTP to the loopback receiver below;
+# Alloy forwards via gRPC (direct OTLP/HTTP push 404s on this instance).
+# Token: Bao secret/projects/nomad/GRAFANA_CLOUD_TRACES field token.
+variable "tempo_endpoint" {
+  type    = string
+  default = "tempo-prod-25-prod-gb-south-1.grafana.net:443"
+}
+
+variable "tempo_user" {
+  type    = string
+  default = "1470731"
+}
+
+variable "tempo_token" {
+  type = string
+}
+
 job "keeper-alloy" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -100,6 +117,10 @@ job "keeper-alloy" {
         # Loki password, same treatment: value from -var=loki_token at
         # register time (Bao, owner terminal only), never baked.
         GRAFANA_CLOUD_LOKI = var.loki_token
+        # Admin bearer for /metrics, as env so the rendered config never
+        # carries it (it used to be inlined into local/config.alloy).
+        KEEPER_METRICS_TOKEN = var.keeper_token
+        TEMPO_OTLP_TOKEN   = var.tempo_token
       }
 
       template {
@@ -107,7 +128,7 @@ job "keeper-alloy" {
 prometheus.scrape "keeper" {
   targets         = [{ "__address__" = "127.0.0.1:8102" }]
   scrape_interval = "30s"
-  bearer_token    = "${var.keeper_token}"
+  bearer_token    = env("KEEPER_METRICS_TOKEN")
   forward_to      = [prometheus.remote_write.cloud.receiver]
 }
 
@@ -132,9 +153,13 @@ discovery.relabel "keeper" {
   // the stable task prefix. Never labeldrop __meta_docker_container_id —
   // the source needs it to identify containers, and dropping it ships zero
   // lines with zero errors. (__-prefixed labels never reach Loki streams.)
+  // Other jobs also run tasks named "server" (Cognee, Node apps): keep
+  // server-* only when the image carries the keeper OCI title label
+  // (keeper/Dockerfile). Relabel regexes are fully anchored.
   rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex         = "^/(server|probe)-.*"
+    source_labels = ["__meta_docker_container_name", "__meta_docker_container_label_org_opencontainers_image_title"]
+    separator     = ";"
+    regex         = "/(server-.*;keeper|probe-.*;.*)"
     action        = "keep"
   }
 
@@ -167,6 +192,28 @@ loki.write "cloud" {
       password = env("GRAFANA_CLOUD_LOKI")
     }
   }
+}
+
+otelcol.receiver.otlp "keeper" {
+  http {
+    endpoint = "127.0.0.1:14318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.grafanacloud.input]
+  }
+}
+
+otelcol.exporter.otlp "grafanacloud" {
+  client {
+    endpoint = "${var.tempo_endpoint}"
+    auth     = otelcol.auth.basic.grafanacloud.handler
+  }
+}
+
+otelcol.auth.basic "grafanacloud" {
+  username = "${var.tempo_user}"
+  password = env("TEMPO_OTLP_TOKEN")
 }
 EOH
         destination = "local/config.alloy"

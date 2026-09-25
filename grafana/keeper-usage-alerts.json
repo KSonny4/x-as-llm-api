@@ -1,0 +1,314 @@
+[
+ {
+  "uid": "keeper-paid-spend-day",
+  "title": "Keeper paid spend over $2 in 24h",
+  "folderUID": "keeper",
+  "ruleGroup": "keeper-usage",
+  "condition": "C",
+  "for": "0s",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "labels": {
+   "service": "keeper",
+   "severity": "page"
+  },
+  "annotations": {
+   "summary": "Keeper spent ${{ $values.B.Value | printf \"%.2f\" }} on paid routes in 24h",
+   "description": "Dashboard: /d/keeper-usage"
+  },
+  "notification_settings": {
+   "receiver": "HonzaTraderBot"
+  },
+  "data": [
+   {
+    "refId": "A",
+    "queryType": "instant",
+    "relativeTimeRange": {
+     "from": 600,
+     "to": 0
+    },
+    "datasourceUid": "grafanacloud-prom",
+    "model": {
+     "expr": "sum(increase(keeper_llm_cost_usd_total{basis=\"actual\"}[24h]))",
+     "instant": true,
+     "intervalMs": 60000,
+     "maxDataPoints": 43200,
+     "refId": "A"
+    }
+   },
+   {
+    "refId": "B",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "A",
+     "reducer": "last",
+     "refId": "B",
+     "type": "reduce"
+    }
+   },
+   {
+    "refId": "C",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "B",
+     "refId": "C",
+     "type": "threshold",
+     "conditions": [
+      {
+       "evaluator": {
+        "params": [
+         2
+        ],
+        "type": "gt"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "uid": "keeper-suspect-keys",
+  "title": "Keeper model has suspect keys for 1h",
+  "folderUID": "keeper",
+  "ruleGroup": "keeper-usage",
+  "condition": "C",
+  "for": "1h",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "labels": {
+   "service": "keeper",
+   "severity": "page"
+  },
+  "annotations": {
+   "summary": "{{ $labels.provider }}/{{ $labels.model }}: {{ $values.B.Value }} suspect keys for 1h",
+   "description": "Dashboard: /d/keeper-usage"
+  },
+  "notification_settings": {
+   "receiver": "HonzaTraderBot"
+  },
+  "data": [
+   {
+    "refId": "A",
+    "queryType": "instant",
+    "relativeTimeRange": {
+     "from": 600,
+     "to": 0
+    },
+    "datasourceUid": "grafanacloud-prom",
+    "model": {
+     "expr": "sum by (provider, model) (keeper_connections{state=\"suspect\"}) and on (provider, model) (sum by (provider, model) (keeper_connections{state=\"working\"}) > 0)",
+     "instant": true,
+     "intervalMs": 60000,
+     "maxDataPoints": 43200,
+     "refId": "A"
+    }
+   },
+   {
+    "refId": "B",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "A",
+     "reducer": "last",
+     "refId": "B",
+     "type": "reduce"
+    }
+   },
+   {
+    "refId": "C",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "B",
+     "refId": "C",
+     "type": "threshold",
+     "conditions": [
+      {
+       "evaluator": {
+        "params": [
+         0
+        ],
+        "type": "gt"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "uid": "keeper-no-working-free",
+  "title": "Keeper has no working free route",
+  "folderUID": "keeper",
+  "ruleGroup": "keeper-usage",
+  "condition": "C",
+  "for": "15m",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "labels": {
+   "service": "keeper",
+   "severity": "page"
+  },
+  "annotations": {
+   "summary": "No free connection has fresh working evidence for 15m (paid fallback only)",
+   "description": "Dashboard: /d/keeper-usage"
+  },
+  "notification_settings": {
+   "receiver": "HonzaTraderBot"
+  },
+  "data": [
+   {
+    "refId": "A",
+    "queryType": "instant",
+    "relativeTimeRange": {
+     "from": 600,
+     "to": 0
+    },
+    "datasourceUid": "grafanacloud-prom",
+    "model": {
+     "expr": "(sum(keeper_connections{tier=\"free\",state=\"working\"}) or vector(0))",
+     "instant": true,
+     "intervalMs": 60000,
+     "maxDataPoints": 43200,
+     "refId": "A"
+    }
+   },
+   {
+    "refId": "B",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "A",
+     "reducer": "last",
+     "refId": "B",
+     "type": "reduce"
+    }
+   },
+   {
+    "refId": "C",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "B",
+     "refId": "C",
+     "type": "threshold",
+     "conditions": [
+      {
+       "evaluator": {
+        "params": [
+         1
+        ],
+        "type": "lt"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "uid": "keeper-verify-stalled",
+  "title": "Keeper verification stalled (no verify checks in 26h)",
+  "folderUID": "keeper",
+  "ruleGroup": "keeper-usage",
+  "condition": "C",
+  "for": "30m",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "labels": {
+   "service": "keeper",
+   "severity": "page"
+  },
+  "annotations": {
+   "summary": "Keeper ran no background verification checks in 26h",
+   "description": "Dashboard: /d/keeper-usage"
+  },
+  "notification_settings": {
+   "receiver": "HonzaTraderBot"
+  },
+  "data": [
+   {
+    "refId": "A",
+    "queryType": "instant",
+    "relativeTimeRange": {
+     "from": 600,
+     "to": 0
+    },
+    "datasourceUid": "grafanacloud-prom",
+    "model": {
+     "expr": "(sum(increase(keeper_checks_total{kind=\"verify\"}[26h])) or vector(0))",
+     "instant": true,
+     "intervalMs": 60000,
+     "maxDataPoints": 43200,
+     "refId": "A"
+    }
+   },
+   {
+    "refId": "B",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "A",
+     "reducer": "last",
+     "refId": "B",
+     "type": "reduce"
+    }
+   },
+   {
+    "refId": "C",
+    "queryType": "",
+    "relativeTimeRange": {
+     "from": 0,
+     "to": 0
+    },
+    "datasourceUid": "__expr__",
+    "model": {
+     "expression": "B",
+     "refId": "C",
+     "type": "threshold",
+     "conditions": [
+      {
+       "evaluator": {
+        "params": [
+         1
+        ],
+        "type": "lt"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+]
