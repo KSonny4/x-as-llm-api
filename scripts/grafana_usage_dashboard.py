@@ -82,6 +82,10 @@ def table(title, queries, rename, desc='', units=None, sort=None):
     """queries: [(ref, expr)] instant tables merged on shared labels."""
     overrides = [{'matcher': {'id': 'byName', 'options': col},
                   'properties': [{'id': 'unit', 'value': unit}]} for col, unit in (units or {}).items()]
+    # increase() extrapolates; counts read as whole numbers, money keeps decimals.
+    overrides += [{'matcher': {'id': 'byName', 'options': col},
+                   'properties': [{'id': 'decimals', 'value': 0}]}
+                  for col in rename.values() if col not in (units or {})]
     return {'type': 'table', 'title': title, 'description': desc, 'datasource': PROM,
             'targets': [prom(e, instant=True, ref=r, fmt='table') for r, e in queries],
             'transformations': [
