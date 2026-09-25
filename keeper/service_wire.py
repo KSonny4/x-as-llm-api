@@ -3,10 +3,14 @@
 Native OpenAI requests pass through. Translated routes accept only explicitly
 mapped fields and text/function-tool history; unsupported features make that
 route incompatible, never silently dropped. Provider identity stays exact.
+Exception, documented: the text-only CLI (zencli) route emulates structured
+output/tools and ignores sampling/length/stop controls it cannot honour
+(zencli_structured.IGNORED).
 """
 import json
 import math
 import translate
+import zencli_structured
 
 COMMON = {'model', 'messages', 'stream', 'max_tokens', 'max_completion_tokens',
           'temperature', 'top_p', 'stop', 'tools', 'tool_choice', 'stream_options'}
@@ -129,9 +133,9 @@ def compatible(protocol, req):
     if not safe_request(req):
         return False
     if protocol == 'zencli':
-        return (not (set(req) - {'model','messages','stream'}) and not req.get('stream')
-                and all(set(m) <= {'role','content'} and m.get('role') in ('system','user','assistant')
-                        and isinstance(m.get('content'), str) for m in req['messages']))
+        # Text-only CLI: structured output/tools are emulated by prompt +
+        # validation (zencli_structured); generation controls are ignored.
+        return zencli_structured.supported(req)
     if protocol == 'openai':
         return True
     if protocol not in ('anthropic', 'gemini', 'responses') or set(req) - COMMON:
@@ -170,8 +174,10 @@ def prepare(config, req):
     p = config['protocol']
     body = {**req, 'model': config['model']}
     limit = req.get('max_completion_tokens', req.get('max_tokens'))
-    if p in ('openai', 'zencli'):
+    if p == 'openai':
         return body
+    if p == 'zencli':
+        return {**zencli_structured.plan(req)[0], 'model': config['model']}
     if p == 'anthropic':
         body = translate.openai_to_anthropic({**body, 'max_tokens': limit or 1024})
         for field in ('temperature', 'top_p'):

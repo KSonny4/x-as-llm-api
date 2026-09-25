@@ -407,7 +407,7 @@ class Availability:
             model['exportable'] = model['protocol'] != 'zencli'
             model['transport_note'] = ('Historical CLI endpoint · not selectable · fresh Unix IPC verification required'
                 if model['protocol'] == 'zencli' and model['base_url'] != BRIDGE_BASE else
-                'Genuine CLI · private Unix HTTP · flattened text history · no client tools/stream/controls · service only'
+                'Genuine CLI · private Unix HTTP · flattened text history · JSON/tools emulated · no stream/controls · service only'
                 if model['protocol'] == 'zencli' else 'CLI required · direct free Zen inference disabled by policy'
                 if model['provider'] == 'opencode-zen' and model['eligibility'] == 'free'
                 else 'Direct provider API')
