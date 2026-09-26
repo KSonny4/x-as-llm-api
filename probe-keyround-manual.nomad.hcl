@@ -8,16 +8,6 @@
 # Values NEVER in git — keys_json rendered from Bao at register (see
 # probe-keyround.nomad.hcl header). Memory floor 1024MB (proven).
 
-variable "dr_user" {
-  type    = string
-  default = ""
-}
-
-variable "dr_pass" {
-  type    = string
-  default = ""
-}
-
 variable "keys_json" {
   type    = string
   default = "[]"
@@ -46,10 +36,6 @@ job "keyround-manual" {
       config {
         image      = "registry.pkubelka.cz/zencli:main-11"
         force_pull = true
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
-        }
         # Override the image ENTRYPOINT (zencli serve loop); the round
         # is driven by keyround.py directly.
         entrypoint = ["python3"]

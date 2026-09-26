@@ -41,18 +41,6 @@ variable "aa_api_key" {
   default = ""
 }
 
-# Registry auth (node docker config proved unreliable — files vanish).
-# Values via -var only, never git (same class as KEEPER_TOKEN).
-variable "dr_user" {
-  type    = string
-  default = ""
-}
-
-variable "dr_pass" {
-  type    = string
-  default = ""
-}
-
 # Live seed routes as JSON ({"routes": [...]}), rendered at deploy time
 # from Bao (secret/projects/pi-infinity-llm/*). Never in git: pass via
 # -var=seeds_json="$(...)". Stored in the job spec like KEEPER_TOKEN
@@ -136,10 +124,6 @@ job "keeper" {
         volumes      = ["${var.keeper_data_path}:/var/lib/keeper"]
         ports        = ["http"]
         force_pull   = true
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
-        }
       }
 
       env {
@@ -202,10 +186,6 @@ job "keeper" {
             size = 536870912
             mode = 1023 # decimal representation of Unix 01777
           }
-        }
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
         }
       }
       env {

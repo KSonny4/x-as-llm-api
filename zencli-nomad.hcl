@@ -10,24 +10,14 @@
 #   export NOMAD_ADDR=https://nomad.pkubelka.cz  # or loopback :4647
 #   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
 #   nomad job run \
-#     -var=dr_user="publisher" \
-#     -var=dr_pass="$(...registry password...)" \
 #     -var=opencode_auth_json="$(cat ~/.local/share/opencode/auth.json)" \
 #     zencli-nomad.hcl
+# Note: registry auth is client-level on the node (KSonny4/platform
+# config/nomad.hcl, docker plugin auth config); specs must not carry auth.
 # Batch runs once on register; watch the alloc, expect NOMAD-ZENCLI-ALIVE.
 #
 # Secrets NEVER in git — both -vars flow shell→Nomad only.
 # Memory floor 1024MB: the opencode CLI SIGKILLs at 256MB (proven).
-
-variable "dr_user" {
-  type    = string
-  default = ""
-}
-
-variable "dr_pass" {
-  type    = string
-  default = ""
-}
 
 variable "opencode_auth_json" {
   type    = string
@@ -46,10 +36,6 @@ job "zencli-validate" {
       config {
         image      = "registry.pkubelka.cz/zencli:main-2"
         force_pull = true
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
-        }
       }
 
       env {

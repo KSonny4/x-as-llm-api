@@ -21,17 +21,6 @@ variable "opencode_auth_json" {
   default = "{}"
 }
 
-# Registry auth via job vars (node docker config unreliable).
-variable "dr_user" {
-  type    = string
-  default = ""
-}
-
-variable "dr_pass" {
-  type    = string
-  default = ""
-}
-
 job "keeper-probe-shell" {
   datacenters = ["ovh-vps"]
   type        = "service"
@@ -47,10 +36,6 @@ job "keeper-probe-shell" {
         network_mode = "host"
         command      = "sleep"
         args         = ["infinity"]
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
-        }
       }
 
       env {
