@@ -8,26 +8,16 @@
 #   export NOMAD_TOKEN=$(bao kv get -field=management secret/projects/NomadSetup/acl)
 #   KEYS_JSON="$(bash scripts/render-keyround-keys.sh)"
 #   nomad job run \
-#     -var=dr_user="publisher" \
-#     -var=dr_pass="$(...registry password...)" \
 #     -var=keys_json="$KEYS_JSON" \
 #     probe-keyround.nomad.hcl
+# Note: registry auth is client-level on the node (KSonny4/platform
+# config/nomad.hcl, docker plugin auth config); specs must not carry auth.
 #   nomad job dispatch -meta key=OPENCODE_ZEN_RETIRED_1 keyround  # manual pin
 #
 # Pool curation (enter on pass, backoff on fail, recovery events) reads
 # verdict history in the keeper publish layer (M3) — the task stays
 # stateless. Memory floor 1024MB (CLI SIGKILLs below it, proven).
 # Auth guard: keyround.py exits 2 on missing/empty/{} values (fail closed).
-
-variable "dr_user" {
-  type    = string
-  default = ""
-}
-
-variable "dr_pass" {
-  type    = string
-  default = ""
-}
 
 variable "keys_json" {
   type    = string
@@ -56,10 +46,6 @@ job "keyround-periodic" {
       config {
         image      = "registry.pkubelka.cz/zencli:main-11"
         force_pull = true
-        auth {
-          username = var.dr_user
-          password = var.dr_pass
-        }
         # Override the image ENTRYPOINT (zencli serve loop); the round
         # is driven by keyround.py directly.
         entrypoint = ["python3"]
